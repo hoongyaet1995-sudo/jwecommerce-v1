@@ -72,6 +72,12 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        $exceptions->render(function (\Illuminate\Routing\Exceptions\InvalidSignatureException $exception, Request $request) {
+            if ($request->is('m/email/preferences/*') && ! $request->expectsJson()) {
+                return response()->view('marketing.email.preferences', ['expired' => true], 403)
+                    ->header('Cache-Control', 'private, no-store')->header('Referrer-Policy', 'no-referrer');
+            }
+        });
         // Native Admin forms need the same expired-session recovery as Admin fetch requests.
         $exceptions->respond(function (\Symfony\Component\HttpFoundation\Response $response, \Throwable $exception, Request $request) {
             if ($response->getStatusCode() === 419

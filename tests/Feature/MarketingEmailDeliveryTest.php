@@ -17,14 +17,14 @@ class MarketingEmailDeliveryTest extends TestCase {
  private function preparedOptOut():array{$c=$this->fixture();$id=$this->postJson('/admin/marketing/campaigns/'.$c['id'].'/email-test',['version'=>$c['version'],'recipient'=>'owner@example.test','landing_url'=>url('/'),'confirmed'=>true])->assertCreated()->json('delivery.id');$snapshot=json_decode(DB::table('marketing_email_deliveries')->find($id)->snapshot,true);$this->assertArrayHasKey('unsubscribe_url',$snapshot);return [$id,$snapshot];}
  public function test_crm_derived_unsubscribe_is_real_readonly_on_get_and_repeat_safe_on_post(){
   [$id,$snapshot]=$this->preparedOptOut();$this->assertStringContainsString(e($snapshot['unsubscribe_url']),$snapshot['html']);auth()->logout();
-  $this->get($snapshot['unsubscribe_url'])->assertOk()->assertSee('Unsubscribe from marketing emails?');$this->assertDatabaseCount('marketing_audience_subscriptions',0);
-  $this->post($snapshot['unsubscribe_url'])->assertOk()->assertSee('Email preferences updated');$this->post($snapshot['unsubscribe_url'])->assertOk();
+  $this->get($snapshot['unsubscribe_url'])->assertOk()->assertSee('Unsubscribe from emails?');$this->assertDatabaseCount('marketing_audience_subscriptions',0);
+  $this->post($snapshot['unsubscribe_url'])->assertOk()->assertSee('Return to store');$this->post($snapshot['unsubscribe_url'])->assertOk();
   $this->assertDatabaseHas('marketing_audience_subscriptions',['channel'=>'email','destination_hash'=>hash('sha256','owner@example.test'),'status'=>'unsubscribed']);
   $this->assertSame(1,DB::table('marketing_audience_audits')->where('action','email_unsubscribed')->count());$this->assertDatabaseHas('marketing_email_deliveries',['id'=>$id,'state'=>'blocked','error_code'=>'recipient_unsubscribed']);
   app(\App\Services\Marketing\MarketingEmailDelivery::class)->run($id);Mail::assertNothingSent();Http::assertNothingSent();
  }
  public function test_unsubscribe_rejects_tampered_expired_and_foreign_store_links(){
-  [$id,$snapshot]=$this->preparedOptOut();auth()->logout();$this->post($snapshot['unsubscribe_url'].'x')->assertForbidden();
+  [$id,$snapshot]=$this->preparedOptOut();auth()->logout();$this->post($snapshot['unsubscribe_url'].'x')->assertForbidden()->assertSee('This link has expired')->assertDontSee('type="submit"', false);
   DB::table('marketing_email_deliveries')->where('id',$id)->update(['merchant_key'=>'another-store']);$this->post($snapshot['unsubscribe_url'])->assertNotFound();
   $this->travel(181)->days();$this->post($snapshot['unsubscribe_url'])->assertForbidden();$this->assertDatabaseCount('marketing_audience_subscriptions',0);Mail::assertNothingSent();
  }
