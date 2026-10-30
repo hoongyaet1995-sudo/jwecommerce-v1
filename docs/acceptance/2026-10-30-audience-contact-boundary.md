@@ -1,0 +1,7 @@
+# Audience contact admission boundary — 2026-10-30
+
+A Marketing Audience contact must have at least one address accepted by ContactValueNormalizer: a valid email or international-format telephone number. Customer registration and Guest labels do not affect admission. Contacts with no reachable address are inactive and excluded from Directory-based list totals, segment previews, exports and send selection. A reachable Guest remains eligible for admission.
+
+Admission does not grant consent or prove ownership/deliverability. Existing channel opt-outs, suppression, conflict exclusions and campaign cost approval remain enforced. Raw customers, orders, enquiries, audience source history and subscription history are retained. New projections with neither address are ignored; recalculation cannot reactivate unreachable records. One-time migration deactivates existing unreachable contacts in batches of500 without deleting data. If valid details are supplied later, normal sync can project the contact again.
+
+Verification: intentional initial red confirmed the customer exception admitted empty contact (not an unexpected failure). After repair,43tests356assertions passed19.13s (Audience and WhatsApp regression). Local MySQL migration succeeded8.25ms. Normal localhost Contacts rendered24 contacts including phone-only owner and reachable Guest entries. No outbound messages or provider calls in this phase. Token accounting unavailable.

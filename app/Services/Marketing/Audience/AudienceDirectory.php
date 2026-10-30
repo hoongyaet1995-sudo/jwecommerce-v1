@@ -10,7 +10,7 @@ class AudienceDirectory {
  public function hash(string $value):string{return hash('sha256',$value);}
  public function project(string $kind,string $source,array $d,string $run):?string {
   $email=Normalize::email($d['email']??null);$phone=Normalize::phone($d['phone']??null);
-  if(!$email&&!$phone&&$kind!=='customer')return null;
+  if(!$email&&!$phone)return null;
   $existing=DB::table('marketing_audience_sources')->where(['merchant_key'=>$this->merchant(),'kind'=>$kind,'source_id'=>$source])->first();
   $matches=(!$email&&!$phone)?collect():$this->query()->where(function($q)use($email,$phone){if($email)$q->where('email',$email);if($phone)$q->orWhere('phone',$phone);})->orderBy('created_at')->get();
   $contact=$existing?DB::table('marketing_audience_contacts')->find($existing->contact_id):$matches->first();
@@ -32,8 +32,9 @@ class AudienceDirectory {
  public function recalculate(string $id):void {
   $q=DB::table('marketing_audience_sources')->where('contact_id',$id)->where('active',true);
   $tags=[];foreach((clone $q)->pluck('tags') as $raw)foreach(json_decode($raw??'[]',true)??[] as $tag)$tags[$tag]=true;
+  $contact=DB::table('marketing_audience_contacts')->find($id);$reachable=$contact&&(Normalize::email($contact->email)||Normalize::phone($contact->phone));
   $paid=(clone $q)->where('kind','order')->where('paid_minor','>',0);$enquiries=(clone $q)->where('kind','enquiry');
-  DB::table('marketing_audience_contacts')->where('id',$id)->update(['active'=>(clone $q)->exists(),'tags'=>json_encode(array_keys($tags)),'paid_orders'=>(clone $paid)->count(),'last_paid_at'=>(clone $paid)->max('occurred_at'),'enquiries'=>(clone $enquiries)->count(),'last_enquiry_at'=>(clone $enquiries)->max('occurred_at')]);
+  DB::table('marketing_audience_contacts')->where('id',$id)->update(['active'=>$reachable&&(clone $q)->exists(),'tags'=>json_encode(array_keys($tags)),'paid_orders'=>(clone $paid)->count(),'last_paid_at'=>(clone $paid)->max('occurred_at'),'enquiries'=>(clone $enquiries)->count(),'last_enquiry_at'=>(clone $enquiries)->max('occurred_at')]);
   DB::table('marketing_audience_values')->where('contact_id',$id)->delete();
   foreach((clone $paid)->selectRaw('currency,SUM(paid_minor-refunded_minor) as net_minor')->groupBy('currency')->get() as $v)if($v->currency)DB::table('marketing_audience_values')->insert(['contact_id'=>$id,'currency'=>$v->currency,'net_minor'=>max(0,(int)$v->net_minor)]);
  }
