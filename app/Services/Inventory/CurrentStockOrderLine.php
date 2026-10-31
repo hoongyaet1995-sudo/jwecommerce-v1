@@ -72,6 +72,20 @@ final class CurrentStockOrderLine
             $debit = $desiredDebitedQuantity - (int) $line->deducted_quantity;
             $credit = $desiredRestoredQuantity - (int) $line->restored_quantity;
             if ($debit !== 0 || $credit !== 0) {
+                $state = $channelKey === 'website' && $balance->current_stock === null
+                    ? app(CatalogInventoryState::class)->snapshot($variantId) : null;
+                $opening = $state && $state['initialized'] && !$state['verified'] && !$state['repair_required'];
+                if ($opening) {
+                    $after = (int) $balance->physical_stock + $credit - $debit;
+                    if ($after < (int) $balance->reserved_stock + (int) $balance->safety_stock) {
+                        throw new RuntimeException('Catalog opening stock is insufficient.');
+                    }
+                    DB::table('inventory_balances')->where('id', $balanceId)->update([
+                        'physical_stock' => $after, 'version' => (int) $balance->version + 1, 'updated_at' => now(),
+                    ]);
+                    $current = $after;
+                    app(CatalogStockProjection::class)->refresh($variantId);
+                } else {
                 $movement = $this->ledger->change($balanceId, $credit - $debit,
                     'order-line:'.$line->id.':'.$desiredDebitedQuantity.':'.$desiredRestoredQuantity,
                     'Order line '.$line->id);
@@ -87,8 +101,12 @@ final class CurrentStockOrderLine
                 if ($pool?->kind === 'shared' || $pool?->pool_key === 'store:website') {
                     app(CatalogStockProjection::class)->refresh($variantId);
                 }
+                }
             } else {
-                $current = $this->ledger->quantity($balanceId);
+                $state = $channelKey === 'website' && $balance->current_stock === null
+                    ? app(CatalogInventoryState::class)->snapshot($variantId) : null;
+                $current = $state && $state['initialized'] && !$state['verified'] && !$state['repair_required']
+                    ? $state['available'] : $this->ledger->quantity($balanceId);
             }
             DB::table('inventory_current_stock_order_lines')->where('id', $line->id)->update([
                 'deducted_quantity' => $desiredDebitedQuantity,
@@ -97,6 +115,7 @@ final class CurrentStockOrderLine
                 'updated_at' => now(),
             ]);
             $result = ['line_id' => (int) $line->id, 'current_stock' => $current,
+                'stock_source' => $channelKey === 'website' && $balance->current_stock === null ? 'catalog_opening' : 'current_stock',
                 'deducted_quantity' => $desiredDebitedQuantity,
                 'restored_quantity' => $desiredRestoredQuantity,
                 'replayed' => $debit === 0 && $credit === 0,

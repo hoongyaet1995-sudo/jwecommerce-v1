@@ -29,6 +29,8 @@ final class SyncOutbox
 
     public function enqueueMutation(?string $operationId, object $balance, string $stage = 'account', ?string $eventKey = null): array
     {
+        // Catalog opening stock may serve the website; provider sync still requires First Count.
+        if (config('inventory.current_stock_only') && $balance->current_stock === null) return [];
         $pool = DB::table('inventory_pools')->find($balance->inventory_pool_id);
         if ($pool?->kind === 'facility') {
             $facilities = DB::table('marketplace_store_facilities as facility')

@@ -16,7 +16,10 @@ final class CatalogStockProjection
             ->where('pool.pool_key', $poolKey)
             ->select('balance.*')
             ->first();
-        $available = config('inventory.current_stock_only')
+        $state = app(CatalogInventoryState::class)->snapshot($variantId);
+        $opening = $balance?->current_stock === null && $state['initialized']
+            && !$state['verified'] && !$state['repair_required'];
+        $available = config('inventory.current_stock_only') && !$opening
             ? (int) ($balance?->current_stock ?? 0)
             : ($balance && $balance->physical_stock !== null
                 ? max(0, (int) $balance->physical_stock - (int) ($balance->reserved_stock ?? 0) - (int) ($balance->safety_stock ?? 0))

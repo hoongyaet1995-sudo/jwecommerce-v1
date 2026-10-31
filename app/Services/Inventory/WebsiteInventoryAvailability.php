@@ -15,12 +15,18 @@ class WebsiteInventoryAvailability
         $configuration=DB::table('inventory_configuration')->where('id',1)->first();
         if (config('inventory.current_stock_only')) {
             $poolKey = $configuration?->operating_mode === 'shared_pool' ? 'shared' : 'store:website';
-            $quantity = DB::table('inventory_balances as balance')
+            $balance = DB::table('inventory_balances as balance')
                 ->join('inventory_pools as pool', 'pool.id', '=', 'balance.inventory_pool_id')
                 ->where('pool.pool_key', $poolKey)->where('balance.product_variant_id', $variant->id)
-                ->value('balance.current_stock');
+                ->select('balance.*')->first();
 
-            return $quantity === null ? null : (int) $quantity;
+            $quantity = $balance?->current_stock;
+            if ($quantity !== null) return (int) $quantity;
+            if (!$balance) return null;
+            $state = app(CatalogInventoryState::class)->snapshot((int) $variant->id);
+            return $state['initialized'] && !$state['verified'] && !$state['repair_required']
+                && $balance?->physical_stock !== null
+                ? max(0, (int) $balance->physical_stock - (int) $balance->reserved_stock - (int) $balance->safety_stock) : null;
         }
         if(in_array($configuration?->operating_mode,['shared_pool','independent_stores'],true)
             && DB::table('inventory_store_accounts')->where('account_key','website')->where('management_status','managed')->exists()){

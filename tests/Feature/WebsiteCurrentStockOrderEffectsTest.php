@@ -19,6 +19,44 @@ class WebsiteCurrentStockOrderEffectsTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_catalog_opening_stock_serves_website_without_first_count_and_switches_after_count(): void
+    {
+        config(['inventory.current_stock_only' => true]);
+        foreach (['shared_pool', 'independent_stores'] as $mode) {
+            DB::table('inventory_configuration')->where('id', 1)->update(['operating_mode' => $mode]);
+            $sku = (new StoreInventoryFixture)->sku();
+            $actor = User::factory()->create(['is_admin' => true]);
+            $availability = app(\App\Services\Inventory\WebsiteInventoryAvailability::class);
+            $this->assertNull($availability->quantity($sku['variant']));
+            app(\App\Services\Inventory\CatalogStockService::class)->setPhysical($sku['variant']->id, 10, null, 'opening-'.$mode, $actor->id);
+            $balance = app(AccountResolver::class)->balance($sku['variant']->id, 'website');
+            $this->assertSame(10, $availability->quantity($sku['variant']->fresh()));
+            $this->assertSame(10, $sku['variant']->fresh()->stock);
+            try {
+                app(\App\Services\Inventory\CurrentStockOrderLine::class)->apply('website', 'oversell-'.$mode, 'oversell',
+                    $sku['variant']->id, $balance['id'], 11, 11, 0, 'oversell-'.$mode);
+                $this->fail('Opening inventory allowed overselling.');
+            } catch (\RuntimeException $error) {
+                $this->assertSame('Catalog opening stock is insufficient.', $error->getMessage());
+            }
+            $this->assertSame(10, $availability->quantity($sku['variant']->fresh()));
+            $order = Order::create(['number' => 'OPENING-'.$mode, 'email' => 'stock@example.test', 'currency' => 'MYR', 'status' => 'pending_payment', 'subtotal' => 200, 'total' => 200]);
+            $item = $order->items()->create(['product_variant_id' => $sku['variant']->id, 'sku' => $sku['variant']->sku, 'title' => 'Test SKU', 'unit_price' => 100, 'quantity' => 2, 'line_total' => 200]);
+            $effects = app(WebsiteCurrentStockOrderEffects::class);
+            $effects->debit($order);
+            $effects->debit($order);
+            $this->assertSame(8, $availability->quantity($sku['variant']->fresh()));
+            $this->assertNull(DB::table('inventory_balances')->where('id', $balance['id'])->value('current_stock'));
+            $this->assertSame(0, DB::table('inventory_current_stock_sync_intents')->where('inventory_balance_id', $balance['id'])->count());
+            $effects->restore($order, [$item->id => 1], 'refund:1');
+            $this->assertSame(9, $availability->quantity($sku['variant']->fresh()));
+            app(CurrentStockLedger::class)->setAbsolute($balance['id'], 6, 'first-count-'.$mode, 'First Count');
+            $this->assertSame(6, $availability->quantity($sku['variant']->fresh()));
+            $effects->restore($order, $effects->remaining($order), 'cancelled');
+            $this->assertSame(7, $availability->quantity($sku['variant']->fresh()));
+        }
+    }
+
     public function test_website_order_debits_at_creation_and_restores_only_the_affected_units(): void
     {
         config(['inventory.current_stock_only' => true]);
