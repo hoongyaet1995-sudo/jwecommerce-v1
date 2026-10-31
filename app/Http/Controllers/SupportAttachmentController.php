@@ -19,6 +19,7 @@ class SupportAttachmentController extends Controller
     }
     public function upload(Request $r, SupportChatService $chat, SupportAttachmentService $media, ?SupportConversation $conversation=null)
     {
+        abort_if(!$r->is('admin/*') && $r->hasFile('document'),422,'PDF uploads are not available in website chat.');
         $r->validate(['image'=>['nullable','file','max:5120'],'audio'=>['nullable','file','max:16384'],'document'=>['nullable','file','max:10240']]);
         abort_unless(count(array_filter(['image','audio','document'],fn($key)=>$r->hasFile($key)))===1,422,'Attach one file at a time.');
         $admin=$r->is('admin/*');

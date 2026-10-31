@@ -79,7 +79,7 @@
 <header class="head"><div class="brand"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#sf-support-chat"/></svg></div><div class="bot-identity"><strong id="sf-bot-name">JW Studio Support</strong><small id="sf-bot-role">Let’s find what you need</small></div><div class="actions"><label class="chat-language"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c5 5 5 13 0 18-5-5-5-13 0-18Z"/></svg><select id="sf-support-language" aria-label="Reply language"><option value="en">English</option><option value="ms">Malay</option><option value="zh">中文</option></select></label><button class="icon" id="sf-support-close" aria-label="Close support chat"><svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div></header>
 <div class="faq-tabs" role="tablist" aria-label="Support sections"><button id="sample-chat-tab" role="tab" aria-selected="false">✦ AI Chat</button><button id="sample-faq-tab" role="tab" aria-selected="true">ⓘ FAQ Guide <span id="faq-total"></span></button></div>
 <div id="faq-tools"><div class="faq-search"><span aria-hidden="true">⌕</span><input id="faq-search" aria-label="Search FAQ" placeholder="Search FAQ: shipping, returns, payment…" type="search"></div><div class="faq-categories" id="faq-categories" role="tablist" aria-label="FAQ categories"></div></div>
-<div class="demo" role="status" aria-live="polite" hidden></div><div class="stream" id="sf-support-stream" role="log" aria-live="polite" hidden></div><div class="stream" id="sf-faq-stream" aria-live="polite"></div><footer class="composer"><div id="sf-image-status" role="status" hidden></div><div id="sf-image-preview" hidden></div><button id="sf-document-attach" type="button" class="icon" aria-label="Attach PDF" title="Attach PDF"><svg><use href="#sf-support-care"/></svg></button><input id="sf-document-file" type="file" accept="application/pdf,.pdf" hidden><input id="sf-image-file" type="file" accept="image/jpeg,image/png,image/webp" hidden><form id="sf-support-form"><button type="button" class="icon" id="sf-image-attach" aria-label="Attach image"><svg viewBox="0 0 24 24"><path d="m21 12-8 8a6 6 0 0 1-8-8l9-9a4 4 0 0 1 6 6l-9 9a2 2 0 0 1-3-3l8-8"/></svg></button><textarea id="sf-support-input" aria-label="Your message" placeholder="Write your message…" maxlength="2000"></textarea><button class="send" id="sf-support-send" aria-label="Send message" disabled><svg viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4 20-7ZM22 2 11 13"/></svg></button></form><div class="foot">Chat with JW Studio Support</div></footer></section>
+<div class="demo" role="status" aria-live="polite" hidden></div><div class="stream" id="sf-support-stream" role="log" aria-live="polite" hidden></div><div class="stream" id="sf-faq-stream" aria-live="polite"></div><footer class="composer"><div id="sf-image-status" role="status" hidden></div><div id="sf-image-preview" hidden></div><input id="sf-image-file" type="file" accept="image/jpeg,image/png,image/webp" hidden><form id="sf-support-form"><button type="button" class="icon" id="sf-image-attach" aria-label="Attach image"><svg viewBox="0 0 24 24"><path d="m21 12-8 8a6 6 0 0 1-8-8l9-9a4 4 0 0 1 6 6l-9 9a2 2 0 0 1-3-3l8-8"/></svg></button><textarea id="sf-support-input" aria-label="Your message" placeholder="Write your message…" maxlength="2000"></textarea><button class="send" id="sf-support-send" aria-label="Send message" disabled><svg viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4 20-7ZM22 2 11 13"/></svg></button></form><div class="foot">Chat with JW Studio Support</div></footer></section>
 <script>
 (()=>{const root=document.querySelector("#storefront-support-widget");
 let enquiryContext=root.dataset.enquiryContext||null;
@@ -113,8 +113,7 @@ function renderGreeting(){stream.querySelectorAll('[data-greeting]').forEach(nod
 const status=root.querySelector('.demo');
 const mediaStatus=root.querySelector('#sf-image-status');
 const imageFile=root.querySelector('#sf-image-file'),imagePreview=root.querySelector('#sf-image-preview'),imageAttach=root.querySelector('#sf-image-attach');
-const documentAttach=root.querySelector('#sf-document-attach'),documentFile=root.querySelector('#sf-document-file');
-function updateSend(){documentAttach.disabled=sending||uploadingImage;send.disabled=sending||uploadingImage||(!input.value.trim()&&!imageDraft);imageAttach.disabled=sending||uploadingImage;}
+function updateSend(){send.disabled=sending||uploadingImage||(!input.value.trim()&&!imageDraft);imageAttach.disabled=sending||uploadingImage;}
 function removeImage(){if(sending||uploadingImage)return;imageDraft=null;imagePreview.replaceChildren();imagePreview.hidden=true;updateSend();}
 function fileSize(bytes){return bytes<1048576?Math.ceil(bytes/1024)+' KB':(bytes/1048576).toFixed(1)+' MB';}
 function showImagePreview(){imagePreview.replaceChildren();imagePreview.hidden=!imageDraft;if(!imageDraft)return;
@@ -124,8 +123,7 @@ function showImagePreview(){imagePreview.replaceChildren();imagePreview.hidden=!
 function uploadState(text,action,label){mediaStatus.replaceChildren();mediaStatus.hidden=false;const span=document.createElement('span');span.textContent=text;mediaStatus.append(span);if(action){const b=document.createElement('button');b.type='button';b.className='message-action';b.textContent=label;b.onclick=action;mediaStatus.append(b);}}
 async function uploadImage(file){
  if(sending||uploadingImage||currentStatus==='resolved')return;
- const pdf=file.type==='application/pdf'||file.name.toLowerCase().endsWith('.pdf');
- if(pdf?file.size>10485760:(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>5242880)){uploadState(pdf?'Use a PDF up to 10 MB.':'Choose a JPEG, PNG or WebP image up to 5 MB.');return;}
+ if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>5242880){uploadState('Choose a JPEG, PNG or WebP image up to 5 MB.');return;}
  uploadingImage=true;failedFile=file;version++;updateSend();const xhr=new XMLHttpRequest();uploadXhr=xhr;
  const cancel=()=>xhr.abort();uploadState('Uploading attachment 0%',cancel,'Cancel upload');
  try{const a=await new Promise((resolve,reject)=>{
@@ -133,12 +131,11 @@ async function uploadImage(file){
   xhr.upload.onprogress=e=>{if(e.lengthComputable){const p=Math.min(100,Math.round(e.loaded/e.total*100));uploadState(p===100?'Processing attachment...':'Uploading attachment '+p+'%',cancel,'Cancel upload');}};
   xhr.onerror=()=>reject(new Error('Upload failed. Check your connection.'));xhr.ontimeout=()=>reject(new Error('Upload timed out.'));xhr.onabort=()=>reject(new Error('Upload cancelled.'));
   xhr.onload=()=>{try{const d=JSON.parse(xhr.responseText);if(xhr.status<200||xhr.status>=300)throw new Error(d.message||'Upload failed.');if(!d.attachment?.id)throw new Error('Invalid upload response.');resolve(d.attachment);}catch(e){reject(e);}};
-  const form=new FormData();form.append(pdf?'document':'image',file);xhr.send(form);
+  const form=new FormData();form.append('image',file);xhr.send(form);
  });imageDraft={...a,url:chatUrl(a.url)};failedFile=null;showImagePreview();mediaStatus.hidden=true;}
  catch(e){uploadState(e.message,()=>{if(failedFile)void uploadImage(failedFile);},'Retry upload');}
  finally{if(uploadXhr===xhr)uploadXhr=null;uploadingImage=false;version++;updateSend();}
 }
-documentAttach.onclick=()=>documentFile.click();documentFile.onchange=()=>{const f=documentFile.files[0];if(f)void uploadImage(f);documentFile.value='';};
 window.addEventListener('pagehide',()=>uploadXhr?.abort());
 imageAttach.onclick=()=>imageFile.click();imageFile.onchange=()=>{const file=imageFile.files[0];if(file)void uploadImage(file);imageFile.value='';};
 input.addEventListener('paste',e=>{const file=Array.from(e.clipboardData.items).find(i=>['image/jpeg','image/png','image/webp'].includes(i.type))?.getAsFile();if(file){e.preventDefault();void uploadImage(file);}});
