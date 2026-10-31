@@ -8,6 +8,15 @@ use App\Services\Support\ProductKnowledgeService;
 use App\Services\Inventory\WebsiteInventoryAvailability;
 use App\Support\StorefrontCurrencyContext;
 class ProductKnowledgeTest extends TestCase {
+ public function test_constraints_filter_before_top_fifty_and_short_sizes_work():void {
+ foreach(range(10,70) as $id)DB::table('products')->insert(['id'=>$id,'title'=>'Memory 8GB','handle'=>'memory-'.$id,'status'=>'active','base_price'=>1000]);
+ DB::table('products')->insert(['id'=>80,'title'=>'Memory 16 GB DDR4','handle'=>'memory-correct','status'=>'active','base_price'=>1000]);
+ $facts=app(ProductKnowledgeService::class)->facts('Memory 16 GB',$this->scope());
+ $this->assertSame(['product:80'],array_column($facts,'id'));
+ DB::table('products')->insert(['id'=>81,'title'=>'Cotton Shirt XL','handle'=>'shirt-xl','status'=>'active','base_price'=>1000]);
+ $facts=app(ProductKnowledgeService::class)->facts('XL',$this->scope(['_requirements'=>['required'=>['XL']]]));
+ $this->assertSame(['product:81'],array_column($facts,'id'));
+ }
  public function test_named_product_is_ranked_before_generic_description_matches():void {
  DB::table('products')->where('status','active')->update(['description'=>'Not machine washable']);
  DB::table('products')->insert(['id'=>4,'title'=>'Other furniture','handle'=>'other','status'=>'active','base_price'=>1000,'description'=>'Not machine washable']);
@@ -16,7 +25,7 @@ class ProductKnowledgeTest extends TestCase {
  $this->assertSame('product:5',$facts[0]['id']);
  }
  protected function setUp():void {parent::setUp();config(['database.default'=>'sqlite','database.connections.sqlite.database'=>':memory:']);DB::purge('sqlite');DB::setDefaultConnection('sqlite');$this->assertSame(':memory:',DB::connection()->getDatabaseName());
- Schema::create('products',function(Blueprint $t){$t->id();foreach(['title','handle','brand','description','status','features'] as $c)$t->text($c)->nullable();$t->integer('base_price');});
+ Schema::create('products',function(Blueprint $t){$t->id();foreach(['title','handle','brand','description','status','features'] as $c)$t->text($c)->nullable();$t->string('purchase_mode')->default('buy');$t->string('price_display')->default('exact');$t->integer('base_price');});
  Schema::create('product_variants',function(Blueprint $t){$t->id();$t->integer('product_id');foreach(['title','options','size','material'] as $c)$t->text($c)->nullable();$t->boolean('enabled')->default(true);$t->integer('price')->nullable();});
  Schema::create('store_settings',function(Blueprint $t){$t->id();$t->string('key');$t->text('value');$t->timestamps();});
  Schema::create('product_images',function(Blueprint $t){$t->id();$t->integer('product_id');$t->text('path');$t->integer('position')->default(0);});

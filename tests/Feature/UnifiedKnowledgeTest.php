@@ -7,6 +7,12 @@ use App\Services\Support\ProductKnowledgeService;
 use App\Services\Support\DiscountKnowledgeService;
 use App\Services\AI\AiConnectionService;
 class UnifiedKnowledgeTest extends TestCase {
+ public function test_follow_up_keeps_original_literal_constraints():void {
+ $s=$this->settings();
+ $this->mock(ProductKnowledgeService::class)->shouldReceive('facts')->once()->with('shirt',\Mockery::on(fn($scope)=>($scope['_requirements']['required']??[])===['XL']))->andReturn([]);
+ $result=app(UnifiedKnowledgeService::class)->followUp(['name'=>'product.search','query'=>'shirt','requirements'=>['required'=>['XL'],'excluded'=>[]]],$s);
+ $this->assertSame('no_match',json_decode($result[0]['answer'],true)[0]['status']);
+ }
  public function test_blended_policy_plan_searches_each_question_without_losing_topics():void{
  $this->mock(AiConnectionService::class)->shouldReceive('generateText')->once()->andReturn('{"tools":[{"name":"faq.search","query":"shipping returns damage"}],"questions":["Penang shipping?","Return deadline?","Damage process?"],"escalation":"none","clarification":"none","language":"en","conversation":"none","needs_business_answer":true}');
  $search=$this->mock(FaqKnowledgeSearch::class);
@@ -71,7 +77,7 @@ class UnifiedKnowledgeTest extends TestCase {
  ['id'=>'hidden','category'=>'shipping','question'=>'Hidden shipping','answer'=>'Hidden','isActive'=>false]
  ]],'productCatalog'=>['isEnabled'=>true,'canRecommendUpsells'=>true],'discountKnowledge'=>['isEnabled'=>false,'activeIds'=>[]]];}
  public function test_policy_query_passes_only_index_to_planner_and_keeps_restrictions():void{
- $this->mock(AiConnectionService::class)->shouldReceive('generateText')->once()->withArgs(fn($purpose,$prompt,$tokens)=>$purpose==='support'&&$tokens===350&&str_contains($prompt,'faq.search')&&!str_contains($prompt,'No overseas delivery')&&!str_contains($prompt,'order.get'))->andReturn('{"tools":[{"name":"faq.search","query":"shipping delivery"}],"escalation":"none","clarification":"none","language":"en","conversation":"none","needs_business_answer":true}');
+ $this->mock(AiConnectionService::class)->shouldReceive('generateText')->once()->withArgs(fn($purpose,$prompt,$tokens)=>$purpose==='support'&&$tokens===1000&&str_contains($prompt,'faq.search')&&!str_contains($prompt,'No overseas delivery')&&!str_contains($prompt,'order.get'))->andReturn('{"tools":[{"name":"faq.search","query":"shipping delivery"}],"escalation":"none","clarification":"none","language":"en","conversation":"none","needs_business_answer":true}');
  $this->mock(ProductKnowledgeService::class)->shouldNotReceive('facts');$this->mock(DiscountKnowledgeService::class)->shouldNotReceive('facts');
  $facts=app(UnifiedKnowledgeService::class)->retrieve('I am from China, when is delivery?',$this->settings());$this->assertEqualsCanonicalizing(['ship','overseas'],array_column($facts,'id'));
  }

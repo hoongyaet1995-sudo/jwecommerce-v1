@@ -53,9 +53,14 @@ class OpenAiClient implements ProviderClient
             }
         }
         $data = $this->http->json('POST', $this->base($baseUrl).'/responses', ['Authorization' => 'Bearer '.$key], $payload);
+        if (($data['status'] ?? null) === 'incomplete') {
+            throw new ProviderFailure(($data['incomplete_details']['reason'] ?? '') === 'max_output_tokens' ? 'output_limit' : 'incomplete');
+        }
+        if (in_array($data['status'] ?? '', ['failed', 'cancelled'], true)) throw new ProviderFailure('response');
         $text = '';
         foreach ($data['output'] ?? [] as $output) {
             foreach ($output['content'] ?? [] as $part) {
+                if (($part['type'] ?? '') === 'refusal') throw new ProviderFailure('refusal');
                 if (($part['type'] ?? '') === 'output_text') {
                     $text .= $part['text'] ?? '';
                 }

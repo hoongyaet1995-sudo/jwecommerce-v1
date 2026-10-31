@@ -26,6 +26,8 @@ class CompatibleClient extends OpenAiClient
         $data = $this->http->json('POST', $this->base($baseUrl).'/chat/completions', ['Authorization' => 'Bearer '.$key], [
             'model' => $model, 'messages' => [['role' => 'user', 'content' => $prompt]], 'max_tokens' => $maxTokens, ...($temperature !== null ? ['temperature' => $temperature] : []),
         ], custom: true);
+        if (($data['choices'][0]['finish_reason'] ?? '') === 'length') throw new ProviderFailure('output_limit');
+        if (($data['choices'][0]['finish_reason'] ?? '') === 'content_filter') throw new ProviderFailure('refusal');
         $text = $data['choices'][0]['message']['content'] ?? null;
         if (! is_string($text) || trim($text) === '') {
             throw new ProviderFailure('response');

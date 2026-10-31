@@ -66,6 +66,8 @@ class SupportChatApiTest extends TestCase
         $this->postJson('/support/chat/messages',$this->payload('What are delivery and return conditions?'))->assertOk();
         $reply=\App\Models\SupportMessage::where('sender_role','ai')->first();
         $this->assertSame('generation_unavailable',$reply->ai_trace['decision']);
+        $this->assertSame('invalid_answer_json',$reply->ai_trace['failureCode']);
+        $this->assertSame(1200,$reply->ai_trace['outputBudget']);
         $this->assertStringNotContainsString('FAQ',$reply->content);
     }
     public function test_preference_acknowledgement_does_not_require_faq_or_promise_persistence():void
@@ -388,7 +390,7 @@ class SupportChatApiTest extends TestCase
     {
         $this->app->instance(\App\Services\Support\UnifiedKnowledgeService::class,new \App\Services\Support\UnifiedKnowledgeService());
         StoreSetting::create(['key'=>'support_faq','value'=>['autoReplyEnabled'=>true,'faq'=>['isEnabled'=>true,'items'=>[]]]]);
-        $this->mock(AiConnectionService::class)->shouldReceive('generateText')->once()->withArgs(fn($purpose,$prompt,$limit)=>$limit===350&&str_contains($prompt,'explicit_request'))->andReturn('{"tools":[],"escalation":"explicit_request","clarification":"none","language":"en","conversation":"none","needs_business_answer":true}');
+        $this->mock(AiConnectionService::class)->shouldReceive('generateText')->once()->withArgs(fn($purpose,$prompt,$limit)=>$limit===1000&&str_contains($prompt,'explicit_request'))->andReturn('{"tools":[],"escalation":"explicit_request","clarification":"none","language":"en","conversation":"none","needs_business_answer":true}');
         $this->postJson('/support/chat/messages',$this->payload('Could somebody from your team personally help me?'))->assertOk()->assertJsonPath('conversation.status','waiting_human')->assertJsonCount(2,'conversation.messages');
         $this->assertSame('explicit_request', SupportConversation::first()->messages()->latest('id')->first()->actions[0]['reason']);
     }
@@ -503,7 +505,7 @@ class SupportChatApiTest extends TestCase
             ['id'=>'payment','category'=>'payment','question'=>'Payment methods','answer'=>'PRIVATE_UNRELATED_PAYMENT','keywords'=>['payment'],'isActive'=>true]
         ]]]]);
         $ai=$this->mock(AiConnectionService::class);
-        $ai->shouldReceive('generateText')->once()->ordered()->withArgs(fn($purpose,$prompt,$tokens)=>$tokens===350&&str_contains($prompt,'available_tools')&&!str_contains($prompt,'We only deliver'))->andReturn('{"tools":[{"name":"faq.search","query":"shipping coverage"}],"escalation":"none","clarification":"none","language":"en","conversation":"none","needs_business_answer":true}');
+        $ai->shouldReceive('generateText')->once()->ordered()->withArgs(fn($purpose,$prompt,$tokens)=>$tokens===1000&&str_contains($prompt,'available_tools')&&!str_contains($prompt,'We only deliver'))->andReturn('{"tools":[{"name":"faq.search","query":"shipping coverage"}],"escalation":"none","clarification":"none","language":"en","conversation":"none","needs_business_answer":true}');
         $ai->shouldReceive('generateText')->once()->ordered()->withArgs(fn($purpose,$prompt,$tokens,$temp)=>str_contains($prompt,'no overseas delivery')&&!str_contains($prompt,'PRIVATE_UNRELATED_PAYMENT'))->andReturn('{"answer":"We only deliver within Malaysia, so we cannot ship to China.","faq_ids":["shipping"]}');
         $this->postJson('/support/chat/messages',$this->payload('Do you deliver to China?'))->assertOk()->assertJsonPath('conversation.messages.1.content','We only deliver within Malaysia, so we cannot ship to China.');
     }
@@ -563,7 +565,7 @@ class SupportChatApiTest extends TestCase
     public function test_each_nonexact_question_uses_one_call_and_unknown_has_no_supported_answer(): void
     {
         StoreSetting::create(['key' => 'support_faq', 'value' => ['autoReplyEnabled' => true, 'faq' => ['isEnabled' => true, 'items' => [['id' => 'shipping', 'question' => 'Shipping cost?', 'answer' => 'Shipping is RM8.', 'keywords' => ['shipping'], 'isActive' => true]]]]]);
-        $this->mock(AiConnectionService::class)->shouldReceive('generateText')->twice()->withArgs(fn ($feature, $prompt, $limit) => $feature === 'support' && str_contains($prompt, 'Shipping is RM8.') && $limit === 350)->andReturn(json_encode(['answer' => 'Delivery costs RM8.', 'faq_ids' => ['shipping']]), json_encode(['answer' => '', 'faq_ids' => []]));
+        $this->mock(AiConnectionService::class)->shouldReceive('generateText')->twice()->withArgs(fn ($feature, $prompt, $limit) => $feature === 'support' && str_contains($prompt, 'Shipping is RM8.') && $limit === 1200)->andReturn(json_encode(['answer' => 'Delivery costs RM8.', 'faq_ids' => ['shipping']]), json_encode(['answer' => '', 'faq_ids' => []]));
         $this->postJson('/support/chat/messages', $this->payload('Please explain shipping'))->assertOk()->assertJsonPath('conversation.messages.1.content', 'Delivery costs RM8.');
         $this->postJson('/support/chat/messages', $this->payload('Tell me about astronomy'))->assertOk();
         $this->assertDatabaseCount('support_messages', 4);
@@ -599,7 +601,7 @@ class SupportChatApiTest extends TestCase
     public function test_retrieved_faqs_reach_model_and_settings_are_style_only(): void
     {
         StoreSetting::create(['key' => 'support_faq', 'value' => ['autoReplyEnabled' => true, 'personality' => ['toneOfVoice' => 'concise_efficient', 'customToneInstructions' => 'Be brief', 'maxOutputTokens' => 240], 'faq' => ['isEnabled' => true, 'items' => [['id' => 'overseas', 'question' => 'Oversea shipping fee?', 'answer' => 'We only deliver within Malaysia.', 'keywords' => ['oversea'], 'isActive' => true], ['id' => 'hidden', 'question' => 'Hidden', 'answer' => 'SECRET_INACTIVE', 'keywords' => [], 'isActive' => false]]]]]);
-        $this->mock(AiConnectionService::class)->shouldReceive('generateText')->once()->withArgs(fn ($f, $p, $n) => str_contains($p, 'We only deliver within Malaysia.') && ! str_contains($p, 'SECRET_INACTIVE') && str_contains($p, 'style only') && $n === 240)->andReturn(json_encode(['answer' => 'We do not ship to China. [overseas]', 'faq_ids' => ['overseas']]));
+        $this->mock(AiConnectionService::class)->shouldReceive('generateText')->once()->withArgs(fn ($f, $p, $n) => str_contains($p, 'We only deliver within Malaysia.') && ! str_contains($p, 'SECRET_INACTIVE') && str_contains($p, 'style only') && $n === 1200)->andReturn(json_encode(['answer' => 'We do not ship to China. [overseas]', 'faq_ids' => ['overseas']]));
         $this->postJson('/support/chat/messages', $this->payload('i am from china, how long do i receive the parcel?'))->assertOk()->assertJsonPath('conversation.messages.1.content', 'We do not ship to China.');
     }
 

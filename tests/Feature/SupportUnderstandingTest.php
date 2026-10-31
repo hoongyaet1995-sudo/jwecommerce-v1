@@ -5,6 +5,16 @@ use App\Services\AI\AiConnectionService;
 use App\Services\Support\SupportUnderstandingService;
 class SupportUnderstandingTest extends TestCase
 {
+    public function test_generic_constraints_are_carried_from_multilingual_context_without_industry_fields():void
+    {
+        $this->mock(AiConnectionService::class)->shouldReceive('generateText')->once()->withArgs(fn($feature,$prompt,$limit)=>$limit===1000 && str_contains($prompt,'requirements') && str_contains($prompt,'customer_context'))->andReturn(json_encode([
+            'tools'=>[['name'=>'product.search','query'=>'cotton shirt XL','requirements'=>['required'=>['cotton','XL'],'excluded'=>['polyester']]]],
+            'escalation'=>'none','clarification'=>'product','language'=>'zh','conversation'=>'none','needs_business_answer'=>true,
+        ]));
+        $result=app(SupportUnderstandingService::class)->understand('要大一码的纯棉款',['product.search'=>'Published products'],['Customer: size L is too small'],[]);
+        $this->assertSame(['cotton','XL'],$result['tools'][0]['requirements']['required']);
+        $this->assertSame('none',$result['escalation']);
+    }
     public function test_preference_and_memory_recall_have_valid_non_business_intents(): void
     {
         $this->mock(AiConnectionService::class)->shouldReceive('generateText')->twice()->andReturn(

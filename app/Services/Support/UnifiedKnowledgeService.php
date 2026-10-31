@@ -87,7 +87,9 @@ class UnifiedKnowledgeService
     public function followUp(array $step,array $settings):array
     {
         $allowed=array_diff(array_keys($this->tools($settings)),['order.lookup','commerce.read']);
-        $step=Validator::make($step,['name'=>'required|in:'.implode(',',$allowed),'query'=>'required|string|max:160','target'=>'sometimes|string|max:80'])->validate();
+        $step=Validator::make($step,['name'=>'required|in:'.implode(',',$allowed),'query'=>'required|string|max:160','target'=>'sometimes|string|max:80',
+            'requirements'=>'sometimes|array:required,excluded','requirements.required'=>'sometimes|array|max:8','requirements.excluded'=>'sometimes|array|max:8',
+            'requirements.required.*'=>'required|string|max:80','requirements.excluded.*'=>'required|string|max:80'])->validate();
         try{$facts=$this->execute($step,$step['query'],$settings);$status=(!$facts||collect($facts)->contains(fn($f)=>$f['id']==='catalogue:search'))?'no_match':'success';}
         catch(\Throwable $e){$facts=[];$status='unavailable';\Illuminate\Support\Facades\Log::warning('support_followup_unavailable',['tool'=>$step['name'],'error_type'=>get_class($e)]);}
         return $this->bounded(array_merge($facts,[['id'=>'support:outcomes','question'=>'Internal follow-up outcomes','answer'=>json_encode([['tool'=>$step['name'],'status'=>$status,'sourceIds'=>array_column($facts,'id')]])]]));
@@ -100,10 +102,24 @@ class UnifiedKnowledgeService
             'taxonomy.search'=>app(TaxonomyKnowledgeService::class)->facts($query,$settings['productCatalog']),
             'faq.search'=>app(FaqKnowledgeSearch::class)->search($query,$settings['faq']),
             'product.count'=>app(ProductKnowledgeService::class)->facts('__catalogue_count__',$settings['productCatalog']),
-            'product.search'=>app(ProductKnowledgeService::class)->facts(($settings['productCatalog']['canRecommendUpsells']??false)?($query?:'__catalogue_list__'):$question,isset($step['target'])?array_replace($settings['productCatalog'],['_namedProduct'=>$step['target']]):$settings['productCatalog']),
+            'product.search'=>app(ProductKnowledgeService::class)->facts(($settings['productCatalog']['canRecommendUpsells']??false)?($query?:'__catalogue_list__'):$question,$this->productScope($step,$question,$settings['productCatalog'])),
             'discount.lookup_code'=>array_values(array_filter(app(DiscountKnowledgeService::class)->facts($settings['discountKnowledge'],$question),fn($f)=>(json_decode($f['answer'],true)['query_mode']??null)==='specific_code')),
             'discount.search'=>array_slice(app(DiscountKnowledgeService::class)->facts($settings['discountKnowledge']),0,5),
         };
+    }
+    private function productScope(array $step,string $question,array $scope):array
+    {
+        if(isset($step['target']))$scope['_namedProduct']=$step['target'];
+        $parser=app(ProductRequirements::class);
+        $explicit=$parser->fromQuery($step['query']);
+        $original=$parser->fromQuery($question);
+        // Multiple products/questions can have different measurements. Never apply
+        // all measurements from the whole message to every separate tool step.
+        if (!$explicit['required'] && count($original['required'])===1) $explicit=$original;
+        $required=array_values(array_unique(array_merge($explicit['required'],$step['requirements']['required']??[])));
+        $excluded=$step['requirements']['excluded']??[];
+        if($required||$excluded)$scope['_requirements']=['required'=>$required,'excluded'=>$excluded];
+        return $scope;
     }
     public function redact(string $text):string
     {

@@ -10,6 +10,9 @@ class ProviderFailure extends RuntimeException
     public function __construct(public readonly string $reason)
     {
         parent::__construct(match ($reason) {
+            'output_limit' => 'The AI response reached its output limit. No automatic retry was made.',
+            'incomplete' => 'The AI response was incomplete. No automatic retry was made.',
+            'refusal' => 'The AI provider declined this response. No automatic retry was made.',
             'timeout' => 'The AI request timed out. No automatic retry was made.',
             'connection' => 'The AI service connection failed. No automatic retry was made.',
             'temperature' => 'The selected model does not support custom temperature. Select a compatible model.',
