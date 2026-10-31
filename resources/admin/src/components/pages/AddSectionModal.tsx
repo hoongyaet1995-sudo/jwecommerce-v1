@@ -1042,28 +1042,22 @@ const SOURCE_SECTION_TEMPLATES: SectionTemplateOption[] = [
   },
   {
     type: 'logo_cloud',
-    title: 'Press Mentions & Partner Brand Logos',
+    title: 'Partner Logos',
     category: 'Social Proof',
-    description: 'Logo marquee highlighting press accolades (Wired, SoundOnSound, TechCrunch, The Verge) and mastering studios.',
+    description: 'Upload original brand logos. Choose static placement or continuous scrolling.',
     icon: HeartHandshake,
     defaultData: {
       type: 'logo_cloud',
-      title: 'Featured in Global Publications & Studios',
-      subtitle: 'CRITICALLY ACCLAIMED',
+      customColors: {titleColor:'#233c2d',eyebrowColor:'#718168',contentColor:'#74806f'}, title: 'Brands & Software We Offer', logoPreset: 'partners', logoHeight: 42, logoGap: 48, marqueeSpeed: 32,
+      subtitle: 'OUR RANGE',
       content: '',
       columnsCount: 5,
       textAlignment: 'center',
-      backgroundColor: 'bg-neutral-900',
-      textColor: 'light',
+      backgroundColor: 'bg-white',
+      textColor: 'dark',
       paddingY: 'compact',
       isVisible: true,
-      items: [
-        { id: 'logo-1', title: 'WIRED', description: '“Headphone of the Year”' },
-        { id: 'logo-2', title: 'SOUND ON SOUND', description: '“Reference Class”' },
-        { id: 'logo-3', title: 'THE VERGE', description: '9.5 / 10 Score' },
-        { id: 'logo-4', title: 'AUDIOPHILE ON', description: 'Editor’s Choice' },
-        { id: 'logo-5', title: 'ROLLING STONE', description: 'Top Tier Audio' }
-      ]
+      items: []
     }
   },
 

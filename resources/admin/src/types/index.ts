@@ -726,6 +726,9 @@ export interface PageSection {
   featureCardsPreset?: 'default' | 'values-list' | 'editorial-columns' | 'numbered-process' | 'service-highlights' | 'industrial-cards' | 'industrial-process' | 'industrial-process-split';
   heroBannerPreset?: 'default' | 'editorial-gradient' | 'industrial-overlay';
   testimonialPreset?: 'default' | 'editorial-quote';
+  logoPreset?: "classic" | "partners";
+  logoHeight?: number;
+  logoGap?: number;
   marqueeSpeed?: number;
   marqueeDirection?: 'left' | 'right';
   marqueePauseOnHover?: boolean;

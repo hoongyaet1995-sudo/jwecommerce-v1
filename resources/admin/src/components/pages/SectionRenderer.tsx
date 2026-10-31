@@ -1,3 +1,4 @@
+import {PartnerLogos} from './PartnerLogos';
 import {IndustrialRelatedProducts} from './IndustrialRelatedProducts';
 import {IndustrialGallery,IndustrialSplit,IndustrialProcessSplit,IndustrialOutlineCta} from './IndustrialDetailSections';
 import {PhotoMarquee} from './PhotoMarquee';
@@ -2778,7 +2779,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
       case 'contact_form': return section.contactPreset==='enquiry'?<EnquiryForm section={section} isEditingMode={isEditingMode}/>:renderContactForm();
       case 'store_locator': return section.contactPreset==='location'?<ContactLocation section={section}/>:renderStoreLocator();
       case 'testimonials_slider': return renderTestimonials();
-      case 'logo_cloud': return renderLogoCloud();
+      case 'logo_cloud': return section.logoPreset === 'partners' ? <PartnerLogos section={section} editing={isEditingMode}/> : renderLogoCloud();
       case 'cta_strip': return section.ctaPreset==='industrial-outline'?<IndustrialOutlineCta section={section} editing={isEditingMode}/>:section.ctaPreset==='help-panel'?<HelpPanel section={section} isEditingMode={isEditingMode}/>:section.ctaPreset==='editorial-band'?<EditorialCtaBand section={section} isEditingMode={isEditingMode}/>:section.ctaPreset==='image-banner'?<ImageBanner section={section} isEditingMode={isEditingMode}/>:renderCtaStrip();
       case 'newsletter_signup': return renderNewsletterSignup();
       default: return renderRichText();

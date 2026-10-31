@@ -1600,6 +1600,9 @@
         "editorial-quote"
       ]
     },
+    "logoPreset": {"type":"string","enum":["classic","partners"]},
+    "logoHeight": {"type":"integer","minimum":24,"maximum":96},
+    "logoGap": {"type":"integer","minimum":16,"maximum":100},
     "marqueeSpeed": {
       "type": "integer",
       "minimum": 0,
@@ -2521,6 +2524,7 @@
       },
       "logo_cloud": {
         "fields": [
+          "logoPreset", "logoHeight", "logoGap", "marqueeSpeed", "marqueeDirection", "marqueePauseOnHover",
           "typography",
           "containerMode",
           "sectionBorder",

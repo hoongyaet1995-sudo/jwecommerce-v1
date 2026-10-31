@@ -315,6 +315,9 @@ export const PAGE_SECTION_BOOTSTRAP_FIELD_RULES = {
   featureCardsPreset: {kind: 'optional-enum', values: ['default', 'values-list', 'editorial-columns','numbered-process','service-highlights','industrial-cards','industrial-process','industrial-process-split']},
   heroBannerPreset:{kind:'optional-enum',values:['default','editorial-gradient','industrial-overlay']},
   testimonialPreset:{kind:'optional-enum',values:['default','editorial-quote']},
+  logoPreset:{kind:'optional-enum',values:['classic','partners']},
+  logoHeight:{kind:'optional-number'},
+  logoGap:{kind:'optional-number'},
   marqueeSpeed:{kind:'optional-number'},
   marqueeDirection:{kind:'optional-enum',values:['left','right']},
   marqueePauseOnHover:{kind:'optional-boolean'},
@@ -446,7 +449,10 @@ const isRuntimeSource = (value: unknown, type: PageRuntimeSource['type']): value
 const isPageSection = (value: unknown): value is PageSection => {
   if(isRecord(value)&&'heroBannerPreset' in value&&value.type!=='hero_banner')return false;
   if(isRecord(value)&&'testimonialPreset' in value&&value.type!=='testimonials_slider')return false;
-  if(isRecord(value)&&['marqueeSpeed','marqueeDirection','marqueePauseOnHover'].some(key=>key in value)&&value.type!=='media_gallery')return false;
+  if(isRecord(value)&&['marqueeSpeed','marqueeDirection','marqueePauseOnHover'].some(key=>key in value)&&!['media_gallery','logo_cloud'].includes(String(value.type)))return false;
+  if(isRecord(value)&&['logoPreset','logoHeight','logoGap'].some(key=>key in value)&&value.type!=='logo_cloud')return false;
+  if(isRecord(value)&&'logoHeight' in value&&(!Number.isInteger(value.logoHeight)||Number(value.logoHeight)<24||Number(value.logoHeight)>96))return false;
+  if(isRecord(value)&&'logoGap' in value&&(!Number.isInteger(value.logoGap)||Number(value.logoGap)<16||Number(value.logoGap)>100))return false;
   if(isRecord(value)&&'marqueeSpeed' in value&&(!Number.isInteger(value.marqueeSpeed)||Number(value.marqueeSpeed)<0||Number(value.marqueeSpeed)>100))return false;
   if(isRecord(value)&&value.type==='promotion_highlights'&&Array.isArray(value.items)&&value.items.length>6)return false;
   if(isRecord(value)&&['promotionSource','promotionLayout','showOfferBadges'].some(k=>k in value)&&value.type!=='promotion_highlights')return false;
