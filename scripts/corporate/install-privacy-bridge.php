@@ -21,12 +21,26 @@ $bridge = file_get_contents(__DIR__.'/privacy-bridge.php');
 // Keep CMS assets separate from the legacy application's bundles.
 $assetRoot = $public.'/jw-cms-assets';
 if (!is_dir($assetRoot)) mkdir($assetRoot, 0755);
-foreach (['build', 'build-admin', 'css', 'js', 'images', 'marketing-studio'] as $directory) {
+function copyPublicAssets(string $source, string $destination): void {
+    if (!is_dir($destination)) mkdir($destination, 0755, true);
+    foreach (new DirectoryIterator($source) as $entry) {
+        if ($entry->isDot() || $entry->isLink()) continue;
+        $to = $destination.'/'.$entry->getFilename();
+        if ($entry->isDir()) copyPublicAssets($entry->getPathname(), $to);
+        elseif ($entry->isFile()) {
+            if (!copy($entry->getPathname(), $to)) throw new RuntimeException('Public asset copy failed');
+            chmod($to, 0644);
+        }
+    }
+}
+foreach (['build', 'build-admin', 'css', 'js', 'marketing-studio'] as $directory) {
     $target = '/home/u762348670/apps/jw-corporate/public/'.$directory;
     $link = $assetRoot.'/'.$directory;
-    if (is_dir($target) && !file_exists($link) && !is_link($link)) {
-        if (!symlink($target, $link)) throw new RuntimeException('Asset link failed');
+    if (is_link($link)) {
+        if (readlink($link) !== $target) throw new RuntimeException('Unexpected asset link');
+        unlink($link);
     }
+    if (is_dir($target)) copyPublicAssets($target, $link);
 }
 $envPath = '/home/u762348670/apps/jw-corporate/.env';
 $env = file_get_contents($envPath);
