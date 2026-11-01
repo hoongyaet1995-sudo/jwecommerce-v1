@@ -9,7 +9,7 @@ use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Session\Middleware\StartSession;
 
-return Application::configure(basePath: dirname(__DIR__))
+$app = Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
         commands: __DIR__.'/../routes/console.php',
@@ -98,3 +98,19 @@ return Application::configure(basePath: dirname(__DIR__))
             'authorizationCode',
         ]);
     })->create();
+
+// Optional split-public-root hosting. Both HTTP and CLI resolve future assets
+// against the actual document root; installations without this setting retain
+// Laravel's default public directory.
+$app->afterBootstrapping(\Illuminate\Foundation\Bootstrap\LoadEnvironmentVariables::class, static function (Application $app): void {
+    $path = env('APP_PUBLIC_PATH');
+    if (is_string($path) && $path !== '') {
+        $absolute = str_starts_with($path, '/') || (strlen($path) > 2 && ctype_alpha($path[0]) && $path[1] === ':' && in_array($path[2], ['/', '\\'], true));
+        if (!is_dir($path) || !$absolute) {
+            throw new RuntimeException('APP_PUBLIC_PATH must be an existing absolute directory.');
+        }
+        $app->usePublicPath($path);
+    }
+});
+
+return $app;
