@@ -27,6 +27,11 @@ find "$next" -type f -exec chmod 644 {} \;
 # Exact legal aliases point to editable CMS pages. No old application is called.
 sed -i '/RewriteEngine On/a\    RewriteRule ^privacy/?$ /pages/privacy-policy [R=302,L]\n    RewriteRule ^privacy-policy/?$ /pages/privacy-policy [R=302,L]\n    RewriteRule ^terms/?$ /pages/terms-and-conditions [R=302,L]\n    RewriteRule ^terms-and-conditions/?$ /pages/terms-and-conditions [R=302,L]' "$next/.htaccess"
 touch "$next/.jw-corporate-site"
+# Hostinger nests independent subdomain mount points in the parent document
+# root. Preserve those links, not any code or route from the retired website.
+for mount in ecom social marketplace qiaojing; do
+  if test -L "$domain/public_html/$mount"; then cp -P "$domain/public_html/$mount" "$next/$mount"; fi
+done
 mkdir -m 755 "$next/storage"
 if test -d "$app/storage/app/public"; then cp -R "$app/storage/app/public/." "$next/storage/"; fi
 find "$next/storage" -type d -exec chmod 755 {} \;
