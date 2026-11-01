@@ -1,0 +1,179 @@
+{
+  "title": "Privacy Policy | JW Studio",
+  "slug": "privacy-policy",
+  "description": "How JW Studio handles business accounts, connected social channels, customer conversations and privacy requests.",
+  "template": "landing",
+  "sections": [
+    {
+      "id": "78d0219b-a3f3-4a94-9fb4-d63b9f78fd34",
+      "type": "rich_text",
+      "isVisible": true,
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "none",
+      "backgroundColor": "custom",
+      "textColor": "dark",
+      "paddingY": "normal",
+      "customColors": {
+        "eyebrowColor": "#947242",
+        "titleColor": "#102331",
+        "contentColor": "#52616b",
+        "primaryBtnBg": "#102331",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#f3f0e9",
+        "secondaryBtnText": "#102331",
+        "customBgColor": "#fbfaf7"
+      },
+      "subtitle": "JW STUDIO · PRIVACY",
+      "title": "Your information.\nHandled with care.",
+      "content": "Privacy Policy · Last updated 1 November 2026\n\nA clear guide to the information we handle, the services it supports, and the choices available to you.",
+      "typography": {
+        "title": {
+          "fontSize": 52,
+          "fontWeight": 500
+        }
+      }
+    },
+    {
+      "id": "c7247d6a-a16e-46b9-932f-e7bdac5352f7",
+      "type": "policy_content",
+      "isVisible": true,
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "none",
+      "backgroundColor": "custom",
+      "textColor": "dark",
+      "paddingY": "normal",
+      "customColors": {
+        "eyebrowColor": "#947242",
+        "titleColor": "#102331",
+        "contentColor": "#52616b",
+        "primaryBtnBg": "#102331",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#f3f0e9",
+        "secondaryBtnText": "#102331",
+        "customBgColor": "#fbfaf7"
+      },
+      "policyPreset": "directory",
+      "title": "Privacy, explained.",
+      "content": "This notice covers JW Studio services. Individual merchants remain responsible for their own customer privacy notices.",
+      "items": [
+        {
+          "id": "d02328c1-d79d-4dac-b557-49965438b874",
+          "title": "Who we are and what this policy covers",
+          "description": "JW Studio is operated by JW TECH SOLUTIONS, registration 202603051646 (003827462-H), based in Bestari Jaya, Selangor, Malaysia. This policy explains our handling of information through our website, business workspace, ecommerce, customer support, AI assistance and marketing tools.\n\nFor information a merchant collects from its own customers, the merchant determines the purposes of processing and provides its own privacy notice. JW Studio processes that information to provide the merchant-authorised service. Contact us at sales@jwaistudio.online for privacy enquiries."
+        },
+        {
+          "id": "d793c92d-fa03-4cc6-9671-53360dfb7d5e",
+          "title": "Information you provide",
+          "description": "We handle account and business details, names, email addresses, telephone numbers, enquiries, support correspondence and configuration information that you or your business provide. Depending on the modules used, records may include customer contacts, orders, quotations, payment status, delivery information and campaign content. Do not submit passwords, payment card details or unnecessary sensitive information in chat or uploaded content."
+        },
+        {
+          "id": "40009adc-e4c9-4300-986a-afc8814c7259",
+          "title": "Connected social accounts and TikTok data",
+          "description": "Connecting an account is optional. With the account owner’s authorisation and the permissions actually granted, we may receive account identifiers, profile or business names, connected assets, access credentials and permitted content or performance information. Where a messaging integration is available and authorised, we may receive conversation identifiers, participant identifiers, message content, attachments and message timestamps or delivery status.\n\nFor TikTok, Business Messaging access remains subject to TikTok approval and the account’s eligibility. This policy describes the intended handling of authorised messaging data; it does not mean that unapproved access is active. We do not obtain private messages merely because you visit our website. Posting, messaging and analytics permissions are distinct."
+        },
+        {
+          "id": "c6575011-b74b-4951-9d98-aaac2eb33efa",
+          "title": "How we use information",
+          "description": "We use information to provide and secure your workspace, authenticate authorised accounts, manage enquiries and orders, organise campaigns, deliver user-approved content, support customer conversations and diagnose failures. Access credentials are used to perform the operations authorised by the connected account. Campaign attribution, where enabled and permitted, connects eligible website activity to enquiries or verified purchases. We do not sell connected-account or customer-message data."
+        },
+        {
+          "id": "5ef0163d-39b9-47e2-b24e-cda0cd880821",
+          "title": "AI-assisted replies and content",
+          "description": "When a business enables AI assistance, relevant questions, conversation context, selected business knowledge and product information may be sent to its configured AI service provider to draft a response or content. Staff can review or take over conversations. AI outputs can be inaccurate and should be checked where accuracy matters.\n\nWe do not use social messages to train our own general-purpose AI models. A configured third-party provider’s data handling depends on that provider and the business’s service settings. Do not submit unnecessary sensitive information to AI features."
+        },
+        {
+          "id": "64a791f6-4a1a-4b7c-a59a-73312e2f6b5c",
+          "title": "Service providers and disclosures",
+          "description": "Information may be processed by providers needed to deliver the service, including hosting and storage, the business’s configured AI provider, email or messaging providers, payment and delivery providers where used, and the social platform you choose to connect. Each receives information relevant to the service being used. We may disclose information when required by law, to protect legitimate rights or security, or in a business transfer with appropriate notice and protections. We do not make customer conversations publicly available by default."
+        },
+        {
+          "id": "a635b962-4393-45a5-825c-60e230c7ed6f",
+          "title": "Cookies, website activity and marketing choices",
+          "description": "Essential session and security technologies support login and requested functions. Optional campaign analytics may record eligible page or item views, cart activity, checkout starts, enquiries and verified purchase events where enabled and permitted. Preference controls are provided on websites using that feature. Rejecting optional analytics does not prevent shopping, enquiries or payment. Marketing subscriptions and optional analytics choices are separate; an order or enquiry alone is not permission for marketing messages."
+        },
+        {
+          "id": "a094957a-11de-4e1c-be23-c6b7d905c137",
+          "title": "Retention and security",
+          "description": "We retain information for as long as needed for the service, the business’s instructions, legitimate security and dispute handling, or legal and accounting obligations. Retention depends on the record and purpose; we do not promise indefinite storage or a universal deletion period. We use application access controls and protected credential storage. No system can guarantee absolute security. Backup copies may remain until their normal secure replacement cycle, with access restricted."
+        },
+        {
+          "id": "c7448177-6a87-4e47-abb7-5ea5d56b44ae",
+          "title": "Disconnecting accounts and deleting information",
+          "description": "You can disconnect an account in Channels or revoke JW Studio’s access in the social platform’s settings. This stops future authorised access but does not automatically remove every record already held or delete content previously published on the social platform.\n\nTo request access, correction or deletion, email sales@jwaistudio.online with the subject Privacy request and identify the relevant account, business or conversation. Do not send passwords or access tokens. We may verify your authority before acting. Where we act for a merchant, we coordinate with that merchant. We explain any information retained for legal, security or accounting reasons. Deletion requests are not a request to send a campaign or to purchase a service."
+        },
+        {
+          "id": "bacdf3b8-fbdc-43bd-bf7c-227eef2f66c7",
+          "title": "Marketing messages and opting out",
+          "description": "Marketing messages are sent using the relevant channel’s subscription and template rules. Use the unsubscribe link in a marketing email or contact the sending business to withdraw marketing permission. Businesses must respect recipients’ choices. Unsubscribing from marketing does not stop necessary order, account or security notices."
+        },
+        {
+          "id": "c63fc0d2-c43a-4609-a093-89e881ffb4d0",
+          "title": "International processing and your rights",
+          "description": "Hosting, configured providers and connected social platforms may process information outside your country. Applicable safeguards and rights depend on the service and relevant law. You may contact us about access, correction, deletion, withdrawal of consent or other rights available to you. We assess requests under applicable law and explain any limits. Our business services are not directed to children."
+        },
+        {
+          "id": "6f95d84b-dc78-4d2f-a5e0-a9063156e7e6",
+          "title": "Updates and contact",
+          "description": "We may update this policy when services or practices change. The date on this page identifies the latest version. Material changes will be communicated where appropriate.\n\nJW TECH SOLUTIONS · JW Studio\nRegistration: 202603051646 (003827462-H)\nBestari Jaya, Selangor, Malaysia\nPrivacy contact: sales@jwaistudio.online"
+        }
+      ]
+    },
+    {
+      "id": "c6bcd5e4-1c10-4538-86bb-0ca713ccfd61",
+      "type": "cta_strip",
+      "isVisible": true,
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "none",
+      "backgroundColor": "custom",
+      "textColor": "dark",
+      "paddingY": "normal",
+      "customColors": {
+        "eyebrowColor": "#947242",
+        "titleColor": "#102331",
+        "contentColor": "#52616b",
+        "primaryBtnBg": "#102331",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#f3f0e9",
+        "secondaryBtnText": "#102331",
+        "customBgColor": "#fbfaf7"
+      },
+      "ctaPreset": "help-panel",
+      "title": "A question about your information?",
+      "content": "Contact JW Studio for privacy enquiries or an account-data request.",
+      "buttonText": "Return to JW Studio",
+      "buttonLink": "/"
+    }
+  ],
+  "style": {
+    "palette": {
+      "paper": "#fbfaf7",
+      "ink": "#102331",
+      "muted": "#52616b",
+      "accent": "#947242",
+      "light": "#ffffff",
+      "secondary": "#f3f0e9",
+      "secondaryInk": "#102331",
+      "hover": "#665035"
+    },
+    "colorSource": "custom",
+    "spacing": "spacious",
+    "buttonRadius": 6,
+    "buttonSize": "normal"
+  },
+  "shellDesign": {
+    "business": "service",
+    "style": "modern",
+    "appearance": "light",
+    "showAnnouncement": false,
+    "showAccount": false,
+    "showCurrency": false,
+    "showThemeSwitch": false,
+    "ctaLabel": "JW Studio",
+    "ctaUrl": "/",
+    "tagline": "Automate. Engage. Grow.",
+    "contactEmail": "sales@jwaistudio.online"
+  }
+}
