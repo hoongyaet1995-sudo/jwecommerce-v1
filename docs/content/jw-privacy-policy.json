@@ -166,13 +166,13 @@
   "shellDesign": {
     "business": "service",
     "style": "modern",
-    "appearance": "light",
+    "appearance": "dark",
     "showAnnouncement": false,
     "showAccount": false,
     "showCurrency": false,
     "showThemeSwitch": false,
-    "ctaLabel": "JW Studio",
-    "ctaUrl": "/",
+    "ctaLabel": "Request a demo",
+    "ctaUrl": "/pages/contact-jw-studio",
     "tagline": "Automate. Engage. Grow.",
     "contactEmail": "sales@jwaistudio.online"
   }

@@ -5374,6 +5374,184 @@
           ]
         }
       },
+      "saas-packages": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:unset": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:true": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:false": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        }
+      },
+      "saas-": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:unset": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:true": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:false": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        }
+      },
       "category": {
         "unset:unset": {
           "section": [
@@ -7323,6 +7501,540 @@
           ]
         }
       },
+      "saas-starter": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:unset": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:true": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:false": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        }
+      },
+      "saas-hero": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:unset": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:true": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:false": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        }
+      },
+      "saas-analytics": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:unset": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:true": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:false": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        }
+      },
+      "saas-modules": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:unset": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:true": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:false": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        }
+      },
+      "saas-addons": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:unset": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:true": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:false": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        }
+      },
+      "left": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:unset": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:true": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:false": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        }
+      },
       "industrial-starter": {
         "unset:unset": {
           "section": [
@@ -7680,95 +8392,6 @@
         }
       },
       "normal": {
-        "unset:unset": {
-          "section": [
-            "title",
-            "subtitle",
-            "content"
-          ],
-          "items": [
-            "title",
-            "description"
-          ]
-        },
-        "unset:true": {
-          "section": [
-            "title",
-            "subtitle",
-            "content"
-          ],
-          "items": [
-            "title",
-            "description"
-          ]
-        },
-        "unset:false": {
-          "section": [
-            "title",
-            "subtitle",
-            "content"
-          ],
-          "items": [
-            "title",
-            "description"
-          ]
-        },
-        "true:unset": {
-          "section": [
-            "title",
-            "subtitle",
-            "content"
-          ],
-          "items": [
-            "title",
-            "description"
-          ]
-        },
-        "true:true": {
-          "section": [
-            "title",
-            "subtitle",
-            "content"
-          ],
-          "items": [
-            "title",
-            "description"
-          ]
-        },
-        "true:false": {
-          "section": [
-            "title",
-            "subtitle",
-            "content"
-          ],
-          "items": [
-            "title",
-            "description"
-          ]
-        },
-        "false:unset": {
-          "section": [],
-          "items": [
-            "title",
-            "description"
-          ]
-        },
-        "false:true": {
-          "section": [],
-          "items": [
-            "title",
-            "description"
-          ]
-        },
-        "false:false": {
-          "section": [],
-          "items": [
-            "title",
-            "description"
-          ]
-        }
-      },
-      "left": {
         "unset:unset": {
           "section": [
             "title",
@@ -16935,6 +17558,95 @@
           ]
         }
       },
+      "saas-split": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:unset": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:true": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:false": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        }
+      },
       "industrial-": {
         "unset:unset": {
           "section": [
@@ -25657,6 +26369,184 @@
           ]
         }
       },
+      "saas-closing": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:unset": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:true": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:false": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        }
+      },
+      "saas-showcase": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:unset": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:true": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:false": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        }
+      },
       "defaults": {
         "unset:unset": {
           "section": [
@@ -25747,6 +26637,184 @@
         }
       },
       "target": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:unset": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:true": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:false": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        }
+      },
+      "amount": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:unset": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:true": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:false": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        }
+      },
+      "contact": {
         "unset:unset": {
           "section": [
             "title",
@@ -33622,6 +34690,154 @@
           "items": []
         }
       },
+      "saas-packages": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:unset": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:true": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:false": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        }
+      },
+      "saas-": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:unset": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:true": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:false": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        }
+      },
       "category": {
         "unset:unset": {
           "section": [
@@ -35102,6 +36318,450 @@
           "items": []
         }
       },
+      "saas-starter": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:unset": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:true": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:false": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        }
+      },
+      "saas-hero": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:unset": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:true": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:false": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        }
+      },
+      "saas-analytics": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:unset": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:true": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:false": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        }
+      },
+      "saas-modules": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:unset": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:true": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:false": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        }
+      },
+      "saas-addons": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:unset": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:true": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:false": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        }
+      },
+      "left": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:unset": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:true": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:false": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        }
+      },
       "industrial-starter": {
         "unset:unset": {
           "section": [
@@ -35399,80 +37059,6 @@
         }
       },
       "normal": {
-        "unset:unset": {
-          "section": [
-            "title",
-            "subtitle",
-            "content",
-            "buttonText"
-          ],
-          "items": []
-        },
-        "unset:true": {
-          "section": [
-            "title",
-            "subtitle",
-            "content",
-            "buttonText"
-          ],
-          "items": []
-        },
-        "unset:false": {
-          "section": [
-            "title",
-            "subtitle",
-            "content",
-            "buttonText"
-          ],
-          "items": []
-        },
-        "true:unset": {
-          "section": [
-            "title",
-            "subtitle",
-            "content",
-            "buttonText"
-          ],
-          "items": []
-        },
-        "true:true": {
-          "section": [
-            "title",
-            "subtitle",
-            "content",
-            "buttonText"
-          ],
-          "items": []
-        },
-        "true:false": {
-          "section": [
-            "title",
-            "subtitle",
-            "content",
-            "buttonText"
-          ],
-          "items": []
-        },
-        "false:unset": {
-          "section": [
-            "buttonText"
-          ],
-          "items": []
-        },
-        "false:true": {
-          "section": [
-            "buttonText"
-          ],
-          "items": []
-        },
-        "false:false": {
-          "section": [
-            "buttonText"
-          ],
-          "items": []
-        }
-      },
-      "left": {
         "unset:unset": {
           "section": [
             "title",
@@ -43094,6 +44680,80 @@
           "items": []
         }
       },
+      "saas-split": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:unset": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:true": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:false": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        }
+      },
       "industrial-": {
         "unset:unset": {
           "section": [
@@ -50346,6 +52006,154 @@
           "items": []
         }
       },
+      "saas-closing": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:unset": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:true": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:false": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        }
+      },
+      "saas-showcase": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:unset": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:true": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:false": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        }
+      },
       "defaults": {
         "unset:unset": {
           "section": [
@@ -50421,6 +52229,154 @@
         }
       },
       "target": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:unset": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:true": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:false": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        }
+      },
+      "amount": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:unset": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:true": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:false": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        }
+      },
+      "contact": {
         "unset:unset": {
           "section": [
             "title",
@@ -54996,6 +56952,202 @@
           ]
         }
       },
+      "saas-packages": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "false:unset": {
+          "section": [],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "false:true": {
+          "section": [],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "false:false": {
+          "section": [],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        }
+      },
+      "saas-": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "false:unset": {
+          "section": [],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "false:true": {
+          "section": [],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "false:false": {
+          "section": [],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        }
+      },
       "industrial-cards": {
         "unset:unset": {
           "section": [
@@ -55447,6 +57599,790 @@
           "items": [
             "title",
             "description"
+          ]
+        }
+      },
+      "saas-starter": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "false:unset": {
+          "section": [],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "false:true": {
+          "section": [],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "false:false": {
+          "section": [],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        }
+      },
+      "saas-hero": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "false:unset": {
+          "section": [],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "false:true": {
+          "section": [],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "false:false": {
+          "section": [],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        }
+      },
+      "saas-analytics": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "false:unset": {
+          "section": [],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "false:true": {
+          "section": [],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "false:false": {
+          "section": [],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        }
+      },
+      "saas-modules": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "false:unset": {
+          "section": [],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "false:true": {
+          "section": [],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "false:false": {
+          "section": [],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        }
+      },
+      "saas-addons": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "false:unset": {
+          "section": [],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "false:true": {
+          "section": [],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "false:false": {
+          "section": [],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        }
+      },
+      "saas-split": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "false:unset": {
+          "section": [],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "false:true": {
+          "section": [],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "false:false": {
+          "section": [],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        }
+      },
+      "saas-closing": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "false:unset": {
+          "section": [],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "false:true": {
+          "section": [],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "false:false": {
+          "section": [],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        }
+      },
+      "saas-showcase": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "false:unset": {
+          "section": [],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "false:true": {
+          "section": [],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
+          ]
+        },
+        "false:false": {
+          "section": [],
+          "items": [
+            "title",
+            "description",
+            "buttonText"
           ]
         }
       }

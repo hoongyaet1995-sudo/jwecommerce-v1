@@ -1,5 +1,6 @@
 import type {PageSection} from '../types';
 export function ctaPresetPatch(section:PageSection,preset:NonNullable<PageSection['ctaPreset']>):Partial<PageSection> {
+ if(preset==='saas-closing')return {ctaPreset:preset};
  if(preset==='industrial-outline')return {ctaPreset:preset};
  if(preset==='default') return {ctaPreset:'default'};
  if(preset==='help-panel')return {ctaPreset:preset,subtitle:section.subtitle??'',backgroundColor:'bg-white',textColor:'dark',customColors:{...section.customColors,customBgColor:'#f5f3ff',eyebrowColor:'#4f46e5',titleColor:'#171717',contentColor:'#737373'}};

@@ -35,6 +35,8 @@ import {EditorialGallery,EditorialColumns} from './EditorialCollections';
 import {ValuesList} from './ValuesList';
 import {Manifesto} from './Manifesto';
 import {IndustrialCards,IndustrialFaq} from './IndustrialSections';
+import {SaasPackages} from './SaasPackages';
+import {SaasMedia,SaasModules,SaasFaq,SaasClosing} from './SaasSections';
 import React, { useState, useEffect, useRef } from 'react';
 import {ScopedImage,imageSlotFrameStyle} from './ScopedImage';
 import {ImageSelectionContext} from './ImageSelectionContext';
@@ -836,6 +838,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
 
   // 5. Media + Text Split
   const renderMediaTextSplit = () => {
+    if(section.layoutPreset?.startsWith('saas-'))return <SaasMedia section={section} editing={isEditingMode}/>;
     if(section.layoutPreset==='tech-feature')return <TechFeature section={section} editing={isEditingMode}/>;
     if(section.layoutPreset==='artisan-story')return <ArtisanStory section={section} editing={isEditingMode}/>;
     if(section.layoutPreset==='kids-discovery')return <KidsDiscovery section={section}/>;
@@ -2761,7 +2764,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
       case 'product_listing': return section.listingPreset==='industrial-related'?<IndustrialRelatedProducts section={section} products={listingItems} editing={isEditingMode}/>:section.listingPreset==='fashion-lookbook'?<ProductLookbook section={section} products={listingItems} context={runtime.context} editing={isEditingMode}/>:['editorial-tabs','pantry-tabs','tech-tabs','kids-tabs'].includes(section.listingPreset??'')?<EditorialProductTabs section={section} facts={runtimeSection} context={runtime.context} editing={isEditingMode}/>:['industrial-related','editorial-grid','beauty-grid','pantry-grid','tech-grid','kids-grid'].includes(section.listingPreset??'')?<EditorialProductGrid section={section} products={listingItems} context={runtime.context} editing={isEditingMode}/>:renderProductListing();
       case 'collection_tabs': return renderCollectionTabs();
       case 'featured_deal': return renderFeaturedDeal();
-      case 'pricing_table': return renderPricingTable();
+      case 'pricing_table': return section.pricingPreset==='saas-packages'?<SaasPackages section={section} currency={runtime.context.currency} editing={isEditingMode}/>:renderPricingTable();
       case 'promotion_highlights': return <PromotionHighlights section={section} offers={runtimeSection.promotions?.offers??[]} editing={isEditingMode}/>;
       case 'shop_navigation': return <ShopNavigation section={section} catalog={runtime.catalog} editing={isEditingMode}/>;
       case 'media_gallery': return ['industrial-mosaic','album-browser'].includes(section.galleryPreset??'')?<IndustrialGallery section={section} editing={isEditingMode}/>:section.galleryPreset==='photo-marquee'?<PhotoMarquee section={section} editing={isEditingMode}/>:section.galleryPreset==='routine-steps'?<RoutineSteps section={section}/>:['editorial-montage','editorial-cards','editorial-triptych','portfolio-cards'].includes(section.galleryPreset??'')?<EditorialGallery section={section} editing={isEditingMode}/>:renderMediaGallery();
@@ -2771,16 +2774,16 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
       case 'policy_content': return <PolicyContent section={section} isEditingMode={isEditingMode}/>;
       case 'payment_methods': return <PaymentMethods section={section}/>;
       case 'delivery_table': return <DeliveryTable section={section}/>;
-      case 'feature_cards': return section.featureCardsPreset==='industrial-process-split'?<IndustrialProcessSplit section={section}/>:['industrial-cards','industrial-process'].includes(section.featureCardsPreset??'')?<IndustrialCards section={section} editing={isEditingMode}/>: section.featureCardsPreset==='service-highlights'?<ServiceHighlights section={section} renderIcon={renderIcon}/>:['editorial-columns','numbered-process'].includes(section.featureCardsPreset??'')?<EditorialColumns section={section}/>:section.featureCardsPreset==='values-list'?<ValuesList section={section}/>:renderFeatureCards();
+      case 'feature_cards': return section.featureCardsPreset?.startsWith('saas-')?<SaasModules section={section} editing={isEditingMode}/>: section.featureCardsPreset==='industrial-process-split'?<IndustrialProcessSplit section={section}/>:['industrial-cards','industrial-process'].includes(section.featureCardsPreset??'')?<IndustrialCards section={section} editing={isEditingMode}/>: section.featureCardsPreset==='service-highlights'?<ServiceHighlights section={section} renderIcon={renderIcon}/>:['editorial-columns','numbered-process'].includes(section.featureCardsPreset??'')?<EditorialColumns section={section}/>:section.featureCardsPreset==='values-list'?<ValuesList section={section}/>:renderFeatureCards();
       case 'values_list': return <ValuesList section={section}/>;
       case 'icon_list': return renderIconList();
       case 'comparison_matrix': return section.comparisonPreset==='device-table'?<DeviceComparison section={section} editing={isEditingMode}/>:renderComparisonMatrix();
-      case 'faq_accordion': return section.faqPreset==='industrial-split'?<IndustrialFaq key={`${section.id}-${section.faqInitiallyOpen}`} section={section}/>: section.faqPreset==='minimal'?<MinimalFaq key={`${section.id}-${section.faqInitiallyOpen}`} section={section}/>:renderFaqAccordion();
+      case 'faq_accordion': return section.faqPreset==='saas-split'?<SaasFaq section={section}/>: section.faqPreset==='industrial-split'?<IndustrialFaq key={`${section.id}-${section.faqInitiallyOpen}`} section={section}/>: section.faqPreset==='minimal'?<MinimalFaq key={`${section.id}-${section.faqInitiallyOpen}`} section={section}/>:renderFaqAccordion();
       case 'contact_form': return section.contactPreset==='enquiry'?<EnquiryForm section={section} isEditingMode={isEditingMode}/>:renderContactForm();
       case 'store_locator': return section.contactPreset==='location'?<ContactLocation section={section}/>:renderStoreLocator();
       case 'testimonials_slider': return renderTestimonials();
       case 'logo_cloud': return section.logoPreset === 'partners' ? <PartnerLogos section={section} editing={isEditingMode}/> : renderLogoCloud();
-      case 'cta_strip': return section.ctaPreset==='industrial-outline'?<IndustrialOutlineCta section={section} editing={isEditingMode}/>:section.ctaPreset==='help-panel'?<HelpPanel section={section} isEditingMode={isEditingMode}/>:section.ctaPreset==='editorial-band'?<EditorialCtaBand section={section} isEditingMode={isEditingMode}/>:section.ctaPreset==='image-banner'?<ImageBanner section={section} isEditingMode={isEditingMode}/>:renderCtaStrip();
+      case 'cta_strip': return section.ctaPreset==='saas-closing'?<SaasClosing section={section} editing={isEditingMode}/>: section.ctaPreset==='industrial-outline'?<IndustrialOutlineCta section={section} editing={isEditingMode}/>:section.ctaPreset==='help-panel'?<HelpPanel section={section} isEditingMode={isEditingMode}/>:section.ctaPreset==='editorial-band'?<EditorialCtaBand section={section} isEditingMode={isEditingMode}/>:section.ctaPreset==='image-banner'?<ImageBanner section={section} isEditingMode={isEditingMode}/>:renderCtaStrip();
       case 'newsletter_signup': return renderNewsletterSignup();
       default: return renderRichText();
     }

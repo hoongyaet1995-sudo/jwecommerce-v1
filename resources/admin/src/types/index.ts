@@ -611,6 +611,10 @@ export interface SectionItem {
   videoUrl?: string;
   linkUrl?: string;
   badge?: string;
+  pricingMode?: 'amount' | 'contact';
+  pricingLabel?: string;
+  billingLabel?: string;
+  highlightLabel?: string;
   price?: number;
   compareAtPrice?: number;
   rating?: number; // e.g. 5
@@ -687,6 +691,8 @@ export interface PageSection {
   authorAvatar?: string;
   mediaUrl?: string; // Image or Video asset URL
   mediaType?: 'image' | 'video';
+  pricingPreset?: 'default' | 'saas-packages';
+  pricingCurrency?: string;
   mediaPosition?: 'left' | 'right';
   imageRatio?: 'default' | 'auto' | '16:9' | '3:2' | '4:3' | '1:1' | '3:4';
   imagePosition?: 'top-left' | 'top-center' | 'top-right' | 'center-left' | 'center' | 'center-right' | 'bottom-left' | 'bottom-center' | 'bottom-right';
@@ -698,7 +704,7 @@ export interface PageSection {
   imageForeground?: boolean;
   imageForegroundColor?: string;
   imageForegroundOpacity?: 0 | 10 | 20 | 30 | 40 | 50 | 60 | 70 | 80 | 90 | 100;
-  layoutPreset?: 'default' | 'editorial-hero' | 'editorial-story' | 'editorial-cover' | 'editorial-story-cards' | 'editorial-journal-rows' | 'story-with-steps' | 'flush-split' | 'producer-story' | 'tech-feature' | 'kids-discovery' | 'artisan-story';
+  layoutPreset?: 'default' | 'editorial-hero' | 'editorial-story' | 'editorial-cover' | 'editorial-story-cards' | 'editorial-journal-rows' | 'story-with-steps' | 'flush-split' | 'producer-story' | 'tech-feature' | 'kids-discovery' | 'artisan-story' | 'saas-hero' | 'saas-showcase' | 'saas-analytics';
   paymentLayout?: 'cards' | 'list';
   paymentNote?: string;
   deliverySource?: 'settings' | 'manual';
@@ -706,7 +712,7 @@ export interface PageSection {
   deliveryDestinationLabel?: string;
   deliveryEstimateLabel?: string;
   deliveryFeeLabel?: string;
-  faqPreset?: 'default' | 'minimal' | 'industrial-split';
+  faqPreset?: 'default' | 'minimal' | 'industrial-split' | 'saas-split';
   faqInitiallyOpen?: boolean;
   leadText?: string;
   policyPreset?: 'guidelines' | 'choices' | 'steps' | 'document' | 'directory' | 'process-flow' | 'timeline' | 'tabs' | 'columns';
@@ -720,10 +726,10 @@ export interface PageSection {
   containerMode?: 'page' | 'full-bleed';
   sectionBorder?: 'default' | 'none' | 'top' | 'bottom' | 'both';
   sectionBorderColor?: string;
-  ctaPreset?: 'default' | 'image-banner' | 'editorial-band' | 'help-panel' | 'industrial-outline';
+  ctaPreset?: 'default' | 'image-banner' | 'editorial-band' | 'help-panel' | 'industrial-outline' | 'saas-closing';
   ctaBannerHeight?: 'compact' | 'normal' | 'spacious';
   richTextPreset?: 'default' | 'manifesto' | 'industrial-split';
-  featureCardsPreset?: 'default' | 'values-list' | 'editorial-columns' | 'numbered-process' | 'service-highlights' | 'industrial-cards' | 'industrial-process' | 'industrial-process-split';
+  featureCardsPreset?: 'default' | 'values-list' | 'editorial-columns' | 'numbered-process' | 'service-highlights' | 'industrial-cards' | 'industrial-process' | 'industrial-process-split' | 'saas-modules' | 'saas-addons';
   heroBannerPreset?: 'default' | 'editorial-gradient' | 'industrial-overlay';
   testimonialPreset?: 'default' | 'editorial-quote';
   logoPreset?: "classic" | "partners";

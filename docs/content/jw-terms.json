@@ -1,0 +1,179 @@
+{
+  "title": "Terms & Conditions",
+  "slug": "terms-and-conditions",
+  "description": "The scope, responsibilities and terms for using JW Studio.",
+  "template": "landing",
+  "sections": [
+    {
+      "id": "1f4484ab-ed19-43ab-a32f-8ce733e89595",
+      "type": "rich_text",
+      "isVisible": true,
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "none",
+      "backgroundColor": "custom",
+      "textColor": "dark",
+      "paddingY": "normal",
+      "customColors": {
+        "eyebrowColor": "#947242",
+        "titleColor": "#102331",
+        "contentColor": "#52616b",
+        "primaryBtnBg": "#102331",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#f3f0e9",
+        "secondaryBtnText": "#102331",
+        "customBgColor": "#fbfaf7"
+      },
+      "subtitle": "JW STUDIO · TERMS & CONDITIONS",
+      "title": "Clear terms.\nA considered partnership.",
+      "content": "The scope, responsibilities and terms for using JW Studio.\n\nLast updated: 1 November 2026",
+      "typography": {
+        "title": {
+          "fontSize": 52,
+          "fontWeight": 500
+        }
+      }
+    },
+    {
+      "id": "09d649b0-d6d0-4274-8377-b5134c081274",
+      "type": "policy_content",
+      "isVisible": true,
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "none",
+      "backgroundColor": "custom",
+      "textColor": "dark",
+      "paddingY": "normal",
+      "customColors": {
+        "eyebrowColor": "#947242",
+        "titleColor": "#102331",
+        "contentColor": "#52616b",
+        "primaryBtnBg": "#102331",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#f3f0e9",
+        "secondaryBtnText": "#102331",
+        "customBgColor": "#fbfaf7"
+      },
+      "policyPreset": "directory",
+      "title": "Terms & Conditions",
+      "content": "Please read the following information before using our services.",
+      "items": [
+        {
+          "id": "7c011209-1398-4865-884a-ceac30cca8ca",
+          "title": "About these terms",
+          "description": "These terms apply to JW Studio websites and business platform services, operated by JW TECH SOLUTIONS, registration 202603051646 (003827462-H), Bestari Jaya, Selangor, Malaysia. Contact sales@jwaistudio.online with service or billing questions. A written order or service agreement may set additional scope and takes priority where expressly agreed."
+        },
+        {
+          "id": "509f073c-132f-4a58-8485-4761786aa6ef",
+          "title": "Who may use the service",
+          "description": "You must be authorised to act for the business and to connect its accounts, upload its content and instruct operations. Keep your login secure and manage staff access responsibly. Do not share another person’s credentials or connect accounts without the account owner’s authority."
+        },
+        {
+          "id": "c31505f8-65e4-4e24-b1e1-507644e18297",
+          "title": "What the platform provides",
+          "description": "JW Studio provides website and ecommerce management, customer-support tools, optional AI assistance, marketplace integrations and marketing tools according to the activated package. Availability depends on agreed scope, configuration, third-party approval and account permissions. The website describes available and planned capabilities; planned functionality is not a promise of current access. TikTok Business Messaging remains subject to TikTok approval."
+        },
+        {
+          "id": "91657bde-5989-4868-a215-9ca74dce20b9",
+          "title": "Packages and monthly fees",
+          "description": "Starter: RM299 per month for Website/Ecommerce plus Customer Support Platform. Growth: RM399 per month, including the Starter scope plus AI Auto Reply on supported, authorised channels. Marketplace integration: an additional RM100 per store per month. Marketing Studio: an additional RM200 per month. Enterprise and Custom scope are agreed individually.\n\nDomain, hosting and one email mailbox are included as specified in the agreed package. Included AI, email, messaging and other usage allowances, provider limits, domain eligibility, additional charges and any setup or contract requirements are confirmed in writing before activation. These packages are not unlimited usage. We do not automatically charge an undisclosed overage."
+        },
+        {
+          "id": "dbaba5ce-30b8-49ae-a2c6-aef31267a395",
+          "title": "One-month trial",
+          "description": "Where offered, the one-month trial uses a preview domain and includes the website/ecommerce and staff-support tools plus agreed limited AI and campaign usage. It does not automatically enrol you into a paid subscription or charge you. A production domain and mailbox are activated after the paid arrangement is confirmed. Channel access still requires provider approval and your authorisation. Trial scope and usage allowance are agreed before starting."
+        },
+        {
+          "id": "ee57886d-44fd-4466-b15a-e707d4261ed9",
+          "title": "Billing, cancellation and service changes",
+          "description": "The agreed invoice or order identifies the billing date, payment arrangements and applicable fees. Contact us to request cancellation, package changes or a billing correction. The effective date and treatment of prepaid amounts are confirmed under your agreement and applicable law. We do not promise an automatic refund or a minimum contract term where none has been agreed. Material service or price changes are communicated before they apply."
+        },
+        {
+          "id": "9c6c7edd-125a-46ae-af71-37736de816b2",
+          "title": "Your content, contacts and campaigns",
+          "description": "You retain rights in your business content and grant us the permission needed to host and process it to provide the service. You are responsible for having the necessary rights and permissions, accurate product and advertising claims, lawful contact collection and valid marketing consent. Do not send spam, deceptive content, unlawful promotions or messages to recipients who have opted out. You must review destinations, recipients, content, costs and schedules before approving delivery."
+        },
+        {
+          "id": "979d92de-0116-4485-8337-63b57f8b62fd",
+          "title": "Connected accounts and third-party platforms",
+          "description": "Social, messaging, marketplace, payment, delivery and AI integrations are subject to the relevant provider’s terms and permissions. You authorise only the actions approved through the platform and may revoke access. Connecting an account does not itself publish content or send a campaign. Provider outages, rate limits, rejected templates or revoked permissions can prevent delivery. We cannot guarantee third-party approval, uninterrupted access, sales, rankings, reach or response accuracy."
+        },
+        {
+          "id": "97508dae-e317-4311-9cd3-89588e6e2380",
+          "title": "AI assistance and human review",
+          "description": "AI-generated replies, recommendations, text and images can contain errors. Review important content and factual claims, and retain human oversight for sensitive or consequential matters. AI does not replace professional advice. Automated replies operate only within the enabled configuration and available business information. Do not supply unnecessary sensitive information to AI features."
+        },
+        {
+          "id": "b5ecca3c-9741-4a5f-93a9-42a9e201eb87",
+          "title": "Privacy, security and data requests",
+          "description": "Our Privacy Policy explains how we handle information, connected accounts, messages and deletion requests. Merchants are responsible for their own customer notices and instructions. You can disconnect integrations or contact sales@jwaistudio.online about access, correction or deletion. We may retain records where needed for legal, security or accounting purposes. Do not use the service to collect data you are not entitled to process."
+        },
+        {
+          "id": "fb9235c7-36e4-43a2-abb0-469417bd4b01",
+          "title": "Availability, suspension and responsibility",
+          "description": "We use reasonable care to operate the service but do not guarantee an error-free or uninterrupted platform. We may restrict activity that threatens security, violates platform rules or is unlawful, and will communicate where reasonably possible. Maintain appropriate copies of important business information. Each party remains responsible for its own obligations; any limits on liability are subject to the agreed service terms and applicable law. Nothing excludes rights or liability that cannot legally be excluded."
+        },
+        {
+          "id": "605bad17-e043-4ae7-a55c-e6e4b81f4e62",
+          "title": "Governing law, updates and contact",
+          "description": "These terms are governed by the laws of Malaysia, subject to any mandatory rights that apply. Contact us first to discuss disputes or concerns. We may update these terms and will notify affected customers of material changes where appropriate.\n\nLast updated: 1 November 2026\nJW TECH SOLUTIONS · JW Studio\nRegistration: 202603051646 (003827462-H)\nBestari Jaya, Selangor, Malaysia\nsales@jwaistudio.online"
+        }
+      ]
+    },
+    {
+      "id": "2f937762-1f32-402b-a43f-45c021fd66eb",
+      "type": "cta_strip",
+      "isVisible": true,
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "none",
+      "backgroundColor": "custom",
+      "textColor": "dark",
+      "paddingY": "normal",
+      "customColors": {
+        "eyebrowColor": "#947242",
+        "titleColor": "#102331",
+        "contentColor": "#52616b",
+        "primaryBtnBg": "#102331",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#f3f0e9",
+        "secondaryBtnText": "#102331",
+        "customBgColor": "#fbfaf7"
+      },
+      "ctaPreset": "help-panel",
+      "title": "Talk to JW Studio.",
+      "content": "For questions, contact sales@jwaistudio.online.",
+      "buttonText": "Contact us",
+      "buttonLink": "/pages/contact-jw-studio"
+    }
+  ],
+  "style": {
+    "palette": {
+      "paper": "#fbfaf7",
+      "ink": "#102331",
+      "muted": "#52616b",
+      "accent": "#947242",
+      "light": "#ffffff",
+      "secondary": "#f3f0e9",
+      "secondaryInk": "#102331",
+      "hover": "#665035"
+    },
+    "colorSource": "custom",
+    "spacing": "spacious",
+    "buttonRadius": 6,
+    "buttonSize": "normal"
+  },
+  "shellDesign": {
+    "business": "service",
+    "style": "modern",
+    "appearance": "dark",
+    "showAnnouncement": false,
+    "showAccount": false,
+    "showCurrency": false,
+    "showThemeSwitch": false,
+    "ctaLabel": "Request a demo",
+    "ctaUrl": "/pages/contact-jw-studio",
+    "tagline": "Automate. Engage. Grow.",
+    "contactEmail": "sales@jwaistudio.online"
+  }
+}

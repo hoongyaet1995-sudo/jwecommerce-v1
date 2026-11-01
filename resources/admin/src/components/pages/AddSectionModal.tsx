@@ -12,6 +12,7 @@ import {collectionBannerDefaults} from '../../cms/collectionBanners';
 import {policyLayouts} from './PolicySettings';
 import {shippingChaptersSections} from '../../cms/shippingChaptersTemplate';
 import {shippingEditorialSections} from '../../cms/shippingEditorialTemplate';
+import {saasSections} from '../../cms/saasTemplates';
 import React, { useState } from 'react';
 import { Category, Collection, PageSection, PageSectionType } from '../../types';
 import { createCollectionTabMappings } from '../../cms/collectionTabMappings';
@@ -46,7 +47,8 @@ import {
   HeartHandshake,
   Tag,
   Flame,
-  Scale
+  Scale,
+  LayoutTemplate
 } from 'lucide-react';
 
 interface AddSectionModalProps {
@@ -68,6 +70,7 @@ export interface SectionTemplateOption {
 }
 
 const SOURCE_SECTION_TEMPLATES: SectionTemplateOption[] = [
+ ...saasSections('saas-starter').map(s=>({type:s.type,title:s.pricingPreset==='saas-packages'?'SaaS Packages':s.layoutPreset==='saas-hero'?'SaaS Product Hero':s.layoutPreset==='saas-analytics'?'SaaS Analytics Showcase':s.type==='faq_accordion'?'SaaS Split FAQ':s.type==='cta_strip'?'SaaS Closing CTA':s.featureCardsPreset==='saas-modules'?'SaaS Module Strip':s.featureCardsPreset==='saas-addons'?'SaaS Add-ons':s.mediaPosition==='left'?'SaaS Showcase — Media Left':'SaaS Showcase — Media Right',category:(s.type==='pricing_table'||s.type==='cta_strip'?'Conversion & Leads':s.type==='faq_accordion'?'Support & Contact':'Storytelling & Narrative') as SectionTemplateOption['category'],description:'Spacious SaaS layout with shared editable content, media and actions.',icon:LayoutTemplate,defaultData:s})),
  ...([0,1,5,6] as const).map((index):SectionTemplateOption=>{const section=logisticsSections({},'industrial-starter')[index];const {id,...defaultData}=section;return {type:section.type,title:index===0?'Industrial Container Hero':index===1?'Industrial Service Cards':index===5?'Industrial Workflow':'Industrial FAQ',category:index===0?'Header & Intro':index===6?'Support & Contact':'Benefits & Trust',description:'Editable industrial layout with shared content, typography, links and motion controls.',icon:Layers,badge:'Industrial',defaultData};}),
   {type:'promotion_highlights',title:'Promotion Highlights',category:'Commerce & Shop',description:'Live promotion offers in photographic cards. Automatic or selected active vouchers with shared content, image and design controls.',icon:Tag,badge:'Editorial',defaultData:promotionHighlightDefaults()},
   {type:'shop_navigation',title:'Collection Banners',category:'Commerce & Shop',description:'Image-overlay collection banners with editable copy, links and visual proportions. One banner per row on mobile.',icon:Image,badge:'Editorial',defaultData:collectionBannerDefaults()},
@@ -1204,10 +1207,11 @@ export const AddSectionModal: React.FC<AddSectionModalProps> = ({
       } : {}),
       id: 'sec-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7)
     };
-    if (newSection.featureCardsPreset?.startsWith('industrial-')||newSection.faqPreset==='industrial-split'||newSection.comparisonPreset==='device-table'||newSection.layoutPreset==='tech-feature'||newSection.type==='promotion_highlights'||newSection.type==='chapter_block'||newSection.galleryPreset?.startsWith('editorial-')||newSection.featureCardsPreset==='editorial-columns') {
+    if (newSection.pricingPreset==='saas-packages'||newSection.featureCardsPreset?.startsWith('saas-')||newSection.faqPreset==='saas-split'||newSection.featureCardsPreset?.startsWith('industrial-')||newSection.faqPreset==='industrial-split'||newSection.comparisonPreset==='device-table'||newSection.layoutPreset==='tech-feature'||newSection.type==='promotion_highlights'||newSection.type==='chapter_block'||newSection.galleryPreset?.startsWith('editorial-')||newSection.featureCardsPreset==='editorial-columns') {
       newSection.items=newSection.items?.map((item,index)=>({...item,id:`${newSection.id}-item-${index}`}));
     }
     newSection.productTabs=newSection.productTabs?.map((tab,index)=>({...tab,id:`${newSection.id}-tab-${index}`}));
+    if(newSection.layoutPreset?.startsWith('saas-')){if(newSection.buttonLink?.startsWith('#section-saas-starter-'))newSection.buttonLink='';if(newSection.secondaryButtonLink?.startsWith('#section-saas-starter-'))newSection.secondaryButtonLink='';}
     onAdd(newSection);
     onClose();
   };

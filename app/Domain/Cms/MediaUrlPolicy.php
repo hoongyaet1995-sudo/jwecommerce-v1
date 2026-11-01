@@ -42,6 +42,8 @@ final class MediaUrlPolicy
         }
 
         // Bundled, reviewed template assets are distinct from uploaded managed media.
+        if (preg_match('#\A/images/cms/saas/(?:editor|support|calendar|analytics)\.svg\z#D', $url) === 1) { return true; }
+
         if (preg_match('#\A/images/themes/wedding/(?:hero|account|album|prints)\.png\z#D', $url) === 1) {
             return true;
         }

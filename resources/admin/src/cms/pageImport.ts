@@ -1,3 +1,4 @@
+import {validSaasPricingSection} from './saasPackages';
 import contractManifest from '../../../cms/page-contract.v1.json';
 import type { PageDocument } from '../types';
 
@@ -231,6 +232,7 @@ const hasPhpCompatibleRawHost = (value: string): boolean => {
 const isSafeMediaUrl = (value: string): boolean => {
   if (value === '') return true;
   if (MANAGED_MEDIA_PATTERN.test(value)) return true;
+  if (/^\/images\/cms\/saas\/(?:editor|support|calendar|analytics)\.svg$/.test(value)) return true;
   if (/^\/images\/themes\/wedding\/(?:hero|account|album|prints)\.png$/.test(value)) return true;
   if (/^\/images\/themes\/logistics\/(?:hero|account|containers|delivery|enquiry)\.png$/.test(value)) return true;
   if (value.startsWith('//') || /[\u0000-\u0020\u007f\\]/.test(value) || containsEncodedControlOrBackslash(value)) return false;
@@ -294,6 +296,7 @@ const validateObject = (value: JsonObject, schema: ContractSchema, path: string)
 
 const validateSection = (value: unknown, path: string): void => {
   if (!isObject(value)) return fail(path, 'This value must be a JSON object.');
+  if(!validSaasPricingSection(value))return fail(path,'Invalid pricing-plan fields or owner.');
   const sectionType = value.type;
   if(sectionType==='promotion_highlights'&&Array.isArray(value.items)&&value.items.length>6)fail(pathFor(path,'items'),'Use up to six offer cards.');
   if (!own(value, 'type') || typeof sectionType !== 'string') {

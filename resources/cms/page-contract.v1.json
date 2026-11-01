@@ -668,7 +668,9 @@
         "numbered-process",
         "industrial-cards",
         "industrial-process",
-        "industrial-process-split"
+        "industrial-process-split",
+        "saas-modules",
+        "saas-addons"
       ]
     },
     "valuesShowHeading": {
@@ -718,7 +720,8 @@
         "image-banner",
         "editorial-band",
         "help-panel",
-        "industrial-outline"
+        "industrial-outline",
+        "saas-closing"
       ]
     },
     "ctaBannerHeight": {
@@ -766,7 +769,10 @@
         "tech-feature",
         "kids-discovery",
         "artisan-story",
-        "editorial-journal-rows"
+        "editorial-journal-rows",
+        "saas-hero",
+        "saas-showcase",
+        "saas-analytics"
       ]
     },
     "mediaAlt": {
@@ -1217,6 +1223,22 @@
         },
         "thirdButtonLink": {
           "type": "string"
+        },
+        "pricingMode": {
+          "type": "string",
+          "enum": [
+            "amount",
+            "contact"
+          ]
+        },
+        "pricingLabel": {
+          "type": "string"
+        },
+        "billingLabel": {
+          "type": "string"
+        },
+        "highlightLabel": {
+          "type": "string"
         }
       }
     },
@@ -1294,7 +1316,8 @@
       "enum": [
         "default",
         "minimal",
-        "industrial-split"
+        "industrial-split",
+        "saas-split"
       ]
     },
     "faqInitiallyOpen": {
@@ -1600,9 +1623,23 @@
         "editorial-quote"
       ]
     },
-    "logoPreset": {"type":"string","enum":["classic","partners"]},
-    "logoHeight": {"type":"integer","minimum":24,"maximum":96},
-    "logoGap": {"type":"integer","minimum":16,"maximum":100},
+    "logoPreset": {
+      "type": "string",
+      "enum": [
+        "classic",
+        "partners"
+      ]
+    },
+    "logoHeight": {
+      "type": "integer",
+      "minimum": 24,
+      "maximum": 96
+    },
+    "logoGap": {
+      "type": "integer",
+      "minimum": 16,
+      "maximum": 100
+    },
     "marqueeSpeed": {
       "type": "integer",
       "minimum": 0,
@@ -1633,6 +1670,16 @@
       "type": "number",
       "minimum": 1,
       "maximum": 100
+    },
+    "pricingPreset": {
+      "type": "string",
+      "enum": [
+        "default",
+        "saas-packages"
+      ]
+    },
+    "pricingCurrency": {
+      "type": "string"
     }
   },
   "section": {
@@ -2140,7 +2187,9 @@
           "items",
           "customColors",
           "surface",
-          "brandPalette"
+          "brandPalette",
+          "pricingPreset",
+          "pricingCurrency"
         ],
         "publishRequired": [
           "title"
@@ -2524,7 +2573,12 @@
       },
       "logo_cloud": {
         "fields": [
-          "logoPreset", "logoHeight", "logoGap", "marqueeSpeed", "marqueeDirection", "marqueePauseOnHover",
+          "logoPreset",
+          "logoHeight",
+          "logoGap",
+          "marqueeSpeed",
+          "marqueeDirection",
+          "marqueePauseOnHover",
           "typography",
           "containerMode",
           "sectionBorder",

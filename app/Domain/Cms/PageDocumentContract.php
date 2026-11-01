@@ -61,6 +61,13 @@ final class PageDocumentContract
             }
 
             $sectionPath = "sections.{$index}";
+            if (($section['pricingPreset'] ?? '') === 'saas-packages') {
+                foreach ($section['items'] ?? [] as $i => $item) {
+                    if (($item['pricingMode'] ?? 'amount') === 'contact') {
+                        if (trim($item['pricingLabel'] ?? '') === '') $this->addError($errors,$sectionPath.'.items.'.$i.'.pricingLabel','Enter the contact-price label.');
+                    } elseif (!array_key_exists('price',$item)) $this->addError($errors,$sectionPath.'.items.'.$i.'.price','Enter this plan price.');
+                }
+            }
             $sectionDefinition = $sectionTypes[$section['type']];
             $editorialQuote = $section['type'] === 'testimonials_slider'
                 && ($section['testimonialPreset'] ?? null) === 'editorial-quote';
@@ -322,6 +329,12 @@ final class PageDocumentContract
 
         if ($value['type'] === 'promotion_highlights' && is_array($value['items'] ?? null) && count($value['items']) > 6) {
             $this->addError($errors, $path.'.items', 'Use up to six offer cards.');
+        }
+        if (isset($value['pricingCurrency']) && is_string($value['pricingCurrency']) && !preg_match('/^[A-Z]{3}$/', $value['pricingCurrency'])) $this->addError($errors,$path.'.pricingCurrency','Use a three-letter uppercase currency.');
+        foreach (is_array($value['items'] ?? null) ? $value['items'] : [] as $i => $item) {
+            if (!is_array($item)) continue;
+            foreach (['pricingMode','pricingLabel','billingLabel','highlightLabel'] as $field) if (array_key_exists($field,$item) && $value['type'] !== 'pricing_table') $this->addError($errors,$path.'.items.'.$i.'.'.$field,'This field belongs to pricing plans.');
+            if (($value['pricingPreset'] ?? '') === 'saas-packages' && isset($item['price']) && $item['price'] < 0) $this->addError($errors,$path.'.items.'.$i.'.price','Enter a nonnegative price.');
         }
         $this->validateImageSlots($value, $path, $errors);
     }

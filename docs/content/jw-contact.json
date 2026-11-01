@@ -1,0 +1,134 @@
+{
+  "title": "Contact JW Studio",
+  "slug": "contact-jw-studio",
+  "description": "Tell us what your business needs. We will help you choose the right setup.",
+  "template": "landing",
+  "sections": [
+    {
+      "id": "ad33729d-994d-4700-8390-5de2c4165a4e",
+      "type": "rich_text",
+      "isVisible": true,
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "none",
+      "backgroundColor": "custom",
+      "textColor": "dark",
+      "paddingY": "normal",
+      "customColors": {
+        "eyebrowColor": "#947242",
+        "titleColor": "#102331",
+        "contentColor": "#52616b",
+        "primaryBtnBg": "#102331",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#f3f0e9",
+        "secondaryBtnText": "#102331",
+        "customBgColor": "#fbfaf7"
+      },
+      "subtitle": "JW STUDIO · CONTACT JW STUDIO",
+      "title": "Let’s make room\nfor what’s next.",
+      "content": "Tell us what your business needs. We will help you choose the right setup.\n\nLast updated: 1 November 2026",
+      "typography": {
+        "title": {
+          "fontSize": 52,
+          "fontWeight": 500
+        }
+      }
+    },
+    {
+      "id": "c0aa6629-8614-4674-a608-9d1e5eff0c75",
+      "type": "policy_content",
+      "isVisible": true,
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "none",
+      "backgroundColor": "custom",
+      "textColor": "dark",
+      "paddingY": "normal",
+      "customColors": {
+        "eyebrowColor": "#947242",
+        "titleColor": "#102331",
+        "contentColor": "#52616b",
+        "primaryBtnBg": "#102331",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#f3f0e9",
+        "secondaryBtnText": "#102331",
+        "customBgColor": "#fbfaf7"
+      },
+      "policyPreset": "directory",
+      "title": "Contact JW Studio",
+      "content": "Please read the following information before using our services.",
+      "items": [
+        {
+          "id": "6800681b-e467-495b-a3c2-09a5f7c78390",
+          "title": "Request a demo or discuss a package",
+          "description": "Email sales@jwaistudio.online with your business name, website (if any), and the tools you want to explore: website, ecommerce, customer support, AI Auto Reply, marketplace integration or Marketing Studio. You do not need to provide passwords or connect accounts to request a demo."
+        },
+        {
+          "id": "6e6ecdeb-9a0e-4733-92c3-5a82d795dba0",
+          "title": "Privacy and account-data requests",
+          "description": "For privacy, access, correction or deletion requests, email sales@jwaistudio.online with the subject Privacy request and identify the business or account concerned. Do not send passwords or access tokens."
+        },
+        {
+          "id": "cc06ce9a-72bc-4ef2-acc2-835a6342b36f",
+          "title": "Our business",
+          "description": "JW TECH SOLUTIONS · JW Studio\nRegistration: 202603051646 (003827462-H)\nBestari Jaya, Selangor, Malaysia\nBusiness contact: sales@jwaistudio.online"
+        }
+      ]
+    },
+    {
+      "id": "13a5191f-aa85-4f46-b60f-db75c2070ca1",
+      "type": "cta_strip",
+      "isVisible": true,
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "none",
+      "backgroundColor": "custom",
+      "textColor": "dark",
+      "paddingY": "normal",
+      "customColors": {
+        "eyebrowColor": "#947242",
+        "titleColor": "#102331",
+        "contentColor": "#52616b",
+        "primaryBtnBg": "#102331",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#f3f0e9",
+        "secondaryBtnText": "#102331",
+        "customBgColor": "#fbfaf7"
+      },
+      "ctaPreset": "help-panel",
+      "title": "Talk to JW Studio.",
+      "content": "For questions, contact sales@jwaistudio.online.",
+      "buttonText": "Explore the platform",
+      "buttonLink": "/"
+    }
+  ],
+  "style": {
+    "palette": {
+      "paper": "#fbfaf7",
+      "ink": "#102331",
+      "muted": "#52616b",
+      "accent": "#947242",
+      "light": "#ffffff",
+      "secondary": "#f3f0e9",
+      "secondaryInk": "#102331",
+      "hover": "#665035"
+    },
+    "colorSource": "custom",
+    "spacing": "spacious",
+    "buttonRadius": 6,
+    "buttonSize": "normal"
+  },
+  "shellDesign": {
+    "business": "service",
+    "style": "modern",
+    "appearance": "dark",
+    "showAnnouncement": false,
+    "showAccount": false,
+    "showCurrency": false,
+    "showThemeSwitch": false,
+    "ctaLabel": "Request a demo",
+    "ctaUrl": "/pages/contact-jw-studio",
+    "tagline": "Automate. Engage. Grow.",
+    "contactEmail": "sales@jwaistudio.online"
+  }
+}

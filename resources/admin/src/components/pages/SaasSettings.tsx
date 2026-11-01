@@ -1,0 +1,12 @@
+import React from 'react';
+import type {PageSection,SectionItem} from '../../types';
+import {VisualChoiceSelect} from './VisualChoiceSelect';
+export function SaasLayoutSettings({section:s,onChange}:{section:PageSection;onChange:(s:PageSection)=>void}){
+ if(s.type!=='pricing_table')return null;
+ return <fieldset className="space-y-3 p-3 border border-neutral-200 dark:border-neutral-700 rounded-lg"><legend className="text-xs">Plan layout</legend><VisualChoiceSelect aria-label="Plan layout" value={s.pricingPreset??'default'} onChange={e=>onChange({...s,pricingPreset:e.target.value as PageSection['pricingPreset']})}><option value="default">Classic pricing</option><option value="saas-packages">SaaS Packages</option></VisualChoiceSelect>{s.pricingPreset==='saas-packages'&&<label className="block text-xs">Currency (leave blank for store currency)<input aria-label="Plan currency" className="mt-1 w-full p-2 border rounded bg-transparent" maxLength={3} value={s.pricingCurrency??''} onChange={e=>onChange({...s,pricingCurrency:e.target.value?e.target.value.toUpperCase():undefined})}/></label>}</fieldset>;
+}
+export function SaasItemSettings({item,index,onChange}:{item:SectionItem;index:number;onChange:(patch:Partial<SectionItem>)=>void}){return <div className="col-span-2 space-y-2">
+ <label className="block text-xs">Price display<select aria-label={`Plan ${index+1} price display`} className="w-full p-2 border rounded bg-transparent" value={item.pricingMode??'amount'} onChange={e=>onChange({pricingMode:e.target.value as SectionItem['pricingMode']})}><option value="amount">Price</option><option value="contact">Contact for pricing</option></select></label>
+ {item.pricingMode==='contact'?<label className="block text-xs">Price wording<input aria-label={`Plan ${index+1} price wording`} className="w-full p-2 border rounded bg-transparent" value={item.pricingLabel??''} onChange={e=>onChange({pricingLabel:e.target.value})}/></label>:<label className="block text-xs">Billing label<input aria-label={`Plan ${index+1} billing label`} className="w-full p-2 border rounded bg-transparent" placeholder="/ month" value={item.billingLabel??''} onChange={e=>onChange({billingLabel:e.target.value})}/></label>}
+ {item.isHighlighted&&<label className="block text-xs">Highlight label<input aria-label={`Plan ${index+1} highlight label`} className="w-full p-2 border rounded bg-transparent" value={item.highlightLabel??''} onChange={e=>onChange({highlightLabel:e.target.value})}/></label>}
+ </div>;}

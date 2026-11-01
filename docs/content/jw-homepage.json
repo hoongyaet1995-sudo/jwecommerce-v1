@@ -1,0 +1,409 @@
+{
+  "title": "JW Studio | Your business. One connected workspace.",
+  "slug": "jw-studio",
+  "template": "standard",
+  "style": {
+    "palette": {
+      "paper": "#f7f4ee",
+      "ink": "#0b1823",
+      "muted": "#62615e",
+      "accent": "#c7ab7b",
+      "light": "#ffffff",
+      "secondary": "#0b1823",
+      "secondaryInk": "#f7f4ee",
+      "hover": "#b09468"
+    },
+    "colorSource": "custom",
+    "spacing": "spacious",
+    "buttonRadius": 6,
+    "buttonSize": "normal"
+  },
+  "sections": [
+    {
+      "id": "sec-a25d72bd-6236-44af-84b8-b15e4ff5965e-hero",
+      "isVisible": true,
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "paddingY": "spacious",
+      "backgroundColor": "custom",
+      "textColor": "light",
+      "customColors": {
+        "customBgColor": "#08111c",
+        "titleColor": "#f7f4ee",
+        "contentColor": "#c6c5c0",
+        "eyebrowColor": "#a68a5c",
+        "primaryBtnBg": "#c7ab7b",
+        "primaryBtnText": "#0b1823",
+        "secondaryBtnBg": "#08111c",
+        "secondaryBtnText": "#f7f4ee"
+      },
+      "type": "media_text_split",
+      "layoutPreset": "saas-hero",
+      "title": "Your business.\nOne connected\nworkspace.",
+      "subtitle": "AUTOMATE · ENGAGE · GROW",
+      "content": "Website, ecommerce, customer support and marketing — connected.",
+      "mediaUrl": "/images/cms/saas/editor.svg",
+      "mediaAlt": "Illustrative JW website editor interface",
+      "mediaPosition": "right",
+      "buttonText": "Explore the platform",
+      "buttonLink": "#section-sec-a25d72bd-6236-44af-84b8-b15e4ff5965e-platform",
+      "secondaryButtonText": "Explore plans",
+      "secondaryButtonLink": "#section-sec-a25d72bd-6236-44af-84b8-b15e4ff5965e-plans"
+    },
+    {
+      "id": "sec-a25d72bd-6236-44af-84b8-b15e4ff5965e-platform",
+      "isVisible": true,
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "paddingY": "spacious",
+      "backgroundColor": "custom",
+      "textColor": "dark",
+      "customColors": {
+        "customBgColor": "#f7f4ee",
+        "titleColor": "#0b1823",
+        "contentColor": "#62615e",
+        "eyebrowColor": "#a68a5c",
+        "primaryBtnBg": "#c7ab7b",
+        "primaryBtnText": "#0b1823",
+        "secondaryBtnBg": "#f7f4ee",
+        "secondaryBtnText": "#0b1823"
+      },
+      "type": "feature_cards",
+      "featureCardsPreset": "saas-modules",
+      "title": "Less switching.\nMore possibility.",
+      "subtitle": "ONE PLATFORM. YOUR WAY.",
+      "content": "Everything you need to run and grow your business, beautifully connected in one workspace.",
+      "items": [
+        {
+          "id": "sec-a25d72bd-6236-44af-84b8-b15e4ff5965e-module-0",
+          "title": "Website",
+          "description": "Build and manage your online presence",
+          "icon": "Globe"
+        },
+        {
+          "id": "sec-a25d72bd-6236-44af-84b8-b15e4ff5965e-module-1",
+          "title": "Ecommerce",
+          "description": "Sell with flexibility and control",
+          "icon": "Store"
+        },
+        {
+          "id": "sec-a25d72bd-6236-44af-84b8-b15e4ff5965e-module-2",
+          "title": "Customer Support",
+          "description": "Unify conversations across supported channels",
+          "icon": "MessageCircle"
+        },
+        {
+          "id": "sec-a25d72bd-6236-44af-84b8-b15e4ff5965e-module-3",
+          "title": "Marketing",
+          "description": "Create, organise and engage",
+          "icon": "Megaphone"
+        },
+        {
+          "id": "sec-a25d72bd-6236-44af-84b8-b15e4ff5965e-module-4",
+          "title": "Analytics",
+          "description": "A clearer view of what comes next",
+          "icon": "BarChart3"
+        }
+      ]
+    },
+    {
+      "id": "sec-a25d72bd-6236-44af-84b8-b15e4ff5965e-support",
+      "isVisible": true,
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "paddingY": "spacious",
+      "backgroundColor": "custom",
+      "textColor": "dark",
+      "customColors": {
+        "customBgColor": "#f7f4ee",
+        "titleColor": "#0b1823",
+        "contentColor": "#62615e",
+        "eyebrowColor": "#a68a5c",
+        "primaryBtnBg": "#c7ab7b",
+        "primaryBtnText": "#0b1823",
+        "secondaryBtnBg": "#f7f4ee",
+        "secondaryBtnText": "#0b1823"
+      },
+      "type": "media_text_split",
+      "layoutPreset": "saas-showcase",
+      "title": "Every conversation,\nconsidered.",
+      "content": "Bring supported customer conversations into one inbox — so your team has the context to help.",
+      "mediaUrl": "/images/cms/saas/support.svg",
+      "mediaAlt": "Illustrative unified customer support inbox",
+      "mediaPosition": "left",
+      "buttonText": "Explore customer support",
+      "buttonLink": "/pages/contact-jw-studio",
+      "buttonStyle": "text-link"
+    },
+    {
+      "id": "sec-a25d72bd-6236-44af-84b8-b15e4ff5965e-marketing",
+      "isVisible": true,
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "paddingY": "spacious",
+      "backgroundColor": "custom",
+      "textColor": "dark",
+      "customColors": {
+        "customBgColor": "#f7f4ee",
+        "titleColor": "#0b1823",
+        "contentColor": "#62615e",
+        "eyebrowColor": "#a68a5c",
+        "primaryBtnBg": "#c7ab7b",
+        "primaryBtnText": "#0b1823",
+        "secondaryBtnBg": "#f7f4ee",
+        "secondaryBtnText": "#0b1823"
+      },
+      "type": "media_text_split",
+      "layoutPreset": "saas-showcase",
+      "title": "Create with clarity.\nMarket with purpose.",
+      "content": "Plan campaigns and publish supported content. Keep your message consistent across the channels your business uses.",
+      "mediaUrl": "/images/cms/saas/calendar.svg",
+      "mediaAlt": "Illustrative marketing campaign calendar",
+      "mediaPosition": "right",
+      "buttonText": "Explore marketing tools",
+      "buttonLink": "#section-sec-a25d72bd-6236-44af-84b8-b15e4ff5965e-analytics",
+      "buttonStyle": "text-link"
+    },
+    {
+      "id": "sec-a25d72bd-6236-44af-84b8-b15e4ff5965e-analytics",
+      "isVisible": true,
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "paddingY": "spacious",
+      "backgroundColor": "custom",
+      "textColor": "dark",
+      "customColors": {
+        "customBgColor": "#f7f4ee",
+        "titleColor": "#0b1823",
+        "contentColor": "#62615e",
+        "eyebrowColor": "#a68a5c",
+        "primaryBtnBg": "#c7ab7b",
+        "primaryBtnText": "#0b1823",
+        "secondaryBtnBg": "#f7f4ee",
+        "secondaryBtnText": "#0b1823"
+      },
+      "type": "media_text_split",
+      "layoutPreset": "saas-analytics",
+      "title": "A clearer view of your business.",
+      "subtitle": "ALL YOUR TOOLS. A CLEARER PICTURE.",
+      "content": "Follow tracked website activity, enquiries and verified purchases — and make smarter decisions, faster.",
+      "mediaUrl": "/images/cms/saas/analytics.svg",
+      "mediaAlt": "Illustrative analytics dashboard; example charts are not customer results"
+    },
+    {
+      "id": "sec-a25d72bd-6236-44af-84b8-b15e4ff5965e-plans",
+      "isVisible": true,
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "paddingY": "spacious",
+      "backgroundColor": "custom",
+      "textColor": "light",
+      "customColors": {
+        "customBgColor": "#08111c",
+        "titleColor": "#f7f4ee",
+        "contentColor": "#c6c5c0",
+        "eyebrowColor": "#a68a5c",
+        "primaryBtnBg": "#c7ab7b",
+        "primaryBtnText": "#0b1823",
+        "secondaryBtnBg": "#08111c",
+        "secondaryBtnText": "#f7f4ee"
+      },
+      "type": "pricing_table",
+      "pricingPreset": "saas-packages",
+      "pricingCurrency": "MYR",
+      "title": "Room to start.\nFreedom to grow.",
+      "subtitle": "FLEXIBLE PLANS FOR YOUR NEXT STAGE",
+      "content": "Choose the plan that fits your business today, with the freedom to grow tomorrow.",
+      "items": [
+        {
+          "id": "sec-a25d72bd-6236-44af-84b8-b15e4ff5965e-starter",
+          "title": "Starter",
+          "price": 299,
+          "billingLabel": "/ month",
+          "description": "Website & ecommerce + customer support",
+          "features": [
+            "Editable website",
+            "Product catalogue",
+            "Support workspace"
+          ],
+          "buttonText": "Explore Starter",
+          "linkUrl": "/pages/contact-jw-studio"
+        },
+        {
+          "id": "sec-a25d72bd-6236-44af-84b8-b15e4ff5965e-growth",
+          "title": "Growth",
+          "price": 399,
+          "billingLabel": "/ month",
+          "description": "Everything in Starter, plus AI assistance.",
+          "features": [
+            "Everything in Starter",
+            "AI Auto Reply",
+            "Supported messaging channels"
+          ],
+          "isHighlighted": true,
+          "highlightLabel": "AI ENABLED",
+          "buttonText": "Explore Growth",
+          "linkUrl": "/pages/contact-jw-studio"
+        },
+        {
+          "id": "sec-a25d72bd-6236-44af-84b8-b15e4ff5965e-enterprise",
+          "title": "Enterprise",
+          "pricingMode": "contact",
+          "pricingLabel": "Let’s talk",
+          "description": "More stores, teams and modules.",
+          "features": [
+            "Expanded deployment",
+            "Module planning",
+            "Agreed usage allowances"
+          ],
+          "buttonText": "Contact sales",
+          "linkUrl": "/pages/contact-jw-studio"
+        },
+        {
+          "id": "sec-a25d72bd-6236-44af-84b8-b15e4ff5965e-custom",
+          "title": "Custom",
+          "pricingMode": "contact",
+          "pricingLabel": "Built around you",
+          "description": "A tailored setup for your workflow.",
+          "features": [
+            "Workflow consultation",
+            "Integration planning",
+            "Tailored rollout"
+          ],
+          "buttonText": "Discuss your project",
+          "linkUrl": "/pages/contact-jw-studio"
+        }
+      ]
+    },
+    {
+      "id": "sec-a25d72bd-6236-44af-84b8-b15e4ff5965e-addons",
+      "isVisible": true,
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "paddingY": "spacious",
+      "backgroundColor": "custom",
+      "textColor": "light",
+      "customColors": {
+        "customBgColor": "#08111c",
+        "titleColor": "#f7f4ee",
+        "contentColor": "#c6c5c0",
+        "eyebrowColor": "#a68a5c",
+        "primaryBtnBg": "#c7ab7b",
+        "primaryBtnText": "#0b1823",
+        "secondaryBtnBg": "#08111c",
+        "secondaryBtnText": "#f7f4ee"
+      },
+      "type": "feature_cards",
+      "featureCardsPreset": "saas-addons",
+      "title": "Optional add-ons",
+      "content": "Usage allowances and provider limits are confirmed before activation.",
+      "items": [
+        {
+          "id": "sec-a25d72bd-6236-44af-84b8-b15e4ff5965e-marketplace",
+          "title": "Marketplace",
+          "icon": "ShoppingCart",
+          "description": "+RM100 / store / month\nAdd supported marketplace stores."
+        },
+        {
+          "id": "sec-a25d72bd-6236-44af-84b8-b15e4ff5965e-studio",
+          "title": "Marketing Studio",
+          "icon": "BarChart3",
+          "description": "+RM200 / month\nCampaign tools and conversion reporting."
+        }
+      ]
+    },
+    {
+      "id": "sec-a25d72bd-6236-44af-84b8-b15e4ff5965e-faq",
+      "isVisible": true,
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "paddingY": "spacious",
+      "backgroundColor": "custom",
+      "textColor": "dark",
+      "customColors": {
+        "customBgColor": "#f7f4ee",
+        "titleColor": "#0b1823",
+        "contentColor": "#62615e",
+        "eyebrowColor": "#a68a5c",
+        "primaryBtnBg": "#c7ab7b",
+        "primaryBtnText": "#0b1823",
+        "secondaryBtnBg": "#f7f4ee",
+        "secondaryBtnText": "#0b1823"
+      },
+      "type": "faq_accordion",
+      "faqPreset": "saas-split",
+      "title": "Answers to\ncommon questions.",
+      "subtitle": "FREQUENTLY ASKED QUESTIONS",
+      "items": [
+        {
+          "id": "sec-a25d72bd-6236-44af-84b8-b15e4ff5965e-faq-0",
+          "title": "What is JW Studio?",
+          "description": "A connected platform for your website, ecommerce, customer support and marketing."
+        },
+        {
+          "id": "sec-a25d72bd-6236-44af-84b8-b15e4ff5965e-faq-1",
+          "title": "Do I need technical knowledge?",
+          "description": "You can manage pages and content through your Admin workspace. We help you plan the initial setup."
+        },
+        {
+          "id": "sec-a25d72bd-6236-44af-84b8-b15e4ff5965e-faq-2",
+          "title": "Which messaging channels are supported?",
+          "description": "Availability depends on platform approval and your account permissions. TikTok direct messaging is not currently available."
+        },
+        {
+          "id": "sec-a25d72bd-6236-44af-84b8-b15e4ff5965e-faq-3",
+          "title": "Can I change my plan later?",
+          "description": "Contact us to agree a suitable package and usage allowance as your needs change."
+        }
+      ]
+    },
+    {
+      "id": "sec-a25d72bd-6236-44af-84b8-b15e4ff5965e-closing",
+      "isVisible": true,
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "paddingY": "spacious",
+      "backgroundColor": "custom",
+      "textColor": "dark",
+      "customColors": {
+        "customBgColor": "#f7f4ee",
+        "titleColor": "#0b1823",
+        "contentColor": "#62615e",
+        "eyebrowColor": "#a68a5c",
+        "primaryBtnBg": "#c7ab7b",
+        "primaryBtnText": "#0b1823",
+        "secondaryBtnBg": "#f7f4ee",
+        "secondaryBtnText": "#0b1823"
+      },
+      "type": "cta_strip",
+      "ctaPreset": "saas-closing",
+      "title": "Let’s make room\nfor what’s next.",
+      "content": "Explore JW Studio with a one-month trial. No automatic charge.",
+      "buttonText": "Request a demo",
+      "buttonLink": "/pages/contact-jw-studio"
+    }
+  ],
+  "description": "Spacious midnight, ivory and champagne software homepage with editable platform visuals, monthly packages, add-ons and FAQs. Review illustrative media and contact destinations before publishing.",
+  "shellDesign": {
+    "business": "service",
+    "style": "modern",
+    "appearance": "dark",
+    "showAnnouncement": false,
+    "showAccount": false,
+    "showCurrency": false,
+    "showThemeSwitch": false,
+    "ctaLabel": "Request a demo",
+    "ctaUrl": "/pages/contact-jw-studio",
+    "tagline": "Automate. Engage. Grow.",
+    "contactEmail": "sales@jwaistudio.online"
+  }
+}

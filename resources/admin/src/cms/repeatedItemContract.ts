@@ -16,6 +16,8 @@ const fields:Partial<Record<PageSection['type'],readonly string[]>>={
  delivery_table:['title','deliveryEstimate','deliveryFee'],chapter_navigation:['title','linkUrl'],
 };
 export function repeatedItemFields(section:PageSection):readonly string[]{
+ if(section.type==='pricing_table'&&section.pricingPreset==='saas-packages')return ['title','description','price','features','badge','linkUrl','isHighlighted','pricingMode','pricingLabel','billingLabel','highlightLabel','buttonText'];
+ if(section.type==='feature_cards'&&section.featureCardsPreset?.startsWith('saas-'))return ['title','description','icon','buttonText','linkUrl'];
  if(section.type==='media_gallery'&&section.galleryPreset==='album-browser')return ['title','description','imageUrl','category'];
  if(section.type==='media_gallery'&&section.galleryPreset==='industrial-mosaic')return ['title','description','imageUrl'];
  if(section.type==='media_gallery'&&section.galleryPreset==='photo-marquee')return ['imageUrl'];

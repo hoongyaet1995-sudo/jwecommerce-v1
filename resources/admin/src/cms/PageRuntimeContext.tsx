@@ -1,3 +1,4 @@
+import {validSaasPricingSection} from './saasPackages';
 import {useCmsBrand} from './useCmsBrand';
 import {isShellDesign} from './shellDesign';
 import {isHeaderPresentation} from './headerPresentation';
@@ -228,7 +229,7 @@ const sectionTypes = new Set([
   'shop_navigation', 'promotion_highlights',
 ]);
 
-const sectionItemStringFields = [
+const sectionItemStringFields = ['pricingMode','pricingLabel','billingLabel','highlightLabel',
   'deliveryEstimate', 'deliveryFee', 'subtitle', 'description', 'icon', 'imageUrl', 'videoUrl', 'linkUrl', 'badge',
   'author', 'authorRole', 'authorAvatar', 'date', 'category', 'value', 'handle',
   'sourceId', 'sourceType', 'caption', 'thirdButtonText', 'thirdButtonLink', 'metricLabel', 'buttonText', 'secondaryButtonText', 'secondaryButtonLink',
@@ -253,6 +254,7 @@ type PageSectionFieldRule =
 // `satisfies Record<keyof PageSection, ...>` makes a PageSection type change fail compilation
 // until its browser-bootstrap rule is deliberately classified here.
 export const PAGE_SECTION_BOOTSTRAP_FIELD_RULES = {
+ pricingPreset:{kind:'optional-enum',values:['default','saas-packages']},pricingCurrency:{kind:'optional-string'},
   newsletterPreset:{kind:'optional-enum',values:['default','inline-signup']},
   surface:{kind:'optional-enum',values:['light','contrast']},
   brandPalette:{kind:'nested'},
@@ -287,11 +289,11 @@ export const PAGE_SECTION_BOOTSTRAP_FIELD_RULES = {
   shopNavigationPreset: {kind: 'optional-enum', values: ['cards','collection-banners','kids-banners','fashion-banners','market-hero','market-offers','image-overlay','image-caption','catalog-captions','recipe-cards','age-cards']},
   bannerProportions: {kind: 'optional-enum', values: ['50:50','60:40','40:60']},
   bannerHeight: {kind: 'optional-enum', values: ['compact','comfortable','tall']},
-  layoutPreset: {kind: 'optional-enum', values: ['default', 'editorial-hero', 'editorial-story', 'editorial-cover', 'editorial-story-cards','editorial-journal-rows', 'story-with-steps','flush-split','producer-story','tech-feature','kids-discovery', 'artisan-story']},
+  layoutPreset: {kind: 'optional-enum', values: ['saas-hero','saas-showcase','saas-analytics','default', 'editorial-hero', 'editorial-story', 'editorial-cover', 'editorial-story-cards','editorial-journal-rows', 'story-with-steps','flush-split','producer-story','tech-feature','kids-discovery', 'artisan-story']},
   containerMode: {kind: 'optional-enum', values: ['page','full-bleed']},
   sectionBorder: {kind: 'optional-enum', values: ['default','none','top','bottom','both']},
   sectionBorderColor: {kind: 'optional-string'},
-  ctaPreset: {kind: 'optional-enum', values: ['default','image-banner','editorial-band','help-panel','industrial-outline']},
+  ctaPreset: {kind: 'optional-enum', values: ['saas-closing','default','image-banner','editorial-band','help-panel','industrial-outline']},
   leadText: {kind:'optional-string'},
   policyPreset:{kind:'optional-enum',values:['guidelines','choices','steps','document','directory','process-flow','timeline','tabs','columns']},
   policyNote:{kind:'optional-string'},
@@ -306,13 +308,13 @@ export const PAGE_SECTION_BOOTSTRAP_FIELD_RULES = {
   deliveryDestinationLabel:{kind:'optional-string'},
   deliveryEstimateLabel:{kind:'optional-string'},
   deliveryFeeLabel:{kind:'optional-string'},
-  faqPreset:{kind:'optional-enum',values:['default','minimal','industrial-split']},
+  faqPreset:{kind:'optional-enum',values:['saas-split','default','minimal','industrial-split']},
   faqInitiallyOpen:{kind:'optional-boolean'},
   chapterPreset: {kind:'optional-enum',values:['story','perspective','principles','process','delivery','actions','policy']},
   mediaContainerMode: {kind:'optional-enum',values:['page','full-bleed']},
   ctaBannerHeight: {kind: 'optional-enum', values: ['compact','normal','spacious']},
   richTextPreset: {kind: 'optional-enum', values: ['default', 'manifesto','industrial-split']},
-  featureCardsPreset: {kind: 'optional-enum', values: ['default', 'values-list', 'editorial-columns','numbered-process','service-highlights','industrial-cards','industrial-process','industrial-process-split']},
+  featureCardsPreset: {kind: 'optional-enum', values: ['saas-modules','saas-addons','default', 'values-list', 'editorial-columns','numbered-process','service-highlights','industrial-cards','industrial-process','industrial-process-split']},
   heroBannerPreset:{kind:'optional-enum',values:['default','editorial-gradient','industrial-overlay']},
   testimonialPreset:{kind:'optional-enum',values:['default','editorial-quote']},
   logoPreset:{kind:'optional-enum',values:['classic','partners']},
@@ -447,6 +449,7 @@ const isRuntimeSource = (value: unknown, type: PageRuntimeSource['type']): value
 );
 
 const isPageSection = (value: unknown): value is PageSection => {
+ if(!validSaasPricingSection(value))return false;
   if(isRecord(value)&&'heroBannerPreset' in value&&value.type!=='hero_banner')return false;
   if(isRecord(value)&&'testimonialPreset' in value&&value.type!=='testimonials_slider')return false;
   if(isRecord(value)&&['marqueeSpeed','marqueeDirection','marqueePauseOnHover'].some(key=>key in value)&&!['media_gallery','logo_cloud'].includes(String(value.type)))return false;
