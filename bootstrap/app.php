@@ -102,8 +102,8 @@ $app = Application::configure(basePath: dirname(__DIR__))
 // Optional split-public-root hosting. Both HTTP and CLI resolve future assets
 // against the actual document root; installations without this setting retain
 // Laravel's default public directory.
-$app->afterBootstrapping(\Illuminate\Foundation\Bootstrap\LoadEnvironmentVariables::class, static function (Application $app): void {
-    $path = env('APP_PUBLIC_PATH');
+$app->afterBootstrapping(\Illuminate\Foundation\Bootstrap\LoadConfiguration::class, static function (Application $app): void {
+    $path = $app['config']->get('app.public_path');
     if (is_string($path) && $path !== '') {
         $absolute = str_starts_with($path, '/') || (strlen($path) > 2 && ctype_alpha($path[0]) && $path[1] === ':' && in_array($path[2], ['/', '\\'], true));
         if (!is_dir($path) || !$absolute) {

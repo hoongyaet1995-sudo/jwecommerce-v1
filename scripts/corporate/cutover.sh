@@ -29,6 +29,8 @@ sed -i '/RewriteEngine On/a\    RewriteRule ^privacy/?$ /pages/privacy-policy [R
 touch "$next/.jw-corporate-site"
 mkdir -m 755 "$next/storage"
 if test -d "$app/storage/app/public"; then cp -R "$app/storage/app/public/." "$next/storage/"; fi
+find "$next/storage" -type d -exec chmod 755 {} \;
+find "$next/storage" -type f -exec chmod 644 {} \;
 # Uploaded public media are never executable, even if a future validator fails.
 printf '<FilesMatch "\\.(php[0-9]?|phtml|phar|cgi|pl|py|sh)$">\nRequire all denied\n</FilesMatch>\nOptions -Indexes\n' > "$next/storage/.htaccess"
 # ASSET_URL is intentionally cleared: this instance now owns the whole public root.
