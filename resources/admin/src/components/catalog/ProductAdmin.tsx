@@ -1,5 +1,7 @@
+import { CommerceAction } from '../commerce/CommerceUI';
+
 import { useAdminCurrency } from '../../context/useAdminCurrency';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAdmin } from '../../context/AdminContext';
 import { Product } from '../../types';
 import { ProductEditorModal } from './ProductEditorModal';
@@ -32,11 +34,11 @@ export const ProductAdmin: React.FC = () => {
   const [sortField, setSortField] = useState<'title' | 'basePrice' | 'totalInventory'>('title');
   const [sortAsc, setSortAsc] = useState(true);
 
-  // Editor Modal State
-  const [isEditorOpen, setIsEditorOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [pendingDeletion, setPendingDeletion] = useState<Product | null>(null);
 
+  const [editorKey,setEditorKey]=useState(()=>new URLSearchParams(typeof window === 'undefined' ? '' : window.location.search).get('product'));
+  useEffect(()=>{const sync=()=>setEditorKey(new URLSearchParams(typeof window === 'undefined' ? '' : window.location.search).get('product'));window.addEventListener('popstate',sync);return()=>window.removeEventListener('popstate',sync)},[]);
+  const openPage=(id:string|null)=>{const url=new URL(location.href);if(id){url.searchParams.set('product',id);url.searchParams.set('tab','basic')}else{['product','tab','pdp'].forEach(key=>url.searchParams.delete(key))}history.pushState({},'',url);setEditorKey(id)};
   // Filter products
   const filteredProducts = products.filter(p => {
     const matchesSearch =
@@ -57,13 +59,11 @@ export const ProductAdmin: React.FC = () => {
   });
 
   const handleCreateNew = () => {
-    setSelectedProduct(null);
-    setIsEditorOpen(true);
+    openPage('new');
   };
 
   const handleEdit = (prod: Product) => {
-    setSelectedProduct(prod);
-    setIsEditorOpen(true);
+    openPage(prod.id);
   };
 
   const handleDuplicate = (prod: Product) => {
@@ -84,6 +84,10 @@ export const ProductAdmin: React.FC = () => {
     addToast('success', `Product duplicated: ${copy.title}`);
   };
 
+  if(editorKey){
+    const editing=editorKey==='new'?null:products.find(p=>p.id===editorKey);
+    return <div className="space-y-6 pb-12"><nav aria-label="Breadcrumb" className="flex items-center gap-3 text-xs text-neutral-500"><button onClick={()=>openPage(null)} className="text-indigo-600 dark:text-indigo-400">Products & Catalog</button><span>/</span><button onClick={()=>openPage(null)} className="text-indigo-600 dark:text-indigo-400">Products</button><span>/</span><span>{editorKey==='new'?'Create product':editing?.title||'Product'}</span></nav>{editing===undefined?<div className="p-6 rounded-xl border border-neutral-200 dark:border-neutral-800"><p>Product unavailable. Refresh or return to products.</p><button onClick={()=>openPage(null)}>Back to products</button></div>:<ProductEditorModal key={editorKey} product={editing} isOpen pageMode onClose={()=>openPage(null)} onSaved={saved=>{const url=new URL(location.href);url.searchParams.set('product',saved.id);history.replaceState({},'',url);setEditorKey(saved.id)}}/>}</div>;
+  }
   return (
     <div className="space-y-6 pb-12">
       {/* Header Bar */}
@@ -309,31 +313,7 @@ export const ProductAdmin: React.FC = () => {
 
                     {/* Actions */}
                     <td className="py-3.5 px-4 text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <button
-                          onClick={() => handleEdit(prod)}
-                          className="p-1.5 rounded-lg text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800"
-                          title="Edit Product & Matrix"
-                        >
-                          <Edit className="w-3.5 h-3.5" />
-                        </button>
-
-                        <button
-                          onClick={() => handleDuplicate(prod)}
-                          className="p-1.5 rounded-lg text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800"
-                          title="Duplicate Product"
-                        >
-                          <Copy className="w-3.5 h-3.5" />
-                        </button>
-
-                        <button
-                          onClick={() => setPendingDeletion(prod)}
-                          className="p-1.5 rounded-lg text-rose-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30"
-                          title="Delete Product"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
+                      <CommerceAction label={prod.title} items={[{label:"Edit Product",icon:<Edit size={15}/>,onClick:()=>handleEdit(prod)},{label:"Duplicate Product",icon:<Copy size={15}/>,onClick:()=>handleDuplicate(prod)},{label:"Delete Product",icon:<Trash2 size={15}/>,danger:true,onClick:()=>setPendingDeletion(prod)}]}/>
                     </td>
                   </tr>
                 );
@@ -343,12 +323,6 @@ export const ProductAdmin: React.FC = () => {
         </div>
       </div>
 
-      {/* Product & Variant Matrix Modal */}
-      <ProductEditorModal
-        product={selectedProduct}
-        isOpen={isEditorOpen}
-        onClose={() => setIsEditorOpen(false)}
-      />
       {pendingDeletion && <DeleteConfirmationModal
         isOpen
         itemType="Product"

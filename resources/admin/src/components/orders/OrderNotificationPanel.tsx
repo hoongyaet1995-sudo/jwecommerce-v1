@@ -19,6 +19,7 @@ import type {
 } from '../../types';
 
 interface OrderNotificationPanelProps {
+  automatic?: boolean;
   order: Order;
   eventKey: NotificationEventKey | null;
   staffNote?: string;
@@ -69,6 +70,7 @@ const timestamp = (value: string | null): string | null => {
 };
 
 export const OrderNotificationPanel: React.FC<OrderNotificationPanelProps> = ({
+  automatic = false,
   order,
   eventKey,
   staffNote = '',
@@ -141,7 +143,7 @@ export const OrderNotificationPanel: React.FC<OrderNotificationPanelProps> = ({
   }, [eventKey, order.id, previewFingerprint, staffNote]);
 
   useEffect(() => {
-    if (!canView) {
+    if (automatic || !canView) {
       auditRequestRef.current += 1;
       setDispatches([]);
       setAuditLoading(false);
@@ -150,10 +152,11 @@ export const OrderNotificationPanel: React.FC<OrderNotificationPanelProps> = ({
     }
 
     void loadDispatches(order.id);
-    return () => {
+  return () => {
       auditRequestRef.current += 1;
     };
   }, [
+    automatic,
     auditRefreshKey,
     canView,
     loadDispatches,
@@ -167,7 +170,7 @@ export const OrderNotificationPanel: React.FC<OrderNotificationPanelProps> = ({
     setPreview(null);
     setPreviewError('');
 
-    if (!eventKey || !canPreview) {
+    if (automatic || !eventKey || !canPreview) {
       setPreviewLoading(false);
       if (eventKey && !canPreview) {
         setPreviewError('You do not have permission to preview Email notifications.');
@@ -192,7 +195,7 @@ export const OrderNotificationPanel: React.FC<OrderNotificationPanelProps> = ({
         setPreviewLoading(false);
       }
     });
-  }, [canPreview, eventKey, laravelBootstrap, order.id, previewFingerprint, staffNote]);
+  }, [automatic, canPreview, eventKey, laravelBootstrap, order.id, previewFingerprint, staffNote]);
 
   const runAction = async (
     id: string,
@@ -250,6 +253,8 @@ export const OrderNotificationPanel: React.FC<OrderNotificationPanelProps> = ({
     if (onManageTemplates) onManageTemplates();
     else setCurrentSection('settings-email');
   };
+
+  if (automatic) return <div className={frameClassName}><div className="flex items-center gap-2"><Clock className="w-4 h-4 text-indigo-600 dark:text-indigo-400"/><span className="text-xs font-bold text-neutral-900 dark:text-white">Update order status</span></div>{children}<p className="text-xs text-neutral-500 dark:text-neutral-400">Customer notifications are sent automatically when applicable.</p></div>;
 
   return (
     <>

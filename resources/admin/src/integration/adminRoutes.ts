@@ -59,6 +59,7 @@ export const ADMIN_PATH_BY_SECTION = {
   'settings-courier': '/admin/settings/couriers',
   'settings-agent-group': '/admin/settings/agent-groups',
   'settings-orders-status': '/admin/settings/order-status',
+  'settings-shipment-status': '/admin/settings/shipment-status',
   'settings-countries': '/admin/settings/countries',
   'settings-zones': '/admin/settings/zones',
   'settings-currencies': '/admin/settings/currencies',

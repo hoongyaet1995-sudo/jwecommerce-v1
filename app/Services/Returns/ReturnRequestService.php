@@ -16,7 +16,7 @@ class ReturnRequestService
 {
     public function __construct(private readonly ReturnPolicySettings $policySettings) {}
 
-    public function create(int $customerId, OrderItem $item, array $data, array $files): ReturnRequest
+    public function create(int $customerId, OrderItem $item, array $data, array $files, ?User $actor = null): ReturnRequest
     {
         $policy = $this->policySettings->get();
         if (! $policy['enabled']) {
@@ -33,7 +33,12 @@ class ReturnRequestService
             throw ValidationException::withMessages(['quantity' => 'Requested quantity exceeds the remaining eligible quantity.']);
         }
 
-        return DB::transaction(function () use ($customerId, $item, $data, $files, $deliveredAt, $policy): ReturnRequest {
+        return DB::transaction(function () use ($customerId, $item, $data, $files, $deliveredAt, $policy, $actor): ReturnRequest {
+            OrderItem::query()->whereKey($item->id)->lockForUpdate()->firstOrFail();
+            $used = (int) ReturnRequest::query()->where('order_item_id', $item->id)->whereNotIn('status', ['rejected'])->sum('quantity');
+            if ($data['quantity'] > $item->quantity - $used) {
+                throw ValidationException::withMessages(['quantity' => 'Requested quantity exceeds the remaining eligible quantity.']);
+            }
             $request = ReturnRequest::query()->create([
                 'order_id' => $item->order_id, 'order_item_id' => $item->id, 'customer_id' => $customerId, 'status' => 'requested',
                 'resolution' => $data['resolution'], 'quantity' => $data['quantity'], 'reason' => $data['reason'], 'details' => $data['details'] ?? null,
@@ -47,7 +52,7 @@ class ReturnRequestService
                 $path = $file->store("returns/{$request->id}", 'local');
                 $request->evidence()->create(['path' => $path, 'original_name' => $file->getClientOriginalName(), 'mime_type' => $file->getMimeType() ?: $file->getClientMimeType(), 'size' => $file->getSize()]);
             }
-            $request->events()->create(['event_type' => 'requested', 'actor_type' => 'customer', 'actor_id' => $customerId, 'note' => 'Customer submitted a return request.']);
+            $request->events()->create(['event_type' => 'requested', 'actor_type' => $actor ? 'staff' : 'customer', 'actor_id' => $actor?->id ?? $customerId, 'note' => $actor ? 'Staff submitted a return request on behalf of the customer.' : 'Customer submitted a return request.']);
 
             return $request->fresh(['item', 'evidence', 'events']);
         });

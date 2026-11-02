@@ -159,9 +159,9 @@ export const AdminHeader: React.FC<{ onToggleMobileSidebar: () => void }> = ({
           <span className="text-[10px] font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
             {category}
           </span>
-          <h1 className="text-sm sm:text-base font-bold text-neutral-900 dark:text-white tracking-tight leading-none mt-0.5">
+          <div className="text-sm sm:text-base font-bold text-neutral-900 dark:text-white tracking-tight leading-none mt-0.5">
             {title}
-          </h1>
+          </div>
         </div>
       </div>
 

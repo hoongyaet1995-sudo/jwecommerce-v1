@@ -1,3 +1,4 @@
+import './components/commerce/commerce.css';
 import {EnquiryAdmin} from './components/orders/EnquiryAdmin';
 import {TikTokReviewPrototype} from './components/support/TikTokReviewPrototype';
 import {SupportImprovementCenter} from './components/ai-auto-reply/SupportImprovementCenter';

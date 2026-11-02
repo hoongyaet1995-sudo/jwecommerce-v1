@@ -1,3 +1,4 @@
+import { CommerceHeading } from '../commerce/CommerceUI';
 import { useAdminCurrency } from '../../context/useAdminCurrency';
 import React, { useState, useEffect } from 'react';
 import { useAdmin } from '../../context/AdminContext';
@@ -24,7 +25,7 @@ import {
 
 export const CustomerAdmin: React.FC = () => {
   const { money, currencyCode } = useAdminCurrency();
-  const { customers, saveCustomer, deleteCustomer, orders } = useAdmin();
+  const { customers, saveCustomer, deleteCustomer, orders, setCurrentSection } = useAdmin();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPlatform, setSelectedPlatform] = useState('all');
@@ -109,35 +110,8 @@ export const CustomerAdmin: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 pb-12">
-      {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-3xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase rounded-full bg-pink-500/20 text-pink-700 dark:text-pink-300 border border-pink-500/30">
-              Customer Intelligence
-            </span>
-            <span className="text-xs text-neutral-500">Accounts & Profiles</span>
-          </div>
-          <h2 className="text-lg sm:text-xl font-bold text-neutral-900 dark:text-white tracking-tight mt-1">
-            Customer Directory & Accounts
-          </h2>
-          <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
-            Monitor registered buyer profiles, VIP membership status, lifetime spend, and address book records.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={openCreateModal}
-            className="px-3.5 py-2 rounded-xl bg-pink-600 hover:bg-pink-700 text-white text-xs font-bold transition-all shadow-md shadow-pink-500/20 flex items-center gap-1.5"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Customer</span>
-          </button>
-        </div>
-      </div>
-
+    <div className="jw-commerce space-y-6 pb-12">
+      <CommerceHeading title="Customers" description="Find customer details and purchase history." section="Customers" onOverview={()=>setCurrentSection('commerce')} actions={<button className="jw-btn jw-btn-primary" onClick={openCreateModal}><Plus size={16}/> Create customer</button>}/>
       {/* Filter Bar */}
       <div className="p-4 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-xs flex flex-col md:flex-row items-center justify-between gap-3">
         <div className="relative w-full md:w-80">

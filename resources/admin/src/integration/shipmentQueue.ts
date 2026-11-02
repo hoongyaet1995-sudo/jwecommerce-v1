@@ -12,3 +12,9 @@ export const visibleShipmentParcels = (parcels: ShipmentParcel[]): ShipmentParce
     )
   ))
 ));
+
+// Preparation contains orders, never historical shipment rows.
+export const preparationParcels = (parcels: ShipmentParcel[]): ShipmentParcel[] =>
+  parcels.filter(parcel => parcel.source === 'pending' && parcel.orderStatus === 'processing');
+export const deliveryParcels = (parcels: ShipmentParcel[]): ShipmentParcel[] =>
+  parcels.filter(parcel => parcel.source !== 'pending');

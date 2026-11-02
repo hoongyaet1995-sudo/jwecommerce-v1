@@ -89,13 +89,15 @@ const ALL_STATUS_OPTIONS: StatusOption[] = [
   }
 ];
 
-export const UpdateShipmentStatusModal: React.FC<UpdateShipmentStatusModalProps> = ({
+export const UpdateShipmentStatusModal: React.FC<UpdateShipmentStatusModalProps> = (props) =>
+  props.isOpen && props.parcel ? <ActiveShipmentStatusModal {...props} parcel={props.parcel}/> : null;
+
+const ActiveShipmentStatusModal: React.FC<Omit<UpdateShipmentStatusModalProps,'parcel'> & {parcel:ShipmentParcel}> = ({
   isOpen,
   parcel,
   onClose,
   onUpdateStatus,
 }) => {
-  if (!isOpen || !parcel) return null;
 
   const [selectedStatus, setSelectedStatus] = useState<ShipmentStatus | null>(null);
   const [auditNote, setAuditNote] = useState<string>('');
@@ -103,6 +105,17 @@ export const UpdateShipmentStatusModal: React.FC<UpdateShipmentStatusModalProps>
   const [error, setError] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [definitions, setDefinitions] = useState<Record<string,{name:string;description:string}> | null>(null);
+  useEffect(()=>{
+    let active=true;
+    fetch('/admin/api/commerce-statuses/shipment',{credentials:'same-origin',headers:{Accept:'application/json'}})
+      .then(async response=>{if(!response.ok)throw new Error('Shipment statuses could not be loaded.');return response.json();})
+      .then(payload=>{if(active)setDefinitions(Object.fromEntries(payload.data.map((row:{code:string;name:string;description:string})=>[row.code,row])));})
+      .catch(error=>{if(active)setError(error.message);});
+    return()=>{active=false;};
+  },[]);
+  const statusOptions = definitions ? ALL_STATUS_OPTIONS.filter(option=>definitions[option.status]).map(option=>({...option,label:definitions[option.status].name,description:definitions[option.status].description})) : [];
+
 
   // Compute allowed forward status transitions strictly according to requirements:
   // - Delivered may be selected directly from Shipped or In Transit.
@@ -112,31 +125,31 @@ export const UpdateShipmentStatusModal: React.FC<UpdateShipmentStatusModalProps>
     const current = parcel.status;
 
     if (current === 'pending' || current === 'ready_to_ship' || current === 'shipped') {
-      return ALL_STATUS_OPTIONS.filter(opt =>
+      return statusOptions.filter(opt =>
         ['in_transit', 'out_for_delivery', 'delivered', 'failed_delivery', 'returned', 'cancelled'].includes(opt.status)
       );
     }
 
     if (current === 'in_transit') {
-      return ALL_STATUS_OPTIONS.filter(opt =>
+      return statusOptions.filter(opt =>
         ['out_for_delivery', 'delivered', 'failed_delivery', 'returned'].includes(opt.status)
       );
     }
 
     if (current === 'out_for_delivery') {
-      return ALL_STATUS_OPTIONS.filter(opt =>
+      return statusOptions.filter(opt =>
         ['delivered', 'failed_delivery', 'returned'].includes(opt.status)
       );
     }
 
     if (current === 'failed_delivery') {
-      return ALL_STATUS_OPTIONS.filter(opt =>
+      return statusOptions.filter(opt =>
         ['in_transit', 'out_for_delivery', 'delivered', 'returned'].includes(opt.status)
       );
     }
 
     if (current === 'delivered') {
-      return ALL_STATUS_OPTIONS.filter(opt =>
+      return statusOptions.filter(opt =>
         ['returned'].includes(opt.status)
       );
     }
@@ -189,6 +202,7 @@ export const UpdateShipmentStatusModal: React.FC<UpdateShipmentStatusModalProps>
   };
 
   const getStatusLabel = (status: ShipmentStatus) => {
+    if (definitions?.[status]) return definitions[status].name;
     switch (status) {
       case 'pending': return 'Pending AWB';
       case 'ready_to_ship': return 'Shipped / Ready to Ship';
@@ -264,7 +278,7 @@ export const UpdateShipmentStatusModal: React.FC<UpdateShipmentStatusModalProps>
 
             {allowedOptions.length === 0 ? (
               <div className="p-4 rounded-xl bg-neutral-50 dark:bg-neutral-800/30 text-center text-neutral-500 text-xs">
-                This shipment is in a terminal state ({getStatusLabel(parcel.status)}). No further manual status transitions are available.
+                {definitions === null ? 'Loading shipment statuses…' : `No further manual status transitions are available for ${getStatusLabel(parcel.status)}.`}
               </div>
             ) : (
               <div className="space-y-2">

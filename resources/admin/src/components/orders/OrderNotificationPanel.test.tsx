@@ -506,3 +506,13 @@ describe('OrderNotificationPanel real delivery binding', () => {
     await vi.waitFor(() => expect(api.auditReads).toBe(2));
   });
 });
+it('keeps automatic order updates free of template and audit actions',async()=>{
+ const {host}=await renderPanel({automatic:true});
+ expect(host.textContent).toContain('Customer notifications are sent automatically');
+ expect(host.textContent).not.toContain('Preview Message Template');
+ expect(host.textContent).not.toContain('Send Current Template');
+ expect(host.textContent).not.toContain('Email Delivery Audit');
+ expect(host.querySelector('input[type="checkbox"]')).toBeNull();
+ const api=(mockedAdminContext.value as {api:OrderNotificationApi}).api;
+ expect(api.fetch).not.toHaveBeenCalled();
+});

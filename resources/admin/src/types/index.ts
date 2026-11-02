@@ -515,6 +515,8 @@ export interface ReturnRequestView {
 }
 
 export interface Order {
+  orderStatus?: string;
+  orderStatusName?: string;
   id: string;
   orderNumber: string; // e.g. "ORD-9842"
   createdAt: string;
@@ -1237,6 +1239,7 @@ export type NavSection =
   | 'settings-courier'
   | 'settings-agent-group'
   | 'settings-orders-status'
+  | 'settings-shipment-status'
   | 'settings-countries'
   | 'settings-zones'
   | 'settings-currencies'

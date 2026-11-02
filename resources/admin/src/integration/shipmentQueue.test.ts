@@ -1,6 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import {fetchShipments} from './shipmentData';
+import type {LaravelAdminBootstrap} from '../types';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ShipmentParcel } from '../types/shipping';
-import { visibleShipmentParcels } from './shipmentQueue';
+import { preparationParcels, deliveryParcels, visibleShipmentParcels } from './shipmentQueue';
 
 const parcel = (overrides: Partial<ShipmentParcel>): ShipmentParcel => ({
   id: 'shipment-1', orderId: 'order-1', orderNumber: 'JW-1', customerName: 'Customer', items: [],
@@ -29,4 +31,22 @@ describe('visibleShipmentParcels', () => {
       'pending-order-2',
     ]);
   });
+});
+
+describe('separate preparation and delivery history',()=>{
+ it('only admits exact processing order rows and retains terminal history in deliveries',()=>{
+  const rows=[parcel({id:'ready',source:'pending',orderStatus:'processing'}),parcel({id:'hold',source:'pending',orderStatus:'on_hold'}),parcel({id:'unpaid',source:'pending',orderStatus:'pending_payment'}),parcel({id:'dispatched',source:'manual',orderStatus:'shipped'}),parcel({id:'cancelled',source:'manual',status:'cancelled'})];
+  expect(preparationParcels(rows).map(p=>p.id)).toEqual(['ready']);
+  expect(deliveryParcels(rows).map(p=>p.id)).toEqual(['dispatched','cancelled']);
+ });
+});
+
+describe('server lifecycle field handoff',()=>{
+ afterEach(()=>vi.unstubAllGlobals());
+ it('preserves order and payment status through the list adapter before queue filtering',async()=>{
+  vi.stubGlobal('window',{fetch:vi.fn().mockResolvedValue({ok:true,json:async()=>({data:[parcel({source:'pending',orderStatus:'processing',paymentStatus:'paid',statusName:'Preparing'})]})})});
+  const rows=await fetchShipments({shipmentsUrl:'/admin/api/shipments'} as LaravelAdminBootstrap);
+  expect(rows[0]).toMatchObject({orderStatus:'processing',paymentStatus:'paid',statusName:'Preparing'});
+  expect(preparationParcels(rows)).toHaveLength(1);
+ });
 });

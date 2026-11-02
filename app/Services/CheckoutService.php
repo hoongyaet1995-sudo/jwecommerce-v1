@@ -31,9 +31,10 @@ use RuntimeException;
 class CheckoutService
 {
     private const TRANSITIONS = [
-        'pending_payment' => ['paid', 'cancelled'],
-        'paid' => ['processing', 'cancelled'],
-        'processing' => ['shipped', 'cancelled'],
+        'pending_payment' => ['paid', 'on_hold', 'cancelled'],
+        'paid' => ['processing', 'on_hold', 'cancelled'],
+        'processing' => ['shipped', 'on_hold', 'cancelled'],
+        'on_hold' => ['pending_payment', 'paid', 'processing', 'cancelled'],
         'shipped' => ['delivered', 'cancelled'],
         'delivered' => [],
         'cancelled' => [],

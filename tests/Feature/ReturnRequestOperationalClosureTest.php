@@ -328,6 +328,28 @@ class ReturnRequestOperationalClosureTest extends TestCase
         ])->assertUnprocessable()->assertJsonValidationErrors('warehouse_note');
     }
 
+    public function test_staff_can_create_request_without_refund_or_stock_mutation(): void
+    {
+        [, $order, $item] = $this->deliveredOrder('STAFF-CREATE');
+        $admin = User::factory()->create(['is_admin'=>true, 'is_super_admin'=>true]);
+        $payload = ['order_item_id'=>$item->id, 'quantity'=>1, 'resolution'=>'refund', 'reason'=>'defective', 'details'=>'Customer requested a return.'];
+        $this->actingAs($admin)->postJson("/admin/api/orders/{$order->id}/returns", $payload)->assertOk()->assertJsonPath('data.returnRequest.status', 'requested');
+        $this->assertDatabaseCount('order_refunds', 0);
+        $this->assertDatabaseCount('inventory_movements', 0);
+        $this->assertSame('paid', $order->payments()->first()->status);
+        $this->actingAs($admin)->postJson("/admin/api/orders/{$order->id}/returns", $payload)->assertUnprocessable();
+        $this->assertDatabaseCount('return_requests', 1);
+    }
+
+    public function test_invoice_is_private_and_uses_order_currency_rate(): void
+    {
+        [, $order] = $this->deliveredOrder('INVOICE');
+        $order->update(['currency_exchange_rate'=>2]);
+        $this->get("/admin/api/orders/{$order->id}/invoice")->assertRedirect();
+        $admin = User::factory()->create(['is_admin'=>true]);
+        $this->actingAs($admin)->get("/admin/api/orders/{$order->id}/invoice")->assertOk()->assertSee('JW-RMA-INVOICE')->assertSee('MYR 400.00')->assertHeader('X-Robots-Tag','noindex, nofollow');
+    }
+
     private function deliveredOrder(string $suffix = 'REFUND'): array
     {
         Carbon::setTestNow('2026-09-03 12:00:00');

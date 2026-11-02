@@ -58,7 +58,8 @@ export const SETTING_TABS: { id: NavSection; label: string; icon: React.ElementT
   { id: 'settings-social', label: 'Social Link Setting', icon: Share2 },
   { id: 'settings-general', label: 'General Setting', icon: Sliders },
   { id: 'settings-agent-group', label: 'Agent Group Setting', icon: Users },
-  { id: 'settings-orders-status', label: 'Orders Status Setting', icon: Clock },
+  { id: 'settings-orders-status', label: 'Order Status', icon: Clock },
+  { id: 'settings-shipment-status', label: 'Shipment Status', icon: Clock },
   { id: 'settings-countries', label: 'Countries Setting', icon: Globe },
   { id: 'settings-zones', label: 'Zones Setting', icon: Map },
   { id: 'settings-currencies', label: 'Currencies', icon: DollarSign },
@@ -184,11 +185,11 @@ export const ShopSettingsHub: React.FC = () => {
     );
   }
 
-  if (currentSection === 'settings-orders-status') {
+  if ((currentSection === 'settings-orders-status' || currentSection === 'settings-shipment-status')) {
     return (
       <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
         <SettingNavBar currentSection={currentSection} setCurrentSection={setCurrentSection} />
-        <OrderStatusSettingAdmin />
+        <OrderStatusSettingAdmin scope={currentSection === 'settings-shipment-status' ? 'shipment' : 'order'} />
       </div>
     );
   }

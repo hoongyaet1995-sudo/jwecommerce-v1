@@ -14,7 +14,7 @@ class ShipmentDataService
 
     private const DEFAULT_PACKAGE_DIMENSION_CM = 1.0;
 
-    public function __construct(private readonly ShipmentActionPolicy $actionPolicy) {}
+    public function __construct(private readonly ShipmentActionPolicy $actionPolicy, private readonly CommerceStatusRegistry $statuses) {}
 
     public function collection(): Collection
     {
@@ -28,7 +28,6 @@ class ShipmentDataService
             ->with(['customer', 'items', 'addresses', 'payments', 'easyParcelShipmentRecoveries', 'shipmentCorrections'])
             ->where('status', 'processing')
             ->whereDoesntHave('shipments', fn ($query) => $query
-                ->where('source', 'easyparcel')
                 ->whereNotIn('status', ['booking_failed', 'cancelled']))
             ->latest('id')
             ->get()
@@ -77,6 +76,9 @@ class ShipmentDataService
             'trackingNumber' => $shipment->tracking_number ?? '',
             'hasLabel' => filled($shipment->label_path),
             'status' => $this->fulfillmentStatus($shipment),
+            'paymentStatus' => $order->payments->sortByDesc('id')->first()?->status ?? 'pending',
+            'orderStatus' => $order->status,
+            'statusName' => $this->statuses->name('shipment', $shipment->status),
             'paymentMode' => $order->payments->first()?->gateway === 'cod' ? 'cod' : 'prepaid',
             'codAmount' => $order->payments->first()?->gateway === 'cod' ? $order->total / 100 : null,
             'createdAt' => $shipment->created_at?->toIso8601String(),
@@ -142,6 +144,8 @@ class ShipmentDataService
             'trackingNumber' => '',
             'hasLabel' => false,
             'status' => 'pending',
+            'paymentStatus' => $order->payments->sortByDesc('id')->first()?->status ?? 'pending',
+            'orderStatus' => $order->status,
             'paymentMode' => $order->payments->first()?->gateway === 'cod' ? 'cod' : 'prepaid',
             'codAmount' => $order->payments->first()?->gateway === 'cod' ? $order->total / 100 : null,
             'createdAt' => $order->created_at?->toIso8601String(),

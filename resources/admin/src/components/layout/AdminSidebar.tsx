@@ -1,3 +1,4 @@
+import {navigateShipping,useShippingView} from '../shipping/shippingNavigation';
 import { readAdminBootstrap } from '../../integration/adminBootstrap';
 import { marketingEntry } from '../../integration/marketingAccess';
 import React, { useEffect, useState } from 'react';
@@ -53,6 +54,7 @@ export const AdminSidebar: React.FC<{ isOpen: boolean; onCloseMobile?: () => voi
     shopSettings
   } = useAdmin();
 
+  const shippingView = useShippingView();
   const studioUrl = marketingEntry(readAdminBootstrap());
   const safeConns = connections || [];
   const safeMpOrders = marketplaceOrders || [];
@@ -70,6 +72,7 @@ export const AdminSidebar: React.FC<{ isOpen: boolean; onCloseMobile?: () => voi
     storefront: false,
     catalog: false,
     commerce: false,
+    'shipping-malaysia': true,
     reports: false,
     settings: false,
   });
@@ -176,6 +179,12 @@ export const AdminSidebar: React.FC<{ isOpen: boolean; onCloseMobile?: () => voi
     {
       id: 'shipping-malaysia' as NavSection,
       label: 'Shipping & Logistics',
+      subItems: [
+        {id:'shipping-malaysia' as NavSection,label:'Overview',shippingView:'overview' as const},
+        {id:'shipping-malaysia' as NavSection,label:'Prepare shipments',shippingView:'fulfillment' as const},
+        {id:'shipping-malaysia' as NavSection,label:'Track deliveries',shippingView:'deliveries' as const},
+        {id:'shipping-malaysia' as NavSection,label:'Settings',shippingView:'settings' as const},
+      ],
       icon: Truck,
       isActive: isShippingActive,
       badge: openFulfilmentCount > 0 ? `${openFulfilmentCount} Tasks` : 'Clear',
@@ -293,7 +302,7 @@ export const AdminSidebar: React.FC<{ isOpen: boolean; onCloseMobile?: () => voi
     },
   ];
 
-  const navGroups = [
+  const navGroups: {title:string;items:{id:NavSection;label:string;icon:React.ElementType;isActive:boolean;badge?:string;badgeVariant?:string;subItems?:{id:NavSection;label:string;shippingView?:import('../shipping/shippingNavigation').ShippingView}[]}[]}[] = [
     {
       title: 'Core Operations',
       items: coreOperationsNav,
@@ -450,13 +459,14 @@ export const AdminSidebar: React.FC<{ isOpen: boolean; onCloseMobile?: () => voi
                   {hasSub && isExpanded && (
                     <div className="ml-5 pl-2.5 py-1 space-y-0.5 border-l border-neutral-200 dark:border-neutral-800">
                       {item.subItems?.map((sub) => {
-                        const isSubActive = currentSection === sub.id;
+                        const shippingTarget = sub.shippingView;
+                        const isSubActive = currentSection === sub.id && (!shippingTarget || shippingView===shippingTarget || shippingTarget==='settings'&&['rates','couriers','tracking'].includes(shippingView));
                         const isReviewSubItem = sub.id === 'catalog-reviews';
                         return (
                           <button
-                            key={sub.id}
+                            key={`${sub.id}-${sub.label}`}
                             type="button"
-                            onClick={() => handleSelect(sub.id)}
+                            onClick={() => {if(shippingTarget)navigateShipping(shippingTarget);handleSelect(sub.id)}}
                             className={`w-full text-left px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition cursor-pointer flex items-center justify-between ${
                               isSubActive
                                 ? 'bg-indigo-600 text-white font-bold shadow-xs'

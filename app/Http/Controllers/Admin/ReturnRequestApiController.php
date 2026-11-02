@@ -12,6 +12,15 @@ use Illuminate\Validation\Rule;
 
 class ReturnRequestApiController extends Controller
 {
+    public function store(Request $q, \App\Models\Order $order, ReturnRequestService $s, OrderDataService $d): JsonResponse
+    {
+        abort_unless($q->user()?->is_admin, 403);
+        $v = $q->validate(['order_item_id'=>['required','integer'], 'quantity'=>['required','integer','min:1'], 'resolution'=>['required',Rule::in(['refund','replacement'])], 'reason'=>['required',Rule::in(['defective','damaged_in_transit','incorrect_item','missing_parts','quality','other'])], 'details'=>['required','string','max:2000']]);
+        $item = $order->items()->findOrFail($v['order_item_id']);
+        abort_unless($order->customer_id, 422, 'This order has no customer record.');
+        return $this->respond($s->create((int)$order->customer_id, $item, $v, [], $q->user()), $d);
+    }
+
     public function approve(Request $q, ReturnRequest $returnRequest, ReturnRequestService $s, OrderDataService $d): JsonResponse
     {
         return $this->respond($s->transition($returnRequest, 'approve', $q->user()), $d);

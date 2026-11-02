@@ -1,3 +1,4 @@
+import { CommerceAction } from '../commerce/CommerceUI';
 
 import {EntitySearchPanel} from '../search/EntitySearchPanel';
 import React, { useState } from 'react';
@@ -211,23 +212,7 @@ export const CategoryAdmin: React.FC = () => {
                     </td>
 
                     <td className="py-3.5 px-4 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <button
-                          onClick={() => {
-                            setEditingCategory(cat);
-                            setIsModalOpen(true);
-                          }}
-                          className="p-1.5 rounded-lg text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800"
-                        >
-                          <Edit2 className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => setPendingDeletion(cat)}
-                          className="p-1.5 rounded-lg text-rose-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
+                      <CommerceAction label={cat.name} items={[{label:"Edit Category",icon:<Edit2 size={15}/>,onClick:()=>{setEditingCategory(cat);setIsModalOpen(true)}},{label:"Delete Category",icon:<Trash2 size={15}/>,danger:true,onClick:()=>setPendingDeletion(cat)}]}/>
                     </td>
                   </tr>
                 );

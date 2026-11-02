@@ -1,3 +1,7 @@
+import {preparationParcels, deliveryParcels} from '../../integration/shipmentQueue';
+import {navigateShipping,useShippingView} from './shippingNavigation';
+import { SharedFulfillmentFlow } from './SharedFulfillmentFlow';
+import '../commerce/commerce.css';
 import React, { useEffect, useState } from 'react';
 import { 
   Truck, 
@@ -50,6 +54,8 @@ import { AmendDeliveryDetailsModal } from '../orders/AmendDeliveryDetailsModal';
 import { visibleShipmentParcels } from '../../integration/shipmentQueue';
 
 export type ShippingTabType = 
+  | 'settings'
+  | 'deliveries'
   | 'overview' 
   | 'rates'
   | 'fulfillment' 
@@ -105,7 +111,9 @@ export const ShippingDashboard: React.FC = () => {
     addToast,
   } = useAdmin();
 
-  const [activeTab, setActiveTab] = useState<ShippingTabType>('overview');
+  const activeTab = useShippingView();
+  const setActiveTab = navigateShipping;
+  useEffect(()=>()=>navigateShipping('overview'),[]);
   const [isReloadingShipping, setIsReloadingShipping] = useState(false);
   const reloadLogistics = async () => { if (isReloadingShipping) return; setIsReloadingShipping(true); try { await reloadShipmentParcels(); } finally { setIsReloadingShipping(false); } };
 
@@ -137,9 +145,7 @@ export const ShippingDashboard: React.FC = () => {
   }, [courierConfigs, easyParcelCallbackState]);
 
   // Counts for badge notifications
-  const openFulfilmentCount = visibleShipmentParcels(shipmentParcels).filter(p => (
-    p.lifecycleStage === 'pending_fulfilment' || p.lifecycleStage === 'action_required'
-  )).length;
+  const openFulfilmentCount = preparationParcels(shipmentParcels).length;
   const inTransitCount = shipmentParcels.filter(p => p.status === 'shipped' || p.status === 'in_transit' || p.status === 'picked_up' || p.status === 'out_for_delivery').length;
   const discrepancyCount = billingReconciliations.filter(b => b.reconciliationStatus === 'disputed').length;
   const connectedCouriersCount = courierConfigs.filter(c => c.isEnabled).length;
@@ -216,192 +222,21 @@ export const ShippingDashboard: React.FC = () => {
     return 'other' as const;
   };
 
+  if(fulfilmentParcel)return <SharedFulfillmentFlow parcel={fulfilmentParcel} onClose={()=>setFulfilmentParcel(null)}/>;
   return (
-    <div className="space-y-6 pb-12">
-      {/* Top Header & Breadcrumb */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 text-xs font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">
-            <Truck className="w-3.5 h-3.5" />
-            <span>Fulfillment & Logistics Engine</span>
-            <span className="text-neutral-300 dark:text-neutral-700">•</span>
-            <span className="text-neutral-500 dark:text-neutral-400">Malaysia (MY) Direct & Aggregators</span>
-          </div>
-          <h1 className="text-2xl font-black tracking-tight text-neutral-900 dark:text-neutral-100 mt-1">
-            Malaysia Shipping & Multi-Carrier Logistics Center
-          </h1>
-          <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 max-w-3xl">
-            Dispatch processing orders manually with carrier and tracking details, then retain an append-only shipment event audit. Carrier APIs, pickup booking, webhooks, labels, and billing reconciliation activate only after their provider integration is configured.
-          </p>
-        </div>
+    <div className={`jw-commerce space-y-6 pb-12 ${activeTab==='overview'?'jw-shipping-hub':''}`}>
+      <nav className="jw-commerce-crumb" aria-label="Breadcrumb"><button onClick={()=>setActiveTab('overview')}>Shipping</button>{activeTab!=='overview'&&<><span>/</span><span>{activeTab==='fulfillment'?'Prepare shipments':activeTab==='deliveries'?'Track deliveries':'Settings'}</span></>}</nav>
+      <div hidden={activeTab==='overview'} className="jw-commerce-heading"><div><h1>{activeTab==='overview'?'Shipping':activeTab==='fulfillment'?'Prepare shipments':activeTab==='deliveries'?'Track deliveries':'Shipping settings'}</h1><p>{activeTab==='overview'?'Prepare shipments and follow deliveries.':activeTab==='fulfillment'?'Choose an order to continue its delivery arrangements.':activeTab==='deliveries'?'Follow progress and review delivery issues.':'Manage checkout rates, courier connections and sender details.'}</p></div><button className="jw-btn" onClick={()=>void reloadLogistics()} disabled={isReloadingShipping}>{isReloadingShipping?'Loading…':'Refresh'}</button></div>
 
-        {/* Global Quick Action Buttons */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <button type="button" onClick={() => void reloadLogistics()} disabled={isReloadingShipping} className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 disabled:opacity-60"><RefreshCw className={`w-3.5 h-3.5 ${isReloadingShipping ? 'animate-spin' : ''}`} />{isReloadingShipping ? 'Reloading...' : 'Reload Logistics'}</button>
-          <button
-            onClick={explainPickupUnavailable}
-            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white transition-colors cursor-pointer shadow-sm"
-          >
-            <Truck className="w-3.5 h-3.5" />
-            Manage Pickup in EasyParcel
-          </button>
-          <button
-            onClick={() => setActiveTab('fulfillment')}
-            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200 transition-colors cursor-pointer shadow-xs"
-          >
-            <Printer className="w-3.5 h-3.5" />
-            View Open Fulfilment ({openFulfilmentCount})
-          </button>
-        </div>
-      </div>
-
-      {/* Navigation Sub-Tabs */}
-      <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 overflow-x-auto shadow-xs">
-        <button
-          onClick={() => setActiveTab('overview')}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer whitespace-nowrap ${
-            activeTab === 'overview'
-              ? 'bg-indigo-600 text-white shadow-xs'
-              : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800/60'
-          }`}
-        >
-          <Package className="w-3.5 h-3.5" />
-          Overview Hub
-        </button>
-
-        <button
-          onClick={() => setActiveTab('rates')}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer whitespace-nowrap ${
-            activeTab === 'rates'
-              ? 'bg-indigo-600 text-white shadow-xs'
-              : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800/60'
-          }`}
-        >
-          <Scale className="w-3.5 h-3.5" />
-          <span>Rate Matrices & Postage Modes</span>
-          <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
-            activeTab === 'rates' ? 'bg-white text-indigo-700' : 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-300'
-          }`}>
-            {activeRatesCount} Rates
-          </span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('fulfillment')}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer whitespace-nowrap ${
-            activeTab === 'fulfillment'
-              ? 'bg-indigo-600 text-white shadow-xs'
-              : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800/60'
-          }`}
-        >
-          <Printer className="w-3.5 h-3.5" />
-          <span>Fulfillment & Waybills</span>
-          {openFulfilmentCount > 0 && (
-            <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
-              activeTab === 'fulfillment' ? 'bg-white text-indigo-700' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300'
-            }`}>
-              {openFulfilmentCount}
-            </span>
-          )}
-        </button>
-
-        <button
-          onClick={() => setActiveTab('routing')}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer whitespace-nowrap ${
-            activeTab === 'routing'
-              ? 'bg-indigo-600 text-white shadow-xs'
-              : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800/60'
-          }`}
-        >
-          <GitFork className="w-3.5 h-3.5" />
-          <span>Smart Routing Engine</span>
-          <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
-            activeTab === 'routing' ? 'bg-white text-indigo-700' : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400'
-          }`}>
-            {smartRoutingRules.length} Rules
-          </span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('couriers')}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer whitespace-nowrap ${
-            activeTab === 'couriers'
-              ? 'bg-indigo-600 text-white shadow-xs'
-              : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800/60'
-          }`}
-        >
-          <Server className="w-3.5 h-3.5" />
-          <span>Courier Integrations</span>
-          <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
-            activeTab === 'couriers' ? 'bg-white text-indigo-700' : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300'
-          }`}>
-            {connectedCouriersCount} Active
-          </span>
-        </button>
-
-        <button
-          onClick={() => {
-            setActiveTab('tracking');
-            void refreshEasyParcelWebhookReceipts().catch(() => undefined);
-          }}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer whitespace-nowrap ${
-            activeTab === 'tracking'
-              ? 'bg-indigo-600 text-white shadow-xs'
-              : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800/60'
-          }`}
-        >
-          <Radio className="w-3.5 h-3.5" />
-          <span>Webhooks & Telemetry</span>
-          {inTransitCount > 0 && (
-            <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
-              activeTab === 'tracking' ? 'bg-white text-indigo-700' : 'bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-300'
-            }`}>
-              {inTransitCount} In-Transit
-            </span>
-          )}
-        </button>
-
-        <button
-          onClick={() => setActiveTab('reconciliation')}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer whitespace-nowrap ${
-            activeTab === 'reconciliation'
-              ? 'bg-indigo-600 text-white shadow-xs'
-              : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800/60'
-          }`}
-        >
-          <DollarSign className="w-3.5 h-3.5" />
-          <span>Billing Reconciliation</span>
-          {discrepancyCount > 0 && (
-            <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
-              activeTab === 'reconciliation' ? 'bg-white text-indigo-700' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300'
-            }`}>
-              {discrepancyCount} Flagged
-            </span>
-          )}
-        </button>
-      </div>
-
+      {activeTab==='settings'&&<div className="jw-commerce-modules"><button className="jw-commerce-card" onClick={()=>setActiveTab('rates')}><Scale/><h2>Checkout delivery rates</h2><p>Set delivery charges shown to your customers.</p><span>Manage rates →</span></button><button className="jw-commerce-card" onClick={()=>setActiveTab('couriers')}><Server/><h2>Courier & sender</h2><p>Manage your courier connection and collection details.</p><span>Manage connection →</span></button></div>}
+      {activeTab==='settings'&&<details className="mt-6"><summary>Connection details</summary><div className="flex gap-3 mt-4"><button className="jw-btn" onClick={explainPickupUnavailable}>Manage Pickup in EasyParcel</button><button className="jw-btn" onClick={()=>{setActiveTab('tracking');void refreshEasyParcelWebhookReceipts().catch(()=>undefined)}}>Connection diagnostics</button></div></details>}
       {/* Render Selected Tab */}
       <div>
-        {activeTab === 'overview' && (
-          <ShippingOverviewTab
-            parcels={shipmentParcels}
-            couriers={courierConfigs}
-            pickupRequests={pickupRequests}
-            onNavigateTab={(tab) => {
-              if (tab === 'reconciliation') setActiveTab('reconciliation');
-              else if (tab === 'fulfillment') setActiveTab('fulfillment');
-              else if (tab === 'routing') setActiveTab('routing');
-              else if (tab === 'couriers') setActiveTab('couriers');
-              else if (tab === 'tracking') {
-                setActiveTab('tracking');
-                void refreshEasyParcelWebhookReceipts().catch(() => undefined);
-              }
-            }}
-            onOpenPickupModal={explainPickupUnavailable}
-          />
-        )}
-
+        {activeTab==='overview'&&<>
+          <section className="jw-shipping-banner"><span className="jw-shipping-tag">Shipping & logistics</span><h1>Shipping & Delivery</h1><p>Prepare orders for dispatch, follow deliveries and manage your shipping settings.</p><div className="jw-shipping-stats">{[['To prepare',openFulfilmentCount],['In transit',inTransitCount],['Connected couriers',connectedCouriersCount]].map(([title,value])=><div key={title}><span>{title}</span><strong>{value}</strong></div>)}</div></section>
+          <div className="flex items-center justify-between mt-7 mb-4"><h2 className="text-lg font-bold">Shipping modules</h2><span className="text-xs text-neutral-500">Select a section to manage</span></div>
+          <div className="jw-shipping-cards">{([{id:'fulfillment',title:'Prepare shipments',description:'Choose a delivery method and get orders ready for dispatch.',icon:Package},{id:'deliveries',title:'Track deliveries',description:'Follow delivery progress and review shipments that need attention.',icon:Truck},{id:'settings',title:'Shipping settings',description:'Manage checkout delivery rates, courier connections and sender details.',icon:Server}] as const).map(({id,title,description,icon:Icon})=><button className="jw-shipping-module" key={id} onClick={()=>setActiveTab(id)}><span className="jw-shipping-icon"><Icon size={21}/></span><h3>{title}</h3><p>{description}</p><span className="jw-shipping-open">{id==='fulfillment'?'Prepare shipments':id==='deliveries'?'Track deliveries':'Manage settings'} →</span></button>)}</div>
+        </>}
         {activeTab === 'rates' && (
           <ShippingRatesTab
             onOpenInsertModal={handleOpenNewRate}
@@ -409,9 +244,11 @@ export const ShippingDashboard: React.FC = () => {
           />
         )}
 
-        {activeTab === 'fulfillment' && (
+        {(activeTab === 'fulfillment'||activeTab==='deliveries') && (
           <ShippingFulfillmentTab
-            parcels={shipmentParcels}
+            key={activeTab}
+            mode={activeTab === 'fulfillment' ? 'prepare' : 'deliveries'}
+            parcels={activeTab==='deliveries'?deliveryParcels(shipmentParcels):preparationParcels(shipmentParcels)}
             onGenerateAWB={generateShipmentAWB}
             onBatchGenerateAWB={batchGenerateAWB}
             onOpenAWBModal={(parcel) => setActiveAWBParcel(parcel)}
@@ -558,20 +395,7 @@ export const ShippingDashboard: React.FC = () => {
       )}
 
       {fulfilmentParcel && (
-        <ChooseFulfillmentMethodModal
-          isOpen={true}
-          parcel={fulfilmentParcel}
-          easyParcelConnected={easyParcelConnected}
-          onClose={() => setFulfilmentParcel(null)}
-          onQuoteEasyParcel={(parcel, packageSpec) => quoteEasyParcelShipment(parcel, packageSpec)}
-          onConfirmEasyParcelBooking={async (parcel, quote, serviceCode) => {
-            const booking = await bookEasyParcelShipment(parcel, quote, serviceCode);
-            await refreshEasyParcelProvider();
-            return booking;
-          }}
-          onConfirmExternalCourier={recordExternalCourierDispatch}
-          onConfirmManualDelivery={recordManualDeliveryDispatch}
-        />
+        <SharedFulfillmentFlow parcel={fulfilmentParcel} onClose={()=>setFulfilmentParcel(null)}/>
       )}
 
       <CorrectFulfilmentModal

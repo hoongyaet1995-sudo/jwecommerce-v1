@@ -123,7 +123,6 @@ import {
   GlobalTaxEngineSettings
 } from '../types/oscommerceSettings';
 import {
-  INITIAL_CUSTOM_ORDER_STATUSES,
   INITIAL_COUNTRIES,
   INITIAL_ZONES,
   INITIAL_CURRENCIES,
@@ -288,7 +287,7 @@ interface AdminContextType {
   reloadOrders: () => Promise<void>;
   selectedOrderId: string | null;
   setSelectedOrderId: (id: string | null) => void;
-  updateOrderStatus: (orderId: string, paymentStatus?: PaymentStatus, fulfillmentStatus?: FulfillmentStatus, note?: string, notifyCustomer?: boolean) => Promise<Order | null>;
+  updateOrderStatus: (orderId: string, paymentStatus?: PaymentStatus, fulfillmentStatus?: FulfillmentStatus, note?: string, notifyCustomer?: boolean, orderStatus?: string) => Promise<Order | null>;
   updateOrderTracking: (orderId: string, carrier: string, trackingNumber: string) => Promise<Order | null>;
   processOrderRefund: (orderId: string, amount: number, reason: string) => Promise<Order | null>;
   reviewPaymentProof: (orderId: string, paymentId: string, decision: 'verified' | 'rejected', reason?: string) => Promise<Order | null>;
@@ -425,9 +424,7 @@ interface AdminContextType {
 
   // osCommerce Orders Status Setting
   orderStatuses: CustomOrderStatus[];
-  saveOrderStatus: (status: CustomOrderStatus) => void;
-  deleteOrderStatus: (id: string) => void;
-  setDefaultOrderStatus: (id: string) => void;
+  reloadOrderStatuses: () => Promise<void>;
 
   // osCommerce Countries Setting
   countriesSetting: CountrySetting[];
@@ -552,7 +549,6 @@ const STORAGE_KEYS = {
   SHIPMENT_PARCELS: 'aurora_admin_shipment_parcels',
   PICKUP_REQUESTS: 'aurora_admin_pickup_requests',
   BILLING_RECONCILIATIONS: 'aurora_admin_billing_reconciliations',
-  CUSTOM_ORDER_STATUSES: 'aurora_admin_order_statuses',
   COUNTRIES_SETTING: 'aurora_admin_countries_setting',
   ZONES_SETTING: 'aurora_admin_zones_setting',
   ORDER_TOTAL_MODULES: 'aurora_admin_order_total_modules',
@@ -870,7 +866,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [globalPaymentSettings, setGlobalPaymentSettings] = useState<GlobalPaymentSettings>(EMPTY_GLOBAL_PAYMENT);
 
   // osCommerce Settings State
-  const [orderStatuses, setOrderStatuses] = useState<CustomOrderStatus[]>(INITIAL_CUSTOM_ORDER_STATUSES);
+  const [orderStatuses, setOrderStatuses] = useState<CustomOrderStatus[]>([]);
   const [countriesSetting, setCountriesSetting] = useState<CountrySetting[]>(INITIAL_COUNTRIES);
   const [zonesSetting, setZonesSetting] = useState<ZoneSetting[]>(INITIAL_ZONES);
   const [currenciesSetting, setCurrenciesSetting] = useState<CurrencySetting[]>(INITIAL_CURRENCIES);
@@ -943,8 +939,10 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       // Marketplace fixtures are retired. Authoritative records load in MarketplaceProvider.
 
-      const savedStatuses = safeParseArray(STORAGE_KEYS.CUSTOM_ORDER_STATUSES, INITIAL_CUSTOM_ORDER_STATUSES);
-      setOrderStatuses(savedStatuses);
+      fetch('/admin/api/commerce-statuses/order', {credentials:'same-origin', headers:{Accept:'application/json'}})
+        .then(response => {if (!response.ok) throw new Error('Status settings unavailable.'); return response.json();})
+        .then(payload => setOrderStatuses(payload.data))
+        .catch(() => setOrderStatuses([]));
 
       const savedCountries = safeParseArray(STORAGE_KEYS.COUNTRIES_SETTING, INITIAL_COUNTRIES);
       setCountriesSetting(savedCountries);
@@ -1466,11 +1464,11 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   // Orders
-  const updateOrderStatus = async (orderId: string, paymentStatus?: PaymentStatus, fulfillmentStatus?: FulfillmentStatus, note?: string, notifyCustomer?: boolean): Promise<Order | null> => {
+  const updateOrderStatus = async (orderId: string, paymentStatus?: PaymentStatus, fulfillmentStatus?: FulfillmentStatus, note?: string, notifyCustomer?: boolean, orderStatus?: string): Promise<Order | null> => {
     try {
       const saved = await orderMutationCoordinatorRef.current!.run(
         orderId,
-        () => updateOrderStatusData(laravelBootstrap, orderId, paymentStatus, fulfillmentStatus, note, notifyCustomer),
+        () => updateOrderStatusData(laravelBootstrap, orderId, paymentStatus, fulfillmentStatus, note, notifyCustomer, orderStatus),
         current => setOrders(prev => prev.map(order => order.id === current.id ? current : order)),
       );
       if (saved === null) return null;
@@ -2904,59 +2902,13 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // osCommerce Settings Handlers
   // ---------------------------
 
-  const saveOrderStatus = (status: CustomOrderStatus) => {
-    setOrderStatuses(prev => {
-      const exists = prev.some(s => s.id === status.id);
-      let updated: CustomOrderStatus[];
-      if (exists) {
-        updated = prev.map(s => (s.id === status.id ? status : s));
-      } else {
-        updated = [...prev, status];
-      }
-      try {
-        localStorage.setItem(STORAGE_KEYS.CUSTOM_ORDER_STATUSES, JSON.stringify(updated));
-      } catch {}
-      return updated;
-    });
-    addToast({
-      type: 'success',
-      title: 'Order Status Saved',
-      message: `Status "${status.name}" has been updated.`
-    });
+  const reloadOrderStatuses = async () => {
+    const response = await fetch('/admin/api/commerce-statuses/order', {credentials:'same-origin',headers:{Accept:'application/json'}});
+    if (!response.ok) throw new Error('Order status settings could not be loaded.');
+    const payload = await response.json();
+    setOrderStatuses(payload.data);
   };
 
-  const deleteOrderStatus = (id: string) => {
-    setOrderStatuses(prev => {
-      const updated = prev.filter(s => s.id !== id);
-      try {
-        localStorage.setItem(STORAGE_KEYS.CUSTOM_ORDER_STATUSES, JSON.stringify(updated));
-      } catch {}
-      return updated;
-    });
-    addToast({
-      type: 'info',
-      title: 'Order Status Removed',
-      message: 'Custom order status was deleted.'
-    });
-  };
-
-  const setDefaultOrderStatus = (id: string) => {
-    setOrderStatuses(prev => {
-      const updated = prev.map(s => ({
-        ...s,
-        isDefault: s.id === id
-      }));
-      try {
-        localStorage.setItem(STORAGE_KEYS.CUSTOM_ORDER_STATUSES, JSON.stringify(updated));
-      } catch {}
-      return updated;
-    });
-    addToast({
-      type: 'success',
-      title: 'Default Status Updated',
-      message: 'Default status for incoming orders updated.'
-    });
-  };
 
   const saveCountrySetting = (country: CountrySetting) => {
     setCountriesSetting(prev => {
@@ -3649,7 +3601,7 @@ Would you like me to drill down into customer records, inventory allocation, or 
       setBankTransferConfig(document.bankTransfer as ManualBankTransferConfig); setCodConfig(document.codConfig as CashOnDeliveryConfig); setGlobalPaymentSettings(document.globalPayment as GlobalPaymentSettings);
       setCurrenciesSetting(document.currencies);
     }).catch(error => addToast({ type: 'error', title: 'Commerce Settings Reload Failed', message: error instanceof Error ? error.message : 'Unable to reload commerce settings.' }));
-    setOrderStatuses(INITIAL_CUSTOM_ORDER_STATUSES);
+    void reloadOrderStatuses();
     setCountriesSetting(INITIAL_COUNTRIES);
     setZonesSetting(INITIAL_ZONES);
     setOrderTotalModules(INITIAL_ORDER_TOTAL_MODULES);
@@ -3844,9 +3796,7 @@ Would you like me to drill down into customer records, inventory allocation, or 
         globalPaymentSettings,
         saveGlobalPaymentSettings,
         orderStatuses,
-        saveOrderStatus,
-        deleteOrderStatus,
-        setDefaultOrderStatus,
+        reloadOrderStatuses,
         countriesSetting,
         countries: countriesSetting,
         saveCountrySetting,

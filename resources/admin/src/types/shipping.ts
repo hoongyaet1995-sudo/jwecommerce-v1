@@ -206,6 +206,9 @@ export interface AmendShipmentOperationalDetailsInput {
 }
 
 export interface ShipmentParcel {
+  orderStatus?: string;
+  statusName?: string;
+  paymentStatus?: string;
   id: string;
   source?: 'manual' | 'easyparcel' | 'pending';
   fulfillmentMethod?: FulfillmentMethodType | null;

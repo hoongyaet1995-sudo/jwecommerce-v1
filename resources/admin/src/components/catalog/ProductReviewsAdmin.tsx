@@ -1,3 +1,4 @@
+import { CommerceAction } from '../commerce/CommerceUI';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useAdmin } from '../../context/AdminContext';
 import type { AdminProductReview, AdminProductReviewAuditEvent, ReviewModerationAction } from '../../types';
@@ -574,7 +575,7 @@ export const ProductReviewsAdmin: React.FC = () => {
                 <th className="py-3.5 px-4">Rating & Review</th>
                 <th className="py-3.5 px-4">Submitted</th>
                 <th className="py-3.5 px-4">Moderation Status</th>
-                <th className="py-3.5 px-4 text-right">Quick Actions</th>
+                <th className="py-3.5 px-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-200 dark:divide-neutral-800/80 text-xs">
@@ -766,62 +767,12 @@ export const ProductReviewsAdmin: React.FC = () => {
                       </td>
 
                       <td className="py-4 px-4 text-right whitespace-nowrap" onClick={(event) => event.stopPropagation()}>
-                        <div className="flex items-center justify-end gap-1.5">
-                          {canModerateReviews && review.status === 'pending' && (
-                            <>
-                              <button
-                                type="button"
-                                onClick={(event) => void handleQuickPublish(event, review.id)}
-                                className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1 shadow-xs transition cursor-pointer"
-                                title="Approve & Publish to PDP"
-                              >
-                                <Check className="w-3.5 h-3.5" />
-                                <span>Approve</span>
-                              </button>
-
-                              <button
-                                type="button"
-                                onClick={(event) => handleOpenRejectModal(event, review.id)}
-                                className="px-2.5 py-1.5 rounded-lg bg-white dark:bg-neutral-800 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-neutral-200 dark:border-neutral-700 font-bold text-xs flex items-center gap-1 transition cursor-pointer"
-                                title="Reject review"
-                              >
-                                <X className="w-3.5 h-3.5" />
-                                <span>Reject</span>
-                              </button>
-                            </>
-                          )}
-
-                          {canModerateReviews && review.status === 'published' && (
-                            <button
-                              type="button"
-                              onClick={(event) => void handleUnpublish(event, review.id)}
-                              className="px-2.5 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 text-xs font-semibold transition cursor-pointer"
-                              title="Unpublish from storefront"
-                            >
-                              Unpublish
-                            </button>
-                          )}
-
-                          {canModerateReviews && review.status === 'rejected' && (
-                            <button
-                              type="button"
-                              onClick={(event) => void handleQuickPublish(event, review.id)}
-                              className="px-2.5 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 text-xs font-bold transition cursor-pointer"
-                              title="Re-evaluate and publish"
-                            >
-                              Publish
-                            </button>
-                          )}
-
-                          <button
-                            type="button"
-                            onClick={() => void handleOpenDetail(review)}
-                            className="p-1.5 rounded-lg text-neutral-400 hover:text-neutral-700 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition cursor-pointer"
-                            title="View full review details & moderation audit"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                        </div>
+                        <CommerceAction label={review.productTitle} items={[
+ ...(canModerateReviews && review.status === 'pending' ? [{label:'Approve review',icon:<Check size={15}/>,onClick:(event:React.MouseEvent<HTMLButtonElement>)=>void handleQuickPublish(event,review.id)},{label:'Reject review',icon:<X size={15}/>,onClick:(event:React.MouseEvent<HTMLButtonElement>)=>handleOpenRejectModal(event,review.id)}] : []),
+ ...(canModerateReviews && review.status === 'published' ? [{label:'Unpublish review',icon:<XCircle size={15}/>,onClick:(event:React.MouseEvent<HTMLButtonElement>)=>void handleUnpublish(event,review.id)}] : []),
+ ...(canModerateReviews && review.status === 'rejected' ? [{label:'Publish review',icon:<Check size={15}/>,onClick:(event:React.MouseEvent<HTMLButtonElement>)=>void handleQuickPublish(event,review.id)}] : []),
+ {label:'View review',icon:<Eye size={15}/>,onClick:()=>void handleOpenDetail(review)}
+ ]}/>
                       </td>
                     </tr>
                   );

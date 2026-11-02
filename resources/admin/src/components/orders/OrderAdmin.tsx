@@ -1,3 +1,7 @@
+import { visibleShipmentParcels } from '../../integration/shipmentQueue';
+import { SharedFulfillmentFlow } from '../shipping/SharedFulfillmentFlow';
+import type { ShipmentParcel } from '../../types/shipping';
+import { CommerceHeading, CommerceAction } from '../commerce/CommerceUI';
 import { paymentStatusLabel } from '../../integration/paymentStatusLabel';
 import { useAdminCurrency } from '../../context/useAdminCurrency';
 import React, { useEffect, useRef, useState } from 'react';
@@ -6,8 +10,10 @@ import { Order, FulfillmentStatus, NotificationEventKey, OrderNotificationSummar
 import { OrderNotificationPanel } from './OrderNotificationPanel';
 import { OrderPaymentProofPreviewModal } from './OrderPaymentProofPreviewModal';
 import { AmendDeliveryDetailsModal } from './AmendDeliveryDetailsModal';
+import {OrderDialogOverlay} from './OrderDialogOverlay';
+import {OrderDetailView} from './OrderDetailView';
 import { OrderReturnRequestCard } from './OrderReturnRequestCard';
-import { mutateReturnRequestData } from '../../integration/orderData';
+import { createReturnRequestData, mutateReturnRequestData } from '../../integration/orderData';
 import { fetchCommerceSettings } from '../../integration/commerceSettingsData';
 import {
   ShoppingBag,
@@ -61,24 +67,38 @@ export const shouldShowReturnsWorkbench = (enabled: boolean, historicalCount: nu
 
 export const OrderAdmin: React.FC = () => {
   const { money, currencyCode } = useAdminCurrency();
-  const { laravelBootstrap, orders, shipmentParcels = [], updateOrderStatus, updateOrderTracking, reviewPaymentProof, amendOrderDeliveryDetails, reloadOrders, orderStatuses, setCurrentSection, notificationPermissions } = useAdmin();
+  const { laravelBootstrap, orders, shipmentParcels = [], updateOrderStatus, updateOrderTracking, reviewPaymentProof, amendOrderDeliveryDetails, reloadOrders, reloadShipmentParcels, orderStatuses, setCurrentSection, setSelectedCustomerId, notificationPermissions } = useAdmin();
   const [isReloading, setIsReloading] = useState(false);
   const reloadStream = async () => {
     if (isReloading) return;
     setIsReloading(true);
     try {
       await reloadOrders();
+      await reloadShipmentParcels?.();
+      setEligibilityError('');
     } finally {
       setIsReloading(false);
     }
   };
 
+  const [sharedParcel,setSharedParcel]=useState<ShipmentParcel|null>(null);
+  const [eligibilityLoading,setEligibilityLoading]=useState(false);
+  const [eligibilityError,setEligibilityError]=useState('');
+  const eligibilityVersion=orders.map(o=>`${o.id}:${o.fulfillmentStatus}:${o.paymentGatewayStatus}`).join('|');
+  const eligibilityLoader=useRef(reloadShipmentParcels);eligibilityLoader.current=reloadShipmentParcels;
+  useEffect(()=>{let active=true;const reload=eligibilityLoader.current;if(!reload)return;setEligibilityLoading(true);setEligibilityError('');void reload().catch(()=>{if(active)setEligibilityError('Shipment availability could not be refreshed. Click Refresh to check again.')}).finally(()=>{if(active)setEligibilityLoading(false)});return()=>{active=false}},[eligibilityVersion]);
+
+  const [filtersOpen,setFiltersOpen]=useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [returnsEnabled, setReturnsEnabled] = useState(true);
   const [rmaBusy,setRmaBusy]=useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [returnModal,setReturnModal]=useState(false);
+  const [statusModal,setStatusModal]=useState(false);
+  const [statusReview,setStatusReview]=useState(false);
+  const [detailError,setDetailError]=useState('');
   const [isProofPreviewOpen, setIsProofPreviewOpen] = useState(false);
   const [isRejectBoxOpen, setIsRejectBoxOpen] = useState(false);
   const [isAmendDeliveryOpen, setIsAmendDeliveryOpen] = useState(false);
@@ -134,7 +154,11 @@ export const OrderAdmin: React.FC = () => {
     return (matchesSearch || Boolean(matchesRma)) && matchesStatus;
   });
 
+  const [orderRouteId,setOrderRouteId]=useState(()=>new URLSearchParams(window.location.search).get('order'));
+  useEffect(()=>{const restore=()=>setOrderRouteId(new URLSearchParams(window.location.search).get('order'));window.addEventListener('popstate',restore);return()=>window.removeEventListener('popstate',restore)},[]);
+  const writeOrderRoute=(id:string|null)=>{const url=new URL(window.location.href);if(id)url.searchParams.set('order',id);else url.searchParams.delete('order');window.history.replaceState(window.history.state,'',url);setOrderRouteId(id)};
   const handleOpenDetail = (order: Order) => {
+    writeOrderRoute(order.id);
     selectedOrderMutationRequestRef.current += 1;
     selectedOrderRef.current = order;
     setSelectedOrder(order);
@@ -161,7 +185,10 @@ export const OrderAdmin: React.FC = () => {
     setIsDetailOpen(true);
   };
 
+  useEffect(()=>{if(orderRouteId){const found=orders.find(o=>o.id===orderRouteId);if(found&&selectedOrderRef.current?.id!==found.id)handleOpenDetail(found)}else if(selectedOrderRef.current){selectedOrderRef.current=null;setSelectedOrder(null);setIsDetailOpen(false)}},[orderRouteId,orders]);
+
   const handleCloseDetail = () => {
+    writeOrderRoute(null);
     selectedOrderMutationRequestRef.current += 1;
     selectedOrderRef.current = null;
     setIsUpdatingStatus(false);
@@ -273,16 +300,18 @@ export const OrderAdmin: React.FC = () => {
 
     // Map payment status if default paid
     let mappedPayment = selectedOrder.paymentGatewayStatus;
-    if (targetStatus.isDefaultPaid) mappedPayment = 'paid';
+    // Payment is verified by the payment workflow, not by selecting an order status.
     const saved = await updateOrderStatus(
       orderId,
       mappedPayment,
       mappedFulfillment,
       customerCommentInput || `Order transitioned to ${targetStatus.name}. Inventory action: ${targetStatus.inventoryAction}.`,
-      notifyCustomerCheck && notificationEventKeyForStatus(targetStatus.code) !== null,
+      notificationEventKeyForStatus(targetStatus.code) !== null,
+      targetStatus.code,
     );
     if (requestId !== selectedOrderMutationRequestRef.current || selectedOrderRef.current?.id !== orderId) return;
 
+    if (!saved) throw new Error('The status could not be changed. Check the order payment and current stage.');
     if (saved) {
       selectedOrderRef.current = saved;
       setSelectedOrder(saved);
@@ -322,36 +351,10 @@ export const OrderAdmin: React.FC = () => {
     }
   };
 
+  if(sharedParcel)return <SharedFulfillmentFlow parcel={sharedParcel} onClose={()=>setSharedParcel(null)}/>;
   return (
-    <div className="space-y-6 pb-12">
-      {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-3xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase rounded-full bg-blue-500/20 text-blue-700 dark:text-blue-300 border border-blue-500/30">
-              Fulfillment Operations
-            </span>
-            <span className="text-xs text-neutral-500">Live Order Streams</span>
-          </div>
-          <h2 className="text-lg sm:text-xl font-bold text-neutral-900 dark:text-white tracking-tight mt-1">
-            Order Fulfillment & Transactions
-          </h2>
-          <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
-            Process checkout transactions, generate shipping waybills, manage refunds, and track customer lifecycles.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-        <button type="button" onClick={() => void reloadStream()} disabled={isReloading} className="flex items-center gap-2 px-3.5 py-2.5 rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-xs font-semibold disabled:opacity-60"><RefreshCw className={`w-3.5 h-3.5 ${isReloading ? 'animate-spin' : ''}`} />{isReloading ? 'Reloading...' : 'Reload Stream'}</button>
-        <button
-          onClick={() => setCurrentSection('shipping-malaysia')}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-sm transition cursor-pointer self-start sm:self-auto"
-        >
-          <Truck className="w-4 h-4" />
-          Malaysia Multi-Courier Hub →
-        </button></div>
-      </div>
-
+    <div className="jw-commerce space-y-6 pb-12">
+      {!isDetailOpen&&<><CommerceHeading title="Orders" description="Review payments, fulfill orders and follow delivery." section="Orders" onOverview={()=>setCurrentSection('commerce')} actions={<button className="jw-btn" onClick={()=>void reloadStream()} disabled={isReloading}>{isReloading?'Loading…':'Refresh'}</button>}/>
       {/* Filter Bar */}
       <div className="p-4 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-xs flex flex-col md:flex-row items-center justify-between gap-3">
         <div className="relative w-full md:w-80">
@@ -366,6 +369,8 @@ export const OrderAdmin: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
+          <button className="jw-btn" aria-expanded={filtersOpen} onClick={()=>setFiltersOpen(!filtersOpen)}><Filter size={16}/> Filters</button>
+          <div hidden={!filtersOpen} className="flex items-center gap-2">
           {showReturnsWorkbench&&<button type="button" onClick={()=>setSelectedStatus(selectedStatus==='returns'?'all':'returns')} className="px-3 py-2 text-xs font-bold rounded-xl border border-neutral-200 dark:border-neutral-700">Returns ({returnHistoryCount})</button>}
           <select
             value={selectedStatus}
@@ -379,14 +384,14 @@ export const OrderAdmin: React.FC = () => {
             <option value="shipped">Shipped</option>
             <option value="delivered">Delivered</option>
             <option value="cancelled">Cancelled</option>
-          </select>
+          </select></div>
         </div>
       </div>
 
       {/* Orders Table */}
       <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-3xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse">
+          <table className="jw-orders-table w-full text-left text-xs border-collapse">
             <thead>
               <tr className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50/70 dark:bg-neutral-800/60 text-[10px] uppercase font-bold text-neutral-500 tracking-wider">
                 <th className="py-3.5 px-4">Order #</th>
@@ -396,7 +401,7 @@ export const OrderAdmin: React.FC = () => {
                 <th className="py-3.5 px-4">Payment</th>
                 <th className="py-3.5 px-4">Fulfillment Status</th>
                 <th className="py-3.5 px-4">Date</th>
-                <th className="py-3.5 px-4 text-right">Action</th>
+                <th className="py-3.5 px-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800 text-neutral-800 dark:text-neutral-200">
@@ -433,7 +438,7 @@ export const OrderAdmin: React.FC = () => {
                   </td>
 
                   <td className="py-3.5 px-4">
-                    {renderStatusBadge(ord.fulfillmentStatus)}
+                    {ord.orderStatusName ? <span className="jw-order-badge">{ord.orderStatusName}</span> : renderStatusBadge(ord.fulfillmentStatus)}
                   </td>
 
                   <td className="py-3.5 px-4 font-mono text-[11px] text-neutral-400">
@@ -441,13 +446,7 @@ export const OrderAdmin: React.FC = () => {
                   </td>
 
                   <td className="py-3.5 px-4 text-right">
-                    <button
-                      onClick={() => handleOpenDetail(ord)}
-                      className="px-3 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-semibold text-xs hover:bg-indigo-100 flex items-center gap-1 ml-auto"
-                    >
-                      <Eye className="w-3.5 h-3.5" />
-                      <span>Details</span>
-                    </button>
+                    <CommerceAction label={ord.orderNumber} onClick={()=>handleOpenDetail(ord)} onPrepare={()=>{const parcel=visibleShipmentParcels(shipmentParcels).find(p=>p.orderId===ord.id&&p.source==='pending');if(parcel)setSharedParcel(parcel)}} prepareDisabledReason={eligibilityLoading?'Checking shipment availability…':eligibilityError|| (visibleShipmentParcels(shipmentParcels).some(p=>p.orderId===ord.id&&p.source==='pending')?undefined:'Payment or shipment preparation must be completed before preparing this order.')}/>
                   </td>
                 </tr>
               ))}
@@ -456,295 +455,8 @@ export const OrderAdmin: React.FC = () => {
         </div>
       </div>
 
-      {/* Order Detail Modal */}
-      {isDetailOpen && selectedOrder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-xs animate-in fade-in">
-          <div className="w-full max-w-3xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-3xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto space-y-6">
-            {/* Header */}
-            <div className="flex items-center justify-between pb-4 border-b border-neutral-100 dark:border-neutral-800">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-mono font-black text-lg text-neutral-900 dark:text-white">
-                    {selectedOrder.orderNumber}
-                  </span>
-                  {renderStatusBadge(selectedOrder.fulfillmentStatus)}
-                </div>
-                <p className="text-xs text-neutral-400 mt-0.5">Placed on {selectedOrder.createdAt}</p>
-                {selectedOrder.quotation&&<p className="text-xs text-neutral-500 mt-2"><a className="text-amber-600 underline" href={selectedOrder.quotation.url} target="_blank" rel="noopener noreferrer">View accepted quotation ↗</a> · Manual fulfilment · No automatic stock deduction</p>}
-              </div>
-
-              <button onClick={handleCloseDetail} className="text-neutral-400 hover:text-neutral-600">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <OrderReturnRequestCard order={selectedOrder} busy={rmaBusy} onAction={async(action,body)=>{if(!selectedOrder.returnRequest)return;setRmaBusy(true);try{const saved=await mutateReturnRequestData(laravelBootstrap,selectedOrder.returnRequest.id,action,body);selectedOrderRef.current=saved;setSelectedOrder(saved);await reloadOrders();}finally{setRmaBusy(false);}}}/>
-
-            <OrderNotificationPanel
-              order={selectedOrder}
-              eventKey={selectedNotificationEventKey}
-              staffNote={customerCommentInput}
-              notifyCustomer={notifyCustomerCheck}
-              mutationDispatch={statusMutationDispatch}
-              auditRefreshKey={notificationAuditRefreshKey}
-              onNotifyCustomerChange={handleNotifyCustomerChange}
-              onConfigureStatuses={() => setCurrentSection('settings-orders-status')}
-              onManageTemplates={() => {
-                handleCloseDetail();
-                setCurrentSection('settings-email');
-              }}
-              frameClassName="p-4 rounded-2xl bg-indigo-50/60 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-900/60 space-y-3"
-              frameTitle="Update Order Status & Dispatch Customer Notification"
-            >
-              {/* Bank In / DuitNow Payment Gate Notice */}
-              {selectedOrder.paymentProof?.required &&
-                selectedOrder.paymentProof.status !== 'verified' &&
-                selectedOrder.paymentGatewayStatus !== 'paid' && (
-                  <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-2 text-xs text-amber-800 dark:text-amber-300">
-                    <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-                    <div>
-                      <strong className="font-semibold">Payment verification required:</strong>
-                      <p className="text-[11px] text-amber-700/90 dark:text-amber-300/90 mt-0.5">
-                        This manual Bank In / DuitNow order cannot proceed to parcel fulfillment or courier dispatch until payment proof is verified by authorized staff.
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-              <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
-                <div className="sm:col-span-4 space-y-1">
-                  <label className="text-[11px] font-semibold text-neutral-700 dark:text-neutral-300">
-                    New Order Status
-                  </label>
-                  <select
-                    value={chosenStatusId}
-                    onChange={e => handleStatusSelectChange(e.target.value)}
-                    className="w-full px-3 py-2 text-xs rounded-xl border bg-white dark:bg-neutral-800 border-neutral-300 dark:border-neutral-700 font-bold text-neutral-900 dark:text-white"
-                  >
-                    {orderStatuses.map(st => (
-                      <option key={st.id} value={st.id}>
-                        {st.name} ({(st.inventoryAction || 'none').toUpperCase()})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="sm:col-span-5 space-y-1">
-                  <label className="text-[11px] font-semibold text-neutral-700 dark:text-neutral-300">
-                    Customer Note / Timeline Comment
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Package packed with fragile bubble wrap. Ready for pickup."
-                    value={customerCommentInput}
-                    onChange={e => handleCustomerCommentChange(e.target.value)}
-                    className="w-full px-3 py-2 text-xs rounded-xl border bg-white dark:bg-neutral-800 border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white"
-                  />
-                </div>
-
-                <div className="sm:col-span-3">
-                  <button
-                    type="button"
-                    disabled={isUpdatingStatus}
-                    onClick={handleApplyOrderStatusUpdate}
-                    className="w-full py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition cursor-pointer"
-                  >
-                    <Send className="w-3.5 h-3.5" />
-                    <span>{isUpdatingStatus ? 'Updating...' : 'Update & Notify'}</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Compact Manual Fulfillment Subsection (Processing Orders Only) */}
-              {(selectedOrder.fulfillmentStatus === 'processing' || isDispatched) && (
-                <div className="pt-2.5 pb-1 border-t border-indigo-200/70 dark:border-indigo-900/60 space-y-2">
-                  {!isDispatched && !selectedOrder.trackingNumber ? (
-                    <>
-                      <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-start">
-                        <div className="sm:col-span-4 space-y-1">
-                          <label className="text-[11px] font-semibold text-neutral-700 dark:text-neutral-300">
-                            Carrier / hand-off partner
-                          </label>
-                          <input
-                            type="text"
-                            placeholder="e.g. DHL Express, J&T Express, Ninja Van"
-                            value={manualCarrier}
-                            onChange={e => {
-                              setManualCarrier(e.target.value);
-                              if (carrierError && e.target.value.trim()) setCarrierError('');
-                            }}
-                            className={`w-full px-3 py-2 text-xs rounded-xl border bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white transition-colors ${
-                              carrierError
-                                ? 'border-rose-500 dark:border-rose-500 focus:ring-1 focus:ring-rose-500'
-                                : 'border-neutral-300 dark:border-neutral-700'
-                            }`}
-                          />
-                          {carrierError && (
-                            <p className="text-[10px] text-rose-500 dark:text-rose-400 font-medium">
-                              {carrierError}
-                            </p>
-                          )}
-                        </div>
-
-                        <div className="sm:col-span-5 space-y-1">
-                          <label className="text-[11px] font-semibold text-neutral-700 dark:text-neutral-300">
-                            Tracking reference
-                          </label>
-                          <input
-                            type="text"
-                            placeholder="e.g. TRK-892410294MY"
-                            value={manualTracking}
-                            onChange={e => {
-                              setManualTracking(e.target.value);
-                              if (trackingError && e.target.value.trim()) setTrackingError('');
-                            }}
-                            className={`w-full px-3 py-2 text-xs rounded-xl border bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white transition-colors ${
-                              trackingError
-                                ? 'border-rose-500 dark:border-rose-500 focus:ring-1 focus:ring-rose-500'
-                                : 'border-neutral-300 dark:border-neutral-700'
-                            }`}
-                          />
-                          {trackingError && (
-                            <p className="text-[10px] text-rose-500 dark:text-rose-400 font-medium">
-                              {trackingError}
-                            </p>
-                          )}
-                        </div>
-
-                        <div className="sm:col-span-3 sm:pt-[21px]">
-                          <button
-                            type="button"
-                            onClick={handleRecordDispatch}
-                            className="w-full py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition cursor-pointer"
-                          >
-                            <Truck className="w-3.5 h-3.5" />
-                            <span>Record dispatch</span>
-                          </button>
-                        </div>
-                      </div>
-
-                      <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
-                        Records a manual shipment and append-only dispatch event. No courier label is purchased.
-                      </p>
-                    </>
-                  ) : (
-                    <div className="p-2.5 px-3 rounded-xl bg-white/80 dark:bg-neutral-800/80 border border-emerald-200 dark:border-emerald-900/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
-                          <CheckCircle2 className="w-2.5 h-2.5" /> Dispatched
-                        </span>
-                        <span className="text-neutral-700 dark:text-neutral-300">
-                          Carrier: <strong className="text-neutral-900 dark:text-white font-mono">{selectedOrder.trackingCarrier || manualCarrier}</strong>
-                        </span>
-                        <span className="text-neutral-300 dark:text-neutral-700 hidden sm:inline">•</span>
-                        <span className="text-neutral-700 dark:text-neutral-300">
-                          Tracking: <strong className="text-indigo-600 dark:text-indigo-400 font-mono">{selectedOrder.trackingNumber || manualTracking}</strong>
-                        </span>
-                      </div>
-                      <span className="text-[10px] text-neutral-400 font-mono">
-                        Manual Dispatch Recorded
-                      </span>
-                    </div>
-                  )}
-                </div>
-              )}
-
-            </OrderNotificationPanel>
-
-            {/* Order Timeline History */}
-            <div className="p-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/40 dark:bg-neutral-800/30 space-y-3">
-              <div className="flex items-center gap-2">
-                <History className="w-4 h-4 text-indigo-500" />
-                <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-800 dark:text-neutral-200">
-                  Order Status Audit Trail
-                </h4>
-              </div>
-
-              <div className="space-y-2.5 max-h-48 overflow-y-auto pr-1">
-                {selectedOrder.timeline.map(ev => (
-                  <div
-                    key={ev.id}
-                    className="p-2.5 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 text-xs flex items-start justify-between gap-3 shadow-2xs"
-                  >
-                    <div>
-                      <div className="font-bold text-neutral-900 dark:text-white flex items-center gap-1.5">
-                        <span>{ev.title}</span>
-                      </div>
-                      <p className="text-[11px] text-neutral-600 dark:text-neutral-400 mt-0.5">
-                        {ev.description}
-                      </p>
-                    </div>
-                    <span className="text-[10px] font-mono text-neutral-400 whitespace-nowrap">
-                      {new Date(ev.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Line Items List */}
-            <div className="space-y-3">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Order Items</h3>
-              <div className="border border-neutral-200 dark:border-neutral-800 rounded-2xl overflow-hidden divide-y divide-neutral-100 dark:divide-neutral-800">
-                {selectedOrder.items.map((item) => (
-                  <div key={item.id} className="p-3.5 flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <img src={item.image} alt={item.title} className="w-10 h-10 rounded-xl object-cover" />
-                      <div>
-                        <div className="font-bold text-neutral-900 dark:text-white text-xs">{item.title}</div>
-                        <div className="text-[11px] text-neutral-400 font-mono">
-                          {item.variantTitle} • SKU: {item.sku}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="text-right font-mono">
-                      <div className="font-bold text-xs text-neutral-900 dark:text-white">
-                        {money((item.price * item.quantity), selectedOrder.currency, selectedOrder.currencyExchangeRate)}
-                      </div>
-                      <div className="text-[10px] text-neutral-400">
-                        {money(item.price, selectedOrder.currency, selectedOrder.currencyExchangeRate)} × {item.quantity}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Customer & Shipping Details */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Shipping Address */}
-              <div className="p-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-800/40 space-y-2 text-xs">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-1.5 font-bold text-neutral-900 dark:text-white">
-                    <MapPin className="w-3.5 h-3.5 text-indigo-500" />
-                    <span>Shipping Address</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setIsAmendDeliveryOpen(true)}
-                    className="px-2 py-1 text-[10px] font-bold rounded-lg border border-indigo-300 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition cursor-pointer flex items-center gap-1"
-                  >
-                    <Edit2 className="w-3 h-3" />
-                    Amend Delivery Details
-                  </button>
-                </div>
-                <div className="text-neutral-700 dark:text-neutral-300 leading-relaxed font-mono text-[11px]">
-                  <div>{selectedOrder.shippingAddress.firstName} {selectedOrder.shippingAddress.lastName}</div>
-                  <div>{selectedOrder.shippingAddress.address1}</div>
-                  <div>{selectedOrder.shippingAddress.city}, {selectedOrder.shippingAddress.province} {selectedOrder.shippingAddress.postalCode}</div>
-                  <div>{selectedOrder.shippingAddress.country}</div>
-                  <div className="text-neutral-400 mt-1">Tel: {selectedOrder.shippingAddress.phone}</div>
-                </div>
-              </div>
-
-              {/* Financial Calculation */}
-              <div className="p-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-800/40 space-y-2 text-xs">
-                <div className="flex items-center gap-1.5 font-bold text-neutral-900 dark:text-white">
-                  <CreditCard className="w-3.5 h-3.5 text-emerald-500" />
-                  <span>Payment Summary</span>
-                </div>
-                <div className="space-y-1.5 text-[11px] font-mono text-neutral-600 dark:text-neutral-300 pb-3 border-b border-neutral-200 dark:border-neutral-700/80">
+      </>}
+      {isDetailOpen&&selectedOrder&&<OrderDetailView order={selectedOrder} invoiceUrl={`${laravelBootstrap.ordersUrl}/${encodeURIComponent(selectedOrder.id)}/invoice`} onHome={()=>setCurrentSection('commerce')} onClose={handleCloseDetail} onCustomer={()=>{setSelectedCustomerId(selectedOrder.customerId);setCurrentSection('customers')}} onEditAddress={()=>setIsAmendDeliveryOpen(true)} onStartFulfillment={()=>{const processing=orderStatuses.find(s=>s.code==='processing');if(processing)handleStatusSelectChange(processing.id);setDetailError('');setStatusReview(false);setStatusModal(true)}} onStatus={()=>{setDetailError('');setStatusReview(false);setStatusModal(true)}} canPrepare={visibleShipmentParcels(shipmentParcels).some(p=>p.orderId===selectedOrder.id&&p.source==='pending')} onPrepare={()=>{const p=visibleShipmentParcels(shipmentParcels).find(p=>p.orderId===selectedOrder.id&&p.source==='pending');if(p)setSharedParcel(p)}} onViewShipments={()=>setCurrentSection('shipping-malaysia')} payment={<>                <div className="space-y-1.5 text-[11px] font-mono text-neutral-600 dark:text-neutral-300 pb-3 border-b border-neutral-200 dark:border-neutral-700/80">
                   <div className="flex items-center justify-between gap-3"><span className="text-neutral-500 dark:text-neutral-400">Payment Method:</span><span className="font-semibold text-neutral-800 dark:text-neutral-200 text-right">{selectedOrder.paymentGateway}</span></div>
                   <div className="flex items-center justify-between gap-3"><span className="text-neutral-500 dark:text-neutral-400">Provider:</span><span className="text-neutral-700 dark:text-neutral-300 text-right">{selectedOrder.paymentProvider || 'Not recorded'}</span></div>
                   <div className="flex items-center justify-between gap-3"><span className="text-neutral-500 dark:text-neutral-400">Reference:</span><span className="font-mono font-medium text-neutral-800 dark:text-neutral-200 text-right break-all">{selectedOrder.paymentReference || 'Not recorded'}</span></div>
@@ -771,50 +483,15 @@ export const OrderAdmin: React.FC = () => {
                   </div>
                 )}
 
-                <div className="p-3 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 space-y-1.5 text-[11px]">
-                  <div className="flex items-center gap-1.5 font-bold text-neutral-900 dark:text-white"><Layers className="w-3.5 h-3.5 text-indigo-500" />Shipping Source</div>
-                  <div className="flex justify-between gap-3"><span className="text-neutral-500">Checkout service:</span><span className="text-right font-medium text-neutral-700 dark:text-neutral-300">{selectedOrder.shippingSource?.checkoutService || 'Not recorded'}</span></div>
-                  <div className="flex justify-between gap-3"><span className="text-neutral-500">Fulfillment module:</span><span className="text-right font-medium text-neutral-700 dark:text-neutral-300">{selectedOrder.shippingSource?.fulfillmentModule || 'Not initiated'}</span></div>
-                  {(selectedOrder.shippingSource?.provider || selectedOrder.shippingSource?.service) && <div className="flex justify-between gap-3"><span className="text-neutral-500">Provider / service:</span><span className="text-right font-medium text-neutral-700 dark:text-neutral-300">{[selectedOrder.shippingSource?.provider, selectedOrder.shippingSource?.service].filter(Boolean).join(' • ')}</span></div>}
-                </div>
-                <div className="space-y-1 text-[11px] font-mono text-neutral-600 dark:text-neutral-300">
-                  <div className="flex justify-between">
-                    <span>Subtotal:</span>
-                    <span>{money(selectedOrder.subtotal, selectedOrder.currency, selectedOrder.currencyExchangeRate)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Tax:</span>
-                    <span>{money(selectedOrder.taxAmount, selectedOrder.currency, selectedOrder.currencyExchangeRate)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Shipping:</span>
-                    <span>{money(selectedOrder.shippingAmount, selectedOrder.currency, selectedOrder.currencyExchangeRate)}</span>
-                  </div>
-                  <div className="flex justify-between font-bold text-xs text-neutral-900 dark:text-white pt-1 border-t border-neutral-200 dark:border-neutral-700">
-                    <span>Grand Total:</span>
-                    <span>{money(selectedOrder.totalAmount, selectedOrder.currency, selectedOrder.currencyExchangeRate)}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-end pt-3 border-t border-neutral-100 dark:border-neutral-800">
-              <button
-                type="button"
-                onClick={handleCloseDetail}
-                className="px-5 py-2 text-xs font-bold rounded-xl bg-neutral-800 text-white hover:bg-neutral-700"
-              >
-                Close Order
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+</>} afterSales={<section className="jw-order-panel"><header><h2><RotateCcw size={18} aria-hidden="true"/>After-sales</h2></header><div className="jw-order-body"><OrderReturnRequestCard order={selectedOrder} busy={rmaBusy} onAction={async(action,body)=>{if(!selectedOrder.returnRequest)return;setRmaBusy(true);try{const saved=await mutateReturnRequestData(laravelBootstrap,selectedOrder.returnRequest.id,action,body);selectedOrderRef.current=saved;setSelectedOrder(saved);await reloadOrders()}finally{setRmaBusy(false)}}}/>{!selectedOrder.returnRequest&&<><p>No request</p><button className="jw-btn" onClick={()=>{setDetailError('');setReturnModal(true)}}>Returns & refunds</button></>}</div></section>}/>}
+      {returnModal&&selectedOrder&&<OrderDialogOverlay busy={rmaBusy} onClose={()=>setReturnModal(false)}><section className="jw-order-dialog" role="dialog" aria-modal="true" aria-label="Return or refund request"><header><h2>Return or refund request</h2><button disabled={rmaBusy} aria-label="Close" onClick={()=>setReturnModal(false)}><X size={18}/></button></header><form onSubmit={async e=>{e.preventDefault();const values=new FormData(e.currentTarget);setRmaBusy(true);setDetailError('');try{const saved=await createReturnRequestData(laravelBootstrap,selectedOrder.id,{order_item_id:Number(values.get('item')),quantity:Number(values.get('quantity')),resolution:values.get('resolution'),reason:values.get('reason'),details:values.get('details')});selectedOrderRef.current=saved;setSelectedOrder(saved);setReturnModal(false);await reloadOrders()}catch(error){setDetailError(error instanceof Error?error.message:'The request could not be saved.')}finally{setRmaBusy(false)}}}>{detailError&&<p role="alert">{detailError}</p>}<label>Resolution<select name="resolution"><option value="refund">Return & refund</option><option value="replacement">Replacement</option></select></label><label>Items<select name="item">{selectedOrder.items.map(i=><option key={i.id} value={i.id}>{i.title} · Qty {i.quantity}</option>)}</select></label><label>Quantity<input name="quantity" type="number" min="1" defaultValue="1" required/></label><label>Reason<select name="reason"><option value="defective">Defective</option><option value="damaged_in_transit">Damaged in transit</option><option value="incorrect_item">Incorrect item</option><option value="missing_parts">Missing parts</option><option value="quality">Quality</option><option value="other">Other</option></select></label><label>Details<textarea name="details" required maxLength={2000}/></label><p>Creating a request does not issue a refund, restock items or cancel delivery.</p><footer><button type="button" className="jw-btn" disabled={rmaBusy} onClick={()=>setReturnModal(false)}>Cancel</button><button className="jw-btn jw-btn-primary" disabled={rmaBusy}>{rmaBusy?'Saving…':'Create request'}</button></footer></form></section></OrderDialogOverlay>}
+      {statusModal&&selectedOrder&&<OrderDialogOverlay busy={isUpdatingStatus} onClose={()=>setStatusModal(false)}><section className="jw-order-dialog" role="dialog" aria-modal="true" aria-label="Update order status"><header><h2>{statusReview?'Review status change':'Update order status'}</h2><button aria-label="Close" disabled={isUpdatingStatus} onClick={()=>setStatusModal(false)}><X size={18}/></button></header><p>Order {selectedOrder.orderNumber}</p>{detailError&&<p role="alert">{detailError}</p>}<form onSubmit={async e=>{e.preventDefault();if(!statusReview){setStatusReview(true);return}try{await handleApplyOrderStatusUpdate();setStatusModal(false)}catch(error){setIsUpdatingStatus(false);setDetailError(error instanceof Error?error.message:'Order could not be updated. Your details are retained.')}}}><label>New status<select disabled={statusReview||isUpdatingStatus} value={chosenStatusId} onChange={e=>handleStatusSelectChange(e.target.value)}>{orderStatuses.filter(status => !['completed'].includes(status.code)).map(st=><option key={st.id} value={st.id}>{st.name}</option>)}</select></label><label>Reason (optional)<textarea maxLength={2000} disabled={statusReview||isUpdatingStatus} value={customerCommentInput} onChange={e=>handleCustomerCommentChange(e.target.value)}/></label><p className="jw-order-muted">Applicable customer notifications are sent automatically.</p><footer><button type="button" className="jw-btn" disabled={isUpdatingStatus} onClick={()=>statusReview?setStatusReview(false):setStatusModal(false)}>{statusReview?'Back':'Cancel'}</button><button className="jw-btn jw-btn-primary" disabled={isUpdatingStatus}>{isUpdatingStatus?'Saving…':statusReview?'Confirm change':'Review change'}</button></footer></form></section></OrderDialogOverlay>}
+      {sharedParcel&&<SharedFulfillmentFlow parcel={sharedParcel} onClose={()=>setSharedParcel(null)}/>}
       {selectedOrder && (
         <AmendDeliveryDetailsModal
           isOpen={isAmendDeliveryOpen}
           order={selectedOrder}
-          hasActiveShipment={shipmentParcels.some(parcel => parcel.orderId === selectedOrder.id && parcel.status !== 'delivered' && parcel.status !== 'cancelled')}
+          hasActiveShipment={shipmentParcels.some(parcel => parcel.orderId === selectedOrder.id && parcel.source !== 'pending' && parcel.status !== 'delivered' && parcel.status !== 'cancelled')}
           onClose={() => setIsAmendDeliveryOpen(false)}
           onSave={async (orderId, updatedAddress, metadata) => {
             const saved = await amendOrderDeliveryDetails(orderId, {

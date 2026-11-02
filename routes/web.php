@@ -332,6 +332,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/api/storefront-shell-settings', [StorefrontShellSettingsApiController::class, 'show'])->name('api.storefront-shell-settings.show');
     Route::put('/api/storefront-shell-settings', [StorefrontShellSettingsApiController::class, 'update'])->name('api.storefront-shell-settings.update');
     Route::get('/api/orders', [OrderApiController::class, 'index'])->name('api.orders.index');
+    Route::get('/api/orders/{order}/invoice', [OrderApiController::class, 'invoice']);
+    Route::post('/api/orders/{order}/returns', [ReturnRequestApiController::class, 'store'])->middleware('throttle:10,1');
     Route::post('/api/returns/{returnRequest}/approve', [ReturnRequestApiController::class, 'approve']);
     Route::post('/api/returns/{returnRequest}/reject', [ReturnRequestApiController::class, 'reject']);
     Route::post('/api/returns/{returnRequest}/receive', [ReturnRequestApiController::class, 'receive']);
@@ -680,6 +682,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/settings/couriers', AdminAppController::class)->name('settings.couriers');
     Route::get('/settings/agent-groups', AdminAppController::class)->name('settings.agent-groups');
     Route::get('/settings/order-status', AdminAppController::class)->name('settings.order-status');
+    Route::get('/settings/shipment-status', AdminAppController::class)->name('settings.shipment-status');
+    Route::get('/api/commerce-statuses/{scope}', [\App\Http\Controllers\Admin\CommerceStatusController::class, 'index']);
+    Route::patch('/api/commerce-statuses/{scope}/{code}', [\App\Http\Controllers\Admin\CommerceStatusController::class, 'update']);
     Route::get('/settings/countries', AdminAppController::class)->name('settings.countries');
     Route::get('/settings/zones', AdminAppController::class)->name('settings.zones');
     Route::get('/settings/currencies', AdminAppController::class)->name('settings.currencies');

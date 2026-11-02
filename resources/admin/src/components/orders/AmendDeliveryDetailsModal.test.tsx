@@ -8,10 +8,13 @@ const address={id:'1',isDefault:true,type:'shipping',firstName:'Tee',lastName:'J
 const order={id:'4',orderNumber:'JW-1004',customerName:'Tee Jing',shippingAddress:address,billingAddress:address,fulfillmentStatus:'processing',paymentGatewayStatus:'paid'} as Order;
 
 describe('AmendDeliveryDetailsModal source-fidelity boundary', () => {
-  it('preserves the approved address form and diff UI without prototype toggles', () => {
+  it('preserves the approved address form and audit inputs without prototype toggles', () => {
     const html=renderToStaticMarkup(<AmendDeliveryDetailsModal isOpen order={order} hasActiveShipment onClose={vi.fn()} onSave={vi.fn()} />);
-    expect(html).toContain('Amend Delivery Details');
-    expect(html).toContain('Save Delivery Details');
+    expect(html).toContain('Edit delivery details');
+    expect(html).toContain('Save changes');
     expect(html).not.toContain('Simulate Permission Denied');
+    expect(html).toContain('Internal note');
+    expect(html).toContain('does not reroute');
+    expect(html).toContain('role="switch"');
   });
 });

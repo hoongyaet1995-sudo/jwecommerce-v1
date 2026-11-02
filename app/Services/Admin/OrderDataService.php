@@ -15,7 +15,7 @@ use App\Domain\Returns\ReturnRequestViewModelFactory;
 
 class OrderDataService
 {
-    public function __construct(private readonly NotificationContextFactory $notificationContexts, private readonly ReturnRequestViewModelFactory $returns) {}
+    public function __construct(private readonly NotificationContextFactory $notificationContexts, private readonly ReturnRequestViewModelFactory $returns, private readonly CommerceStatusRegistry $statuses) {}
 
     public function collection(): Collection
     {
@@ -71,6 +71,9 @@ class OrderDataService
             'paymentReference' => $payment?->reference,
             'paymentEnvironment' => $payment?->environment,
             'paymentProof' => $this->paymentProof($order, $payment, $canViewProof, $canReviewProof),
+            'orderStatus' => CommerceStatusRegistry::orderCode($order->status),
+            'orderStatusName' => $this->statuses->name('order', CommerceStatusRegistry::orderCode($order->status)),
+            'customStatusId' => CommerceStatusRegistry::orderCode($order->status),
             'fulfillmentStatus' => match ($order->status) {
                 'processing', 'shipped', 'delivered', 'cancelled' => $order->status, default => 'unfulfilled'
             },

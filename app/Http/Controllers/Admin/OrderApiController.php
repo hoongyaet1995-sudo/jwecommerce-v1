@@ -19,6 +19,14 @@ use Illuminate\Validation\Rule;
 
 class OrderApiController extends Controller
 {
+    public function invoice(Request $request, Order $order, OrderDataService $data)
+    {
+        abort_unless($request->user()?->is_admin, 403);
+        $order->loadMissing(['items', 'addresses', 'customer', 'payments']);
+        return response()->view('admin.orders.invoice', ['document' => $data->data($order), 'seller' => app(\App\Support\ShopBrand::class)->name()])
+            ->header('Cache-Control', 'private, no-store')->header('X-Robots-Tag', 'noindex, nofollow');
+    }
+
     public function updateDeliveryDetails(UpdateOrderDeliveryDetailsRequest $request, Order $order, OrderDeliveryDetailsService $details): JsonResponse
     {
         abort_unless(ShippingPermission::allows($request->user(), ShippingPermission::DISPATCH), 403);
@@ -43,6 +51,7 @@ class OrderApiController extends Controller
     public function updateStatus(Request $request, Order $order, OrderOperationsService $operations, OrderDataService $data): JsonResponse
     {
         $validated = $request->validate([
+            'orderStatus' => ['nullable', Rule::in(['pending', 'paid', 'processing', 'on_hold', 'cancelled'])],
             'paymentStatus' => ['nullable', Rule::in(['paid', 'pending', 'refunded', 'partially_refunded', 'failed'])],
             'fulfillmentStatus' => ['nullable', Rule::in(['unfulfilled', 'processing', 'shipped', 'delivered', 'cancelled'])],
             'note' => ['nullable', 'string', 'max:2000'],
@@ -55,6 +64,7 @@ class OrderApiController extends Controller
             (int) $request->user()->id,
             $validated['note'] ?? null,
             $validated['notifyCustomer'] ?? true,
+            $validated['orderStatus'] ?? null,
         );
 
         return response()->json(['data' => $data->data($result->order, $result->notificationDispatch)]);

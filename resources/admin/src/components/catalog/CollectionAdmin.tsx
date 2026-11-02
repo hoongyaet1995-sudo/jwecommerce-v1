@@ -1,3 +1,4 @@
+import { CommerceAction } from '../commerce/CommerceUI';
 
 import {EntitySearchPanel} from '../search/EntitySearchPanel';
 import { useAdminCurrency } from '../../context/useAdminCurrency';
@@ -183,23 +184,7 @@ export const CollectionAdmin: React.FC = () => {
             {/* Actions Footer */}
             <div className="p-4 border-t border-neutral-100 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-800/30 flex items-center justify-between text-xs">
               <span className="font-mono text-[11px] text-neutral-400">/collections/{col.slug}</span>
-              <div className="flex items-center gap-1.5">
-                <button
-                  onClick={() => {
-                    setEditingCollection(col);
-                    setIsModalOpen(true);
-                  }}
-                  className="p-1.5 rounded-lg text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800"
-                >
-                  <Edit2 className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => setPendingDeletion(col)}
-                  className="p-1.5 rounded-lg text-rose-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
+              <CommerceAction label={col.title} items={[{label:"Edit Collection",icon:<Edit2 size={15}/>,onClick:()=>{setEditingCollection(col);setIsModalOpen(true)}},{label:"Delete Collection",icon:<Trash2 size={15}/>,danger:true,onClick:()=>setPendingDeletion(col)}]}/>
             </div>
           </div>
         ))}

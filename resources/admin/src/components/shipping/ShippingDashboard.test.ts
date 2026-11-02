@@ -86,7 +86,7 @@ describe('ShippingDashboard provider action binding', () => {
   });
 
   it('keeps the approved logistics reload and single-line shipment action affordances', () => {
-    expect(source).toContain('Reload Logistics');
+    expect(source).toContain('void reloadLogistics()');
   });
   it('shows the stable EasyParcel callback URL using the existing courier callback presentation', () => {
     const html = renderToStaticMarkup(React.createElement(EasyParcelOAuthModal, {
@@ -728,7 +728,7 @@ describe('ShippingDashboard provider action binding', () => {
 
     const html = renderToStaticMarkup(React.createElement(ShippingDashboard));
 
-    expect(html).toContain('1 In-Transit');
+    expect(html).toMatch(/In transit<\/span><strong>1<\/strong>/);
   });
 
   it('labels the global fulfilment shortcut as the open work queue instead of an AWB queue', () => {
@@ -748,7 +748,8 @@ describe('ShippingDashboard provider action binding', () => {
 
     const html = renderToStaticMarkup(React.createElement(ShippingDashboard));
 
-    expect(html).toContain('View Open Fulfilment (0)');
+    expect(html).toContain('Prepare shipments');
+    expect(html).toMatch(/To prepare<\/span><strong>0<\/strong>/);
     expect(html).not.toContain('View Pending AWBs');
     expect(html).not.toContain('Batch Print AWB');
   });
@@ -777,6 +778,7 @@ describe('ShippingDashboard provider action binding', () => {
       root.render(React.createElement(ShippingDashboard));
     });
     expect(host.textContent).not.toContain('Schedule Driver Pickup');
+    await act(async()=>{Array.from(host.querySelectorAll('button')).find(b=>b.textContent?.includes('Manage settings'))!.click()});
     const pickup = Array.from(host.querySelectorAll('button'))
       .find(button => button.textContent?.includes('Manage Pickup in EasyParcel')) as HTMLButtonElement;
     await act(async () => pickup.click());
@@ -1309,8 +1311,9 @@ describe('ShippingDashboard provider action binding', () => {
     await act(async () => {
       root.render(React.createElement(ShippingDashboard));
     });
+    await act(async()=>{Array.from(host.querySelectorAll('button')).find(b=>b.textContent?.includes('Manage settings'))!.click()});
     const trackingTab = Array.from(host.querySelectorAll('button'))
-      .find(button => button.textContent?.includes('Webhooks & Telemetry')) as HTMLButtonElement;
+      .find(button => button.textContent?.includes('Connection diagnostics')) as HTMLButtonElement;
     await act(async () => { trackingTab.click(); });
 
     expect(refreshAudit).toHaveBeenCalledTimes(1);

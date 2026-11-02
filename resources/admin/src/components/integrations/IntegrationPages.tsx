@@ -21,6 +21,11 @@ export function IntegrationHub() {
         <h3 className="text-lg font-bold mt-7">AI Connect</h3><p className={`${muted} mt-2 leading-relaxed`}>Configure your AI provider for Support Chat and CMS page building.</p>
         <div className="mt-6 flex items-center gap-2 text-sm font-semibold text-indigo-600 dark:text-indigo-400">Configure <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" /></div>
       </button>
+      <a href="/admin/marketing" className={`${panel} p-6 text-left group hover:border-indigo-400 dark:hover:border-indigo-500 transition-colors focus-visible:outline-2 focus-visible:outline-indigo-500`}>
+        <div className="flex items-center justify-between gap-3"><span className="p-3 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400"><LayoutTemplate className="w-6 h-6" /></span><span className="text-xs px-3 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700 text-neutral-500 dark:text-neutral-400">Creative preparation</span></div>
+        <h3 className="text-lg font-bold mt-7">Marketing Studio</h3><p className={`${muted} mt-2 leading-relaxed`}>Prepare product and service ideas, scripts and storyboards in a dedicated workspace.</p>
+        <div className="mt-6 flex items-center gap-2 text-sm font-semibold text-indigo-600 dark:text-indigo-400">Open workspace <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" /></div>
+      </a>
     </div>
     <p className="text-xs text-neutral-500 dark:text-neutral-400">{error || (active ? `${active.label} configured. Support and CMS consumer integration is the next step.` : 'Connect and verify your provider to prepare AI features.')}</p>
   </div>;

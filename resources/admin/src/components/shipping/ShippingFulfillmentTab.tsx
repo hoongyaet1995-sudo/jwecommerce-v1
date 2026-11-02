@@ -30,6 +30,7 @@ import { UpdateShipmentStatusModal } from './UpdateShipmentStatusModal';
 
 interface ShippingFulfillmentTabProps {
   parcels: ShipmentParcel[];
+  mode?: 'prepare' | 'deliveries';
   onGenerateAWB: (parcelId: string, courierCode?: string) => void;
   onBatchGenerateAWB: (parcelIds: string[]) => void;
   onOpenAWBModal: (parcel: ShipmentParcel) => void;
@@ -47,6 +48,7 @@ interface ShippingFulfillmentTabProps {
 
 export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
   parcels,
+  mode = 'deliveries',
   onGenerateAWB,
   onBatchGenerateAWB,
   onOpenAWBModal,
@@ -248,6 +250,7 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
     if (parcel.recoveryState === 'rebooking_ready') {
       return <span className="px-2 py-0.5 text-[10px] font-semibold rounded bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300">Rebooking Ready</span>;
     }
+    if (parcel.statusName) return <span className="px-2 py-0.5 text-[10px] font-semibold rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200">{parcel.statusName}</span>;
     switch (parcel.status) {
       case 'pending':
         return <span className="px-2 py-0.5 text-[10px] font-semibold rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300">{parcel.labelState === 'pending' ? 'AWB Pending' : 'Pending Fulfilment'}</span>;
@@ -286,13 +289,13 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
         {/* Status Tabs */}
         <div className="flex flex-wrap items-center gap-1.5 border-b border-neutral-200 dark:border-neutral-800 pb-3">
           {[
-            { id: 'all', label: 'All Shipments', count: visibleParcels.length },
+            { id: 'all', label: mode === 'prepare' ? 'To prepare' : 'All Shipments', count: visibleParcels.length },
             { id: 'pending_fulfilment', label: 'Pending Fulfilment', count: visibleParcels.filter(p => p.lifecycleStage === 'pending_fulfilment').length },
             { id: 'ready_to_ship', label: 'Ready to Ship', count: visibleParcels.filter(p => p.lifecycleStage === 'ready_to_ship').length },
             { id: 'in_transit', label: 'In Transit', count: visibleParcels.filter(p => p.lifecycleStage === 'in_transit').length },
             { id: 'delivered', label: 'Delivered', count: visibleParcels.filter(p => p.lifecycleStage === 'delivered').length },
             { id: 'action_required', label: 'Action Required', count: visibleParcels.filter(p => p.lifecycleStage === 'action_required').length },
-          ].map((tab) => (
+          ].filter(tab => mode !== 'prepare' || tab.id === 'all').map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveStatusFilter(tab.id as any)}
@@ -520,16 +523,10 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
 
                       {/* Payment */}
                       <td className="p-3.5">
-                        {parcel.paymentMode === 'cod' ? (
-                          <div className="text-rose-600 font-bold">
-                            <span className="px-1.5 py-0.5 rounded bg-rose-100 dark:bg-rose-900/40 text-[10px] uppercase">COD</span>
-                            <div className="font-mono text-xs mt-0.5">RM {parcel.codAmount?.toFixed(2)}</div>
-                          </div>
-                        ) : (
-                          <span className="px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold uppercase">
-                            Prepaid
-                          </span>
-                        )}
+                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${parcel.paymentStatus === 'paid' ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300' : 'bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300'}`}>
+                          {parcel.paymentStatus === 'paid' ? 'Paid' : parcel.paymentStatus === 'refunded' ? 'Refunded' : parcel.paymentStatus === 'partially_refunded' ? 'Partially refunded' : parcel.paymentStatus === 'failed' ? 'Failed' : parcel.paymentStatus === 'cancelled' ? 'Cancelled' : 'Pending'}
+                        </span>
+                        {parcel.paymentMode === 'cod' && <div className="text-xs mt-1 text-neutral-500">COD / RM {parcel.codAmount?.toFixed(2)}</div>}
                       </td>
 
                       {/* Tracking / Status */}

@@ -321,27 +321,6 @@ export const ProductExtraInfoEditor: React.FC<ProductExtraInfoEditorProps> = ({
   return (
     <div className="space-y-6">
       {/* Sub-tab Navigation Header */}
-      <button type="button" onClick={() => setSubSection('faqs')} className="px-3 py-2 rounded-xl border text-xs font-semibold">Product FAQ</button>
-      {subSection === 'faqs' && <section className="space-y-4 rounded-xl border p-5">
-        <h3 className="text-sm font-bold text-neutral-900 dark:text-white">Product FAQ</h3>
-        <p className="text-xs text-neutral-500">Questions and answers for this product. Empty FAQs stay hidden on the storefront. Custom Accordions are managed separately.</p>
-        {(persisted.faqs ?? []).map((faq, index, rows) => <div key={faq.id} className="p-4 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 space-y-3">
-          <label className="block text-xs font-bold">Question<input value={faq.question} maxLength={500} onChange={e => onChange({...formData, pdpContent:{...persisted, faqs:rows.map((row,i) => i === index ? {...row,question:e.target.value} : row)}})} className="block w-full px-3 py-2 mt-1 text-xs rounded-xl border bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-white"/></label>
-          <label className="block text-xs font-bold">Answer<textarea rows={3} value={faq.answer} maxLength={10000} onChange={e => onChange({...formData, pdpContent:{...persisted, faqs:rows.map((row,i) => i === index ? {...row,answer:e.target.value} : row)}})} className="block w-full px-3 py-2 mt-1 text-xs rounded-xl border bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-white"/></label>
-          <div className="flex items-center gap-2">
-            {([-1,1] as const).map(direction => <button type="button" key={direction} disabled={index + direction < 0 || index + direction >= rows.length} aria-label={direction === -1 ? 'Move FAQ up' : 'Move FAQ down'} onClick={() => {const reordered=[...rows]; [reordered[index],reordered[index+direction]]=[reordered[index+direction],reordered[index]]; onChange({...formData,pdpContent:{...persisted,faqs:reordered}});}} className="p-1.5 rounded-lg border disabled:opacity-30">{direction === -1 ? <ChevronUp className="w-4 h-4"/> : <ChevronDown className="w-4 h-4"/>}</button>)}
-            <button type="button" aria-label="Delete FAQ" onClick={() => onChange({...formData,pdpContent:{...persisted,faqs:rows.filter((_,i) => i !== index)}})} className="p-1.5 text-neutral-400 hover:text-rose-500 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40"><Trash2 className="w-4 h-4"/></button>
-          </div>
-        </div>)}
-        <button type="button" disabled={(persisted.faqs?.length ?? 0) >= 30} onClick={() => onChange({...formData,pdpContent:{...persisted,faqs:[...(persisted.faqs ?? []),{id:crypto.randomUUID(),question:'',answer:''}]}})} className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 disabled:opacity-30"><Plus className="w-3.5 h-3.5"/>Add FAQ</button>
-      </section>}
-      <button type="button" onClick={() => setSubSection('story')} className="px-3 py-2 rounded-xl border text-xs font-semibold">Product Story</button>
-      {subSection === 'story' && <section className="space-y-4 rounded-xl border p-5">
-        <h3 className="font-semibold">Product Story</h3><p className="text-xs text-neutral-500">Shared product content. Each supported theme presents it in its own layout. Leave empty to hide.</p>
-        {(['label','heading','description','alt'] as const).map(key => <label key={key} className="block text-xs capitalize">{key === 'alt' ? 'Image description' : key}<textarea rows={key === 'description' ? 4 : 1} maxLength={key === 'description' ? 5000 : key === 'heading' ? 255 : key === 'alt' ? 200 : 100} value={persisted.story?.[key] ?? ''} onChange={e => onChange({...formData,pdpContent:{...persisted,story:{...persisted.story,[key]:e.target.value}}})} className="block w-full border rounded bg-transparent p-2 mt-2"/></label>)}
-        <CatalogImageUploadField label="Story image" value={persisted.story?.image} onChange={image => onChange({...formData,pdpContent:{...persisted,story:{...persisted.story,image}}})}/>
-        <ThemeImageFocus image={persisted.story?.image} focus={persisted.story?.focus} focusY={persisted.story?.focusY} onChange={(focus,focusY) => onChange({...formData,pdpContent:{...persisted,story:{...persisted.story,focus,focusY}}})}/>
-      </section>}
       <div className="flex flex-wrap items-center gap-1.5 p-1.5 rounded-2xl bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
         <button
           type="button"
@@ -437,9 +416,29 @@ export const ProductExtraInfoEditor: React.FC<ProductExtraInfoEditorProps> = ({
             </span>
           )}
         </button>
+        {([['faqs','Product FAQ'],['story','Product Story']] as const).map(([key,label])=><button key={key} type="button" onClick={()=>setSubSection(key)} className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 ${subSection===key?'bg-white dark:bg-neutral-800 text-indigo-600 dark:text-indigo-400 shadow-xs':'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'}`}>{key==='faqs'?<HelpCircle className="w-3.5 h-3.5"/>:<FileText className="w-3.5 h-3.5"/>}<span>{label}</span></button>)}
       </div>
 
       {/* ---------------------------------------------------------------- */}
+      {subSection === 'faqs' && <section className="space-y-4 rounded-xl border p-5">
+        <h3 className="text-sm font-bold text-neutral-900 dark:text-white">Product FAQ</h3>
+        <p className="text-xs text-neutral-500">Questions and answers for this product. Empty FAQs stay hidden on the storefront. Custom Accordions are managed separately.</p>
+        {(persisted.faqs ?? []).map((faq, index, rows) => <div key={faq.id} className="p-4 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 space-y-3">
+          <label className="block text-xs font-bold">Question<input value={faq.question} maxLength={500} onChange={e => onChange({...formData, pdpContent:{...persisted, faqs:rows.map((row,i) => i === index ? {...row,question:e.target.value} : row)}})} className="block w-full px-3 py-2 mt-1 text-xs rounded-xl border bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-white"/></label>
+          <label className="block text-xs font-bold">Answer<textarea rows={3} value={faq.answer} maxLength={10000} onChange={e => onChange({...formData, pdpContent:{...persisted, faqs:rows.map((row,i) => i === index ? {...row,answer:e.target.value} : row)}})} className="block w-full px-3 py-2 mt-1 text-xs rounded-xl border bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-white"/></label>
+          <div className="flex items-center gap-2">
+            {([-1,1] as const).map(direction => <button type="button" key={direction} disabled={index + direction < 0 || index + direction >= rows.length} aria-label={direction === -1 ? 'Move FAQ up' : 'Move FAQ down'} onClick={() => {const reordered=[...rows]; [reordered[index],reordered[index+direction]]=[reordered[index+direction],reordered[index]]; onChange({...formData,pdpContent:{...persisted,faqs:reordered}});}} className="p-1.5 rounded-lg border disabled:opacity-30">{direction === -1 ? <ChevronUp className="w-4 h-4"/> : <ChevronDown className="w-4 h-4"/>}</button>)}
+            <button type="button" aria-label="Delete FAQ" onClick={() => onChange({...formData,pdpContent:{...persisted,faqs:rows.filter((_,i) => i !== index)}})} className="p-1.5 text-neutral-400 hover:text-rose-500 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40"><Trash2 className="w-4 h-4"/></button>
+          </div>
+        </div>)}
+        <button type="button" disabled={(persisted.faqs?.length ?? 0) >= 30} onClick={() => onChange({...formData,pdpContent:{...persisted,faqs:[...(persisted.faqs ?? []),{id:crypto.randomUUID(),question:'',answer:''}]}})} className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 disabled:opacity-30"><Plus className="w-3.5 h-3.5"/>Add FAQ</button>
+      </section>}
+      {subSection === 'story' && <section className="space-y-4 rounded-xl border p-5">
+        <h3 className="font-semibold">Product Story</h3><p className="text-xs text-neutral-500">Shared product content. Each supported theme presents it in its own layout. Leave empty to hide.</p>
+        {(['label','heading','description','alt'] as const).map(key => <label key={key} className="block text-xs capitalize">{key === 'alt' ? 'Image description' : key}<textarea rows={key === 'description' ? 4 : 1} maxLength={key === 'description' ? 5000 : key === 'heading' ? 255 : key === 'alt' ? 200 : 100} value={persisted.story?.[key] ?? ''} onChange={e => onChange({...formData,pdpContent:{...persisted,story:{...persisted.story,[key]:e.target.value}}})} className="block w-full border rounded bg-transparent p-2 mt-2"/></label>)}
+        <CatalogImageUploadField label="Story image" value={persisted.story?.image} onChange={image => onChange({...formData,pdpContent:{...persisted,story:{...persisted.story,image}}})}/>
+        <ThemeImageFocus image={persisted.story?.image} focus={persisted.story?.focus} focusY={persisted.story?.focusY} onChange={(focus,focusY) => onChange({...formData,pdpContent:{...persisted,story:{...persisted.story,focus,focusY}}})}/>
+      </section>}
       {/* 1. SIGNATURE HIGHLIGHTS SECTION */}
       {/* ---------------------------------------------------------------- */}
       {subSection === 'highlights' && (

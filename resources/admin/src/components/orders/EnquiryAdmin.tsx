@@ -1,3 +1,4 @@
+import '../commerce/commerce.css';
 import React,{useEffect,useState} from 'react';
 import {useAdmin} from '../../context/AdminContext';
 import './enquiries.css';
@@ -23,9 +24,9 @@ export function EnquiryAdmin(){
  const addNote=async()=>{if(!detail||!note.trim())return;setBusy(true);setError('');setNotice('');try{const result=await enquiryRequest<{data:Enquiry}>('/admin/api/enquiries/'+detail.id+'/notes','POST',{content:note});setDetail(result.data);setNote('');setNotice('Internal note saved.');}catch(e){setError((e as Error).message);}finally{setBusy(false);}};
  const reloadDetail=async()=>{if(selected){try{const result=await enquiryRequest<{data:Enquiry}>('/admin/api/enquiries/'+selected);applyDetail(result.data);setError('');}catch(e){setError((e as Error).message);}}else setRefresh(n=>n+1);};
  if(selected&&new URL(location.href).searchParams.has('quotation'))return <QuotationEditor enquiryId={selected}/>;
- return <div className="enquiry-admin"><main>
- <div className="crumb"><button onClick={()=>setCurrentSection('commerce')}>Commerce overview</button><span>/</span>{selected?<><button onClick={()=>open(null)}>Enquiries</button><span>/</span>{detail?.reference??'Enquiry'}</>:'Enquiries'}</div>
- <div className="heading-row"><div>{selected&&<p className="overline">Customer enquiry</p>}<h1>{selected?detail?.reference??'Loading enquiry…':'Customer enquiries'}</h1><p className="lead">{selected?detail?`${detail.name} · ${detail.productTitle}`:'Loading the saved request…':'One place for product and service requests, from first contact to follow-up.'}</p></div>{selected&&<button className="secondary" onClick={()=>open(null)}>← Back to enquiries</button>}</div>
+ return <div className="enquiry-admin jw-commerce"><main>
+ <div className="crumb"><button onClick={()=>setCurrentSection('commerce')}>Orders & CRM</button><span>/</span>{selected?<><button onClick={()=>open(null)}>Enquiries</button><span>/</span>{detail?.reference??'Enquiry'}</>:'Enquiries'}</div>
+ <div className="heading-row"><div>{selected&&<p className="overline">Customer enquiry</p>}<h1>{selected?detail?.reference??'Loading enquiry…':'Enquiries & quotations'}</h1><p className="lead">{selected?detail?`${detail.name} · ${detail.productTitle}`:'Loading the saved request…':'Follow up requests and prepare quotations.'}</p></div>{selected&&<button className="secondary" onClick={()=>open(null)}>← Back to enquiries</button>}</div>
  {error&&<div className="error" role="alert">{error} <button className="secondary" onClick={reloadDetail}>Reload</button></div>}{notice&&<p role="status" style={{color:'#b6c6ad',marginBottom:16}}>{notice}</p>}
  {!selected?<>
  <div className="toolbar"><div className="tabs">{(['all','new','following_up','closed'] as const).map(key=><button key={key} className={`tab ${filter===key?'active':''}`} aria-pressed={filter===key} onClick={()=>{setFilter(key);setPage(1);}}>{key==='all'?'All':labels[key]} {data&&`(${data.counts[key]})`}</button>)}</div><input className="search" type="search" aria-label="Search enquiries" placeholder="Search reference, customer or item…" value={search} onChange={e=>{setSearch(e.target.value);setPage(1);}}/></div>

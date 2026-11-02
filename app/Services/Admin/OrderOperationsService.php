@@ -30,6 +30,7 @@ class OrderOperationsService
         int $userId,
         ?string $note,
         bool $notifyCustomer = true,
+        ?string $orderStatus = null,
     ): OrderStatusUpdateResult {
         if (in_array($paymentStatus, ['refunded', 'partially_refunded'], true)) {
             throw ValidationException::withMessages(['paymentStatus' => 'Use the refund action so the refund is recorded in the ledger.']);
@@ -47,6 +48,7 @@ class OrderOperationsService
         try {
             $result = DB::transaction(function () use (
                 $fulfillmentStatus,
+                $orderStatus,
                 $note,
                 $notifyCustomer,
                 $order,
@@ -65,12 +67,45 @@ class OrderOperationsService
                     }
                 }
 
+                if ($orderStatus !== null) {
+                    $target = $orderStatus === 'pending' ? 'pending_payment' : $orderStatus;
+                    if ($target === 'paid' && $order->status !== 'paid' && $order->status !== 'on_hold') {
+                        throw ValidationException::withMessages(['orderStatus' => 'Use the payment review workflow to confirm payment.']);
+                    }
+                    if ($target === 'processing') {
+                        $payment = $order->payments()->latest('id')->first();
+                        if (! $payment || ($payment->gateway !== 'cod' && ! in_array($payment->status, ['paid', 'partially_refunded'], true)) || ($payment->gateway === 'bank_transfer' && $payment->proof_status !== 'verified')) {
+                            throw ValidationException::withMessages(['orderStatus' => 'Verify payment before starting fulfillment.']);
+                        }
+                    }
+                    if ($order->status === 'on_hold') {
+                        $previous = $order->statusHistory()->where('to_status', 'on_hold')->latest('id')->value('from_status');
+                        if (! in_array($target, [$previous, 'cancelled', 'on_hold'], true)) {
+                            throw ValidationException::withMessages(['orderStatus' => 'Resume the previous order stage or cancel this order.']);
+                        }
+                    }
+                    if ($target !== $order->status) {
+                        $order = $this->checkout->transition($order, $target, $userId, $note, false);
+                        if ($notifyCustomer && in_array($target, ['cancelled', 'on_hold'], true)) {
+                            $history = $order->statusHistory()->latest('id')->firstOrFail();
+                            $notificationDispatch = $this->recordNotification($order, $target, $history, $actor, $note);
+                        }
+                    }
+                    return new OrderStatusUpdateResult($order->fresh(), $notificationDispatch);
+                }
+
                 $target = match ($fulfillmentStatus) {
                     'processing' => 'processing',
                     'delivered' => 'delivered',
                     'cancelled' => 'cancelled',
                     default => null,
                 };
+                if ($target === 'processing') {
+                    $payment = $order->payments()->latest('id')->first();
+                    if (! $payment || ($payment->gateway !== 'cod' && ! in_array($payment->status, ['paid', 'partially_refunded'], true)) || ($payment->gateway === 'bank_transfer' && $payment->proof_status !== 'verified')) {
+                        throw ValidationException::withMessages(['fulfillmentStatus' => 'Verify payment before starting fulfillment.']);
+                    }
+                }
                 if ($target !== null && $order->status !== $target) {
                     $order = $this->checkout->transition($order, $target, $userId, $note, false);
                     if ($notifyCustomer && in_array($target, ['delivered', 'cancelled'], true)) {

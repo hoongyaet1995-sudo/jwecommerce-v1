@@ -35,6 +35,8 @@ interface ProductEditorModalProps {
   product: Product | null;
   isOpen: boolean;
   onClose: () => void;
+  pageMode?: boolean;
+  onSaved?: (product: Product) => void;
 }
 
 const packageDimensionValue = (value: string): number | undefined => value === '' ? undefined : parseFloat(value);
@@ -72,14 +74,15 @@ export const VariantStockControl: React.FC<{
 export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
   product,
   isOpen,
-  onClose
+  onClose, pageMode = false, onSaved
 }) => {
   const { money, currencyCode } = useAdminCurrency();
   const { categories, collections, products, taxClasses, saveProduct } = useAdmin();
 
-  const [activeTab, setActiveTab] = useState<'basic' | 'variants' | 'media' | 'extra_info' | 'seo'>('basic');
+  const [activeTab, setActiveTab] = useState<'basic' | 'variants' | 'media' | 'extra_info' | 'seo'>(()=>{const tab=new URLSearchParams(typeof window === 'undefined' ? '' : window.location.search).get('tab');return pageMode&&['basic','variants','media','extra_info','seo'].includes(tab||'')?tab as any:'basic'});
   const [formData, setFormData] = useState<Product | null>(null);
 
+  useEffect(()=>{if(!pageMode)return;const url=new URL(location.href);url.searchParams.set('tab',activeTab);history.replaceState({},'',url)},[activeTab,pageMode]);
   // New option tag input temporary states
   const [newOptionName, setNewOptionName] = useState('');
   const [newOptionValueInputs, setNewOptionValueInputs] = useState<Record<string, string>>({});
@@ -357,17 +360,17 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
     e.preventDefault();
     if ((formData.purchaseMode ?? 'buy') !== 'buy' && !window.__JW_ADMIN__?.productEnquiriesEnabled && formData.status !== 'draft') return;
     const saved = await saveProduct(formData);
-    if (saved) onClose();
+    if (saved) { if(pageMode){setFormData(saved);onSaved?.(saved)}else onClose(); }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/70 backdrop-blur-xs animate-in fade-in">
+    <div className={pageMode?"product-editor-page":"fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/70 backdrop-blur-xs animate-in fade-in"}>
       <div
         id="product-editor-modal"
-        className="w-full max-w-5xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]"
+        className={pageMode?"w-full bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl flex flex-col":"w-full max-w-5xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]"}
       >
         {/* Modal Header */}
-        <div className="px-6 py-4 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between bg-white dark:bg-neutral-900 sticky top-0 z-20">
+        <div className={`px-6 py-4 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between bg-white dark:bg-neutral-900 ${pageMode ? "" : "sticky top-0 z-20"}`}>
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
               <Package className="w-5 h-5" />
@@ -385,9 +388,9 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
           <div className="flex items-center gap-2">
             <button
               onClick={onClose}
-              className="p-2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 rounded-xl"
+              className={pageMode ? "px-4 py-2 text-xs font-medium rounded-xl border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800" : "p-2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 rounded-xl"}
             >
-              <X className="w-5 h-5" />
+              {pageMode?<span>Back</span>:<X className="w-5 h-5" />}
             </button>
           </div>
         </div>
@@ -459,7 +462,7 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
         </div>
 
         {/* Modal Body Content */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div className={pageMode?"flex-1 p-6 space-y-6":"flex-1 overflow-y-auto p-6 space-y-6"}>
           {/* TAB 1: BASIC INFO */}
           {activeTab === 'basic' && (
             <div className="space-y-4 animate-in fade-in duration-150">
