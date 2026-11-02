@@ -28,6 +28,7 @@ final class CatalogMediaReferenceSynchronizer
     {
         $this->sync(self::CATEGORY, $category->getKey(), [
             'image' => $category->image_url,
+            'imageSettings.mobile' => $category->image_settings['mobile'] ?? null,
         ]);
     }
 
@@ -46,6 +47,7 @@ final class CatalogMediaReferenceSynchronizer
     {
         $this->sync(self::COLLECTION, $collection->getKey(), [
             'coverImage' => $collection->cover_image,
+            'imageSettings.mobile' => $collection->image_settings['mobile'] ?? null,
         ]);
     }
 

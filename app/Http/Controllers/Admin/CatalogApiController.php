@@ -69,6 +69,7 @@ class CatalogApiController extends Controller
     public function destroyCategory(Category $category): JsonResponse
     {
         DB::transaction(function () use ($category): void {
+            app(\App\Domain\Catalog\CategoryHierarchy::class)->validateDelete($category);
             $this->catalogMedia->removeCategory($category);
             $category->delete();
         });
@@ -164,22 +165,62 @@ class CatalogApiController extends Controller
         return response()->json(status: 204);
     }
 
+    public function categoryProducts(Request $request, Category $category): JsonResponse
+    {
+        $data = $request->validate(['page'=>['nullable','integer','min:1'], 'search'=>['nullable','string','max:255'], 'picker'=>['nullable','boolean']]);
+        $picker = $request->boolean('picker');
+        $query = Product::query()->with(['images','variants:id,product_id,sku','category:id,name'])
+            ->when($picker, fn($q)=>$q->where('status','!=','archived')->where(fn($q)=>$q->whereNull('category_id')->orWhere('category_id','!=',$category->id)), fn($q)=>$q->where('category_id',$category->id))
+            ->when($data['search'] ?? null, fn($q,$search)=>$q->where(fn($q)=>$q->where('title','like','%'.$search.'%')->orWhereHas('variants',fn($v)=>$v->where('sku','like','%'.$search.'%'))))
+            ->orderBy('title')->orderBy('id')->paginate(20);
+        return response()->json(['data'=>$query->getCollection()->map(fn($p)=>['id'=>(string)$p->id,'title'=>$p->title,'categoryId'=>$p->category_id ? (string)$p->category_id : null,'categoryName'=>$p->category?->name,'image'=>$p->images->sortBy('position')->first()?->path,'sku'=>$p->variants->pluck('sku')->implode(', '),'price'=>$p->base_price/100,'status'=>$p->status]),'total'=>$query->total(),'lastPage'=>$query->lastPage(),'page'=>$query->currentPage()]);
+    }
+
+    public function linkCategoryProducts(Request $request, Category $category): JsonResponse
+    {
+        $data=$request->validate(['productIds'=>['required','array','min:1','max:200'],'productIds.*'=>['required','integer','distinct','exists:products,id']]);
+        DB::transaction(function() use($data,$category){
+            Product::whereIn('id',$data['productIds'])->lockForUpdate()->get()->each(fn($p)=>$p->update(['category_id'=>$category->id]));
+            $this->dynamicCollections->syncAll();
+        });
+        return response()->json(['linked'=>count($data['productIds'])]);
+    }
+
+    public function unlinkCategoryProduct(Category $category, Product $product): JsonResponse
+    {
+        DB::transaction(function() use($category,$product){
+            $locked=Product::whereKey($product->id)->lockForUpdate()->firstOrFail();
+            abort_unless($locked->category_id===$category->id,404);
+            $locked->update(['category_id'=>null]);
+            $this->dynamicCollections->syncAll();
+        });
+        return response()->json(status:204);
+    }
+
     private function categoryAttributes(Request $request, ?Category $category = null): array
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'slug' => ['nullable', 'alpha_dash', 'max:255', Rule::unique('categories', 'slug')->ignore($category)],
             'parentId' => ['nullable', 'integer', 'exists:categories,id', Rule::notIn([$category?->id])],
+            'imageSettings' => ['nullable', 'array:mobile,focus,focusY,alt,hidden'],
+            'imageSettings.mobile' => ['nullable', 'string', 'max:2048'],
+            'imageSettings.focus' => ['nullable', Rule::in(['left','center','right'])],
+            'imageSettings.focusY' => ['nullable', Rule::in(['top','middle','bottom'])],
+            'imageSettings.alt' => ['nullable', 'string', 'max:200'],
+            'imageSettings.hidden' => ['sometimes', 'boolean'],
             'icon' => ['nullable', 'string', 'max:100'], 'image' => ['nullable', 'string', 'max:2048'],
             'description' => ['nullable', 'string', 'max:5000'], 'seoTitle' => ['nullable', 'string', 'max:255'],
             'seoDescription' => ['nullable', 'string', 'max:1000'], 'seoKeywords' => ['nullable', 'string', 'max:1000'],
             'status' => ['required', Rule::in(['active', 'draft'])], 'sortOrder' => ['required', 'integer', 'min:0', 'max:65535'],
         ]);
 
+        app(\App\Domain\Catalog\CategoryHierarchy::class)->validateParent(isset($data['parentId']) ? (int) $data['parentId'] : null, $category);
         $this->validateCatalogMediaUrl($data['image'] ?? null, 'image');
+        $this->validateCatalogMediaUrl($data['imageSettings']['mobile'] ?? null, 'imageSettings.mobile');
 
         return ['name' => $data['name'], 'slug' => filled($data['slug'] ?? null) ? trim($data['slug']) : null, 'parent_id' => $data['parentId'] ?? null, 'icon' => $data['icon'] ?? null,
-            'image_url' => $data['image'] ?? null, 'description' => $data['description'] ?? null, 'seo_title' => $data['seoTitle'] ?? null,
+            'image_settings' => $data['imageSettings'] ?? ($category?->image_settings ?? []), 'image_url' => $data['image'] ?? null, 'description' => $data['description'] ?? null, 'seo_title' => $data['seoTitle'] ?? null,
             'seo_description' => $data['seoDescription'] ?? null, 'seo_keywords' => $data['seoKeywords'] ?? null,
             'is_active' => $data['status'] === 'active', 'sort_order' => $data['sortOrder']];
     }
@@ -189,6 +230,12 @@ class CatalogApiController extends Controller
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'], 'slug' => ['nullable', 'alpha_dash', 'max:255', Rule::unique('collections', 'slug')->ignore($collection)],
             'description' => ['nullable', 'string', 'max:5000'], 'subtitle' => ['nullable', 'string', 'max:1000'], 'badge' => ['nullable', 'string', 'max:255'], 'coverImage' => ['nullable', 'string', 'max:2048'],
+            'imageSettings' => ['nullable', 'array:mobile,focus,focusY,alt,hidden'],
+            'imageSettings.mobile' => ['nullable', 'string', 'max:2048'],
+            'imageSettings.focus' => ['nullable', Rule::in(['left','center','right'])],
+            'imageSettings.focusY' => ['nullable', Rule::in(['top','middle','bottom'])],
+            'imageSettings.alt' => ['nullable', 'string', 'max:200'],
+            'imageSettings.hidden' => ['sometimes', 'boolean'],
             'type' => ['required', Rule::in(['manual', 'dynamic'])], 'matchType' => ['nullable', Rule::in(['all', 'any'])],
             'dynamicRules' => ['nullable', 'array', 'max:100'], 'dynamicRules.*.id' => ['required', 'string', 'max:100'],
             'dynamicRules.*.field' => ['required', Rule::in(['price', 'category', 'tag', 'vendor', 'inventory'])],
@@ -198,7 +245,9 @@ class CatalogApiController extends Controller
         ]);
 
         $this->validateCatalogMediaUrl($data['coverImage'] ?? null, 'coverImage');
+        $this->validateCatalogMediaUrl($data['imageSettings']['mobile'] ?? null, 'imageSettings.mobile');
 
+        $data['imageSettings'] = $data['imageSettings'] ?? ($collection?->image_settings ?? []);
         $data['slug'] = filled($data['slug'] ?? null) ? trim($data['slug']) : null;
 
         return $data;
@@ -207,7 +256,7 @@ class CatalogApiController extends Controller
     private function collectionAttributes(array $data): array
     {
         return ['title' => $data['title'], 'slug' => $data['slug'], 'description' => $data['description'] ?? null, 'subtitle' => $data['subtitle'] ?? null, 'badge' => $data['badge'] ?? null,
-            'cover_image' => $data['coverImage'] ?? null, 'type' => $data['type'], 'match_type' => $data['matchType'] ?? null,
+            'image_settings' => $data['imageSettings'] ?? [], 'cover_image' => $data['coverImage'] ?? null, 'type' => $data['type'], 'match_type' => $data['matchType'] ?? null,
             'dynamic_rules' => $data['dynamicRules'] ?? [], 'status' => $data['status'], 'is_active' => $data['status'] === 'active'];
     }
 
@@ -422,12 +471,12 @@ class CatalogApiController extends Controller
 
     private function categoryData(Category $category): array
     {
-        return ['id' => (string) $category->id, 'name' => $category->name, 'slug' => $category->slug, 'parentId' => $category->parent_id ? (string) $category->parent_id : null, 'icon' => $category->icon ?? 'FolderTree', 'image' => $category->image_url, 'description' => $category->description, 'seoTitle' => $category->seo_title, 'seoDescription' => $category->seo_description, 'seoKeywords' => $category->seo_keywords, 'status' => $category->is_active ? 'active' : 'draft', 'sortOrder' => $category->sort_order, 'productCount' => $category->products_count ?? $category->products()->count(), 'createdAt' => $category->created_at?->toDateString()];
+        return ['id' => (string) $category->id, 'name' => $category->name, 'slug' => $category->slug, 'parentId' => $category->parent_id ? (string) $category->parent_id : null, 'icon' => $category->icon ?? 'FolderTree', 'image' => $category->image_url, 'imageSettings' => $category->image_settings ?? [], 'description' => $category->description, 'seoTitle' => $category->seo_title, 'seoDescription' => $category->seo_description, 'seoKeywords' => $category->seo_keywords, 'status' => $category->is_active ? 'active' : 'draft', 'sortOrder' => $category->sort_order, 'productCount' => $category->products_count ?? $category->products()->count(), 'createdAt' => $category->created_at?->toDateString()];
     }
 
     private function collectionData(Collection $collection): array
     {
-        return ['id' => (string) $collection->id, 'title' => $collection->title, 'slug' => $collection->slug, 'description' => $collection->description, 'subtitle' => $collection->subtitle, 'badge' => $collection->badge, 'coverImage' => $collection->cover_image, 'type' => $collection->type, 'matchType' => $collection->match_type, 'dynamicRules' => $collection->dynamic_rules ?? [], 'manualProductIds' => $collection->relationLoaded('products') ? $collection->products->pluck('id')->map(fn ($id) => (string) $id)->all() : [], 'status' => $collection->status, 'productCount' => $collection->products_count ?? $collection->products()->count(), 'createdAt' => $collection->created_at?->toDateString()];
+        return ['id' => (string) $collection->id, 'title' => $collection->title, 'slug' => $collection->slug, 'description' => $collection->description, 'subtitle' => $collection->subtitle, 'badge' => $collection->badge, 'coverImage' => $collection->cover_image, 'imageSettings' => $collection->image_settings ?? [], 'type' => $collection->type, 'matchType' => $collection->match_type, 'dynamicRules' => $collection->dynamic_rules ?? [], 'manualProductIds' => $collection->relationLoaded('products') ? $collection->products->pluck('id')->map(fn ($id) => (string) $id)->all() : [], 'status' => $collection->status, 'productCount' => $collection->products_count ?? $collection->products()->count(), 'createdAt' => $collection->created_at?->toDateString()];
     }
 
     private function productData(Product $product): array

@@ -317,6 +317,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/website-design/acceptance/reference/{scenario}', [\App\Http\Controllers\Admin\WebsiteThemeAcceptanceController::class, 'reference']);
     Route::get('/api/catalog-listing-settings', [CatalogListingSettingsApiController::class, 'show'])->name('api.catalog-listing-settings.show');
     Route::put('/api/catalog-listing-settings', [CatalogListingSettingsApiController::class, 'update'])->name('api.catalog-listing-settings.update');
+    Route::get('/api/catalog/categories/{category}/products', [CatalogApiController::class, 'categoryProducts']);
+    Route::post('/api/catalog/categories/{category}/products', [CatalogApiController::class, 'linkCategoryProducts']);
+    Route::delete('/api/catalog/categories/{category}/products/{product}', [CatalogApiController::class, 'unlinkCategoryProduct']);
     Route::post('/api/catalog/categories', [CatalogApiController::class, 'storeCategory']);
     Route::patch('/api/catalog/categories/{category}', [CatalogApiController::class, 'updateCategory']);
     Route::delete('/api/catalog/categories/{category}', [CatalogApiController::class, 'destroyCategory']);

@@ -2,13 +2,14 @@ import { CommerceAction } from '../commerce/CommerceUI';
 
 import {EntitySearchPanel} from '../search/EntitySearchPanel';
 import { useAdminCurrency } from '../../context/useAdminCurrency';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAdmin } from '../../context/AdminContext';
-import { CatalogImageUploadField } from './CatalogImageUploadField';
+import { CatalogBannerControls } from './CatalogBannerControls';
 import { DeleteConfirmationModal } from '../common/DeleteConfirmationModal';
 import { primaryProductImage } from '../../catalogMedia';
 import { Collection, DynamicRule, CollectionRuleField, CollectionRuleOperator } from '../../types';
 import {
+  Copy,
   Sparkles,
   Plus,
   Trash2,
@@ -26,10 +27,29 @@ export const CollectionAdmin: React.FC = () => {
   const { money, currencyCode } = useAdminCurrency();
   const { collections, saveCollection, deleteCollection, products } = useAdmin();
   const [editingCollection, setEditingCollection] = useState<Collection | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editorKey, setEditorKey] = useState<string | null>(() => typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('collection'));
+  const navigateEditor = (id: string | null, replace = false) => {
+    const url = new URL(window.location.href);
+    if (id) url.searchParams.set('collection', id); else url.searchParams.delete('collection');
+    window.history[replace ? 'replaceState' : 'pushState']({}, '', url);
+    setEditorKey(id);
+    if (!id) setEditingCollection(null);
+  };
+  useEffect(() => {
+    const sync = () => { setEditingCollection(null); setEditorKey(new URLSearchParams(window.location.search).get('collection')); };
+    window.addEventListener('popstate', sync);
+  return () => window.removeEventListener('popstate', sync);
+  }, []);
+  useEffect(() => {
+    if (!editorKey || editingCollection) return;
+    if (editorKey === 'new') { createEditor(); return; }
+    const found = collections.find(item => item.id === editorKey);
+    if (found) setEditingCollection(JSON.parse(JSON.stringify(found)));
+  }, [editorKey, collections, editingCollection]);
+  const [copyMessage, setCopyMessage] = useState('');
   const [pendingDeletion, setPendingDeletion] = useState<Collection | null>(null);
 
-  const openCreateModal = () => {
+  const createEditor = () => {
     const newCol: Collection = {
       id: 'col-' + Date.now(),
       title: '',
@@ -49,8 +69,9 @@ export const CollectionAdmin: React.FC = () => {
       createdAt: new Date().toISOString().split('T')[0]
     };
     setEditingCollection(newCol);
-    setIsModalOpen(true);
+
   };
+  const openCreateModal = () => { createEditor(); navigateEditor('new'); };
 
   const addDynamicRule = () => {
     if (!editingCollection) return;
@@ -86,120 +107,23 @@ export const CollectionAdmin: React.FC = () => {
     });
   };
 
-  return (
+    if (editorKey) return (
     <div className="space-y-6 pb-12">
-      {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-3xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase rounded-full bg-purple-500/20 text-purple-700 dark:text-purple-300 border border-purple-500/30">
-              Curations & Campaigns
-            </span>
-            <span className="text-xs text-neutral-500">Dynamic Automated vs Manual Collections</span>
-          </div>
-          <h2 className="text-lg sm:text-xl font-bold text-neutral-900 dark:text-white tracking-tight mt-1">
-            Collection Management (CRUD)
-          </h2>
-          <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
-            Group products by promotional campaigns, seasonal sales, or smart automated rules (e.g. Price &gt; {money(50)} AND Tag = &apos;summer&apos;).
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={openCreateModal}
-            className="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-all shadow-md shadow-purple-500/20 flex items-center gap-1.5"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Create Collection</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Collections Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {collections.map((col) => (
-          <div
-            key={col.id}
-            className="group rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
-          >
-            <div>
-              {/* Cover Banner */}
-              <div className="h-36 w-full relative overflow-hidden bg-neutral-800">
-                <img
-                  src={col.coverImage}
-                  alt={col.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex items-end p-4">
-                  <div className="flex items-center justify-between w-full">
-                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/20 text-white backdrop-blur-md border border-white/20">
-                      {col.type === 'dynamic' ? '⚡ Dynamic Smart Rules' : '✋ Handpicked Manual'}
-                    </span>
-                    <span className="text-xs font-bold text-white bg-black/50 px-2 py-0.5 rounded-md font-mono">
-                      {col.type === 'manual' ? col.manualProductIds?.length || 0 : col.productCount} Items
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Body */}
-              <div className="p-5 space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-bold text-neutral-900 dark:text-white leading-snug">
-                    {col.title}
-                  </h3>
-                  <span
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full capitalize ${
-                      col.status === 'active'
-                        ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300'
-                        : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-500'
-                    }`}
-                  >
-                    {col.status}
-                  </span>
-                </div>
-
-                <p className="text-xs text-neutral-500 dark:text-neutral-400 line-clamp-2">
-                  {col.description || 'No promotional description specified.'}
-                </p>
-
-                {col.type === 'dynamic' && col.dynamicRules && (
-                  <div className="p-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-100 dark:border-neutral-800 text-[11px] space-y-1">
-                    <div className="font-semibold text-neutral-500 uppercase text-[10px]">
-                      Match: <span className="text-purple-600 dark:text-purple-400 font-bold">{col.matchType === 'all' ? 'ALL conditions' : 'ANY condition'}</span>
-                    </div>
-                    <ul className="space-y-0.5 text-neutral-600 dark:text-neutral-300 font-mono text-[10px]">
-                      {col.dynamicRules.map(r => (
-                        <li key={r.id} className="truncate">
-                          • {r.field} {r.operator} &quot;{r.value}&quot;
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Actions Footer */}
-            <div className="p-4 border-t border-neutral-100 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-800/30 flex items-center justify-between text-xs">
-              <span className="font-mono text-[11px] text-neutral-400">/collections/{col.slug}</span>
-              <CommerceAction label={col.title} items={[{label:"Edit Collection",icon:<Edit2 size={15}/>,onClick:()=>{setEditingCollection(col);setIsModalOpen(true)}},{label:"Delete Collection",icon:<Trash2 size={15}/>,danger:true,onClick:()=>setPendingDeletion(col)}]}/>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Collection Editor Modal */}
-      {isModalOpen && editingCollection && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
-          <div className="w-full max-w-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-3xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+      <nav aria-label="Breadcrumb" className="flex items-center gap-3 text-xs text-neutral-500">
+        <span>Products & Catalog</span><span>/</span>
+        <button onClick={() => navigateEditor(null)} className="text-indigo-600 dark:text-indigo-400">Collections</button><span>/</span>
+        <span>{editorKey === 'new' ? 'Create collection' : editingCollection?.title || 'Edit collection'}</span>
+      </nav>
+      {!editingCollection && <div className="p-6 rounded-xl border border-neutral-200 dark:border-neutral-800"><p>Loading collection…</p><button onClick={() => navigateEditor(null)} className="mt-4 px-4 py-2 border rounded-xl text-xs">Back</button></div>}
+      {editingCollection && (
+        <div className="w-full">
+          <div className="w-full bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-3xl p-6 shadow-sm">
             <div className="flex items-center justify-between pb-3 border-b border-neutral-100 dark:border-neutral-800 mb-4">
               <h3 className="text-sm font-bold text-neutral-900 dark:text-white">
                 {editingCollection.title ? `Edit Collection: ${editingCollection.title}` : 'Create New Collection'}
               </h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-neutral-400 hover:text-neutral-600">
-                <X className="w-4 h-4" />
+              <button onClick={() => navigateEditor(null)} className="px-4 py-2 text-xs font-medium rounded-xl border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800">
+                Back
               </button>
             </div>
 
@@ -207,7 +131,7 @@ export const CollectionAdmin: React.FC = () => {
               onSubmit={async (e) => {
                 e.preventDefault();
                 const saved = await saveCollection(editingCollection);
-                if (saved) setIsModalOpen(false);
+                if (saved) { setEditingCollection(saved); navigateEditor(saved.id, true); }
               }}
               className="space-y-4"
             >
@@ -243,7 +167,7 @@ export const CollectionAdmin: React.FC = () => {
                 </div>
               </div>
 
-              <CatalogImageUploadField label="Cover Image URL" value={editingCollection.coverImage || ''} onChange={(coverImage) => setEditingCollection({ ...editingCollection, coverImage })} />
+              <CatalogBannerControls image={editingCollection.coverImage} settings={editingCollection.imageSettings} onImage={(coverImage) => setEditingCollection({ ...editingCollection, coverImage })} onChange={imageSettings => setEditingCollection({ ...editingCollection, imageSettings })} />
 
               <div>
                 <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">Description / Campaign Hook</label>
@@ -421,7 +345,7 @@ export const CollectionAdmin: React.FC = () => {
               <div className="flex justify-end gap-2 pt-3 border-t border-neutral-100 dark:border-neutral-800">
                 <button
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={() => navigateEditor(null)}
                   className="px-4 py-2 text-xs font-medium rounded-xl border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300"
                 >
                   Cancel
@@ -437,6 +361,118 @@ export const CollectionAdmin: React.FC = () => {
           </div>
         </div>
       )}
+
+    </div>
+  );
+  return (
+    <div className="space-y-6 pb-12">
+      <span role="status" aria-live="polite" className={copyMessage ? "text-xs text-neutral-500" : "sr-only"}>{copyMessage}</span>
+      {/* Header Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-3xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase rounded-full bg-purple-500/20 text-purple-700 dark:text-purple-300 border border-purple-500/30">
+              Curations & Campaigns
+            </span>
+            <span className="text-xs text-neutral-500">Dynamic Automated vs Manual Collections</span>
+          </div>
+          <h2 className="text-lg sm:text-xl font-bold text-neutral-900 dark:text-white tracking-tight mt-1">
+            Collection Management (CRUD)
+          </h2>
+          <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+            Group products by promotional campaigns, seasonal sales, or smart automated rules (e.g. Price &gt; {money(50)} AND Tag = &apos;summer&apos;).
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={openCreateModal}
+            className="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-all shadow-md shadow-purple-500/20 flex items-center gap-1.5"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Create Collection</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Collections Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        {collections.map((col) => (
+          <div
+            key={col.id}
+            className="group rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
+          >
+            <div>
+              {/* Cover Banner */}
+              <div className="h-36 w-full relative overflow-hidden bg-neutral-800">
+                <img
+                  src={col.coverImage}
+                  alt={col.title}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex items-end p-4">
+                  <div className="flex items-center justify-between w-full">
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/20 text-white backdrop-blur-md border border-white/20">
+                      {col.type === 'dynamic' ? '⚡ Dynamic Smart Rules' : '✋ Handpicked Manual'}
+                    </span>
+                    <span className="text-xs font-bold text-white bg-black/50 px-2 py-0.5 rounded-md font-mono">
+                      {col.type === 'manual' ? col.manualProductIds?.length || 0 : col.productCount} Items
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Body */}
+              <div className="p-5 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-neutral-900 dark:text-white leading-snug">
+                    {col.title}
+                  </h3>
+                  <span
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full capitalize ${
+                      col.status === 'active'
+                        ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300'
+                        : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-500'
+                    }`}
+                  >
+                    {col.status}
+                  </span>
+                </div>
+
+                <p className="text-xs text-neutral-500 dark:text-neutral-400 line-clamp-2">
+                  {col.description || 'No promotional description specified.'}
+                </p>
+
+                {col.type === 'dynamic' && col.dynamicRules && (
+                  <div className="p-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-100 dark:border-neutral-800 text-[11px] space-y-1">
+                    <div className="font-semibold text-neutral-500 uppercase text-[10px]">
+                      Match: <span className="text-purple-600 dark:text-purple-400 font-bold">{col.matchType === 'all' ? 'ALL conditions' : 'ANY condition'}</span>
+                    </div>
+                    <ul className="space-y-0.5 text-neutral-600 dark:text-neutral-300 font-mono text-[10px]">
+                      {col.dynamicRules.map(r => (
+                        <li key={r.id} className="truncate">
+                          • {r.field} {r.operator} &quot;{r.value}&quot;
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Actions Footer */}
+            <div className="p-4 border-t border-neutral-100 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-800/30 flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2 min-w-0">
+                <a href={`/collections/${encodeURIComponent(col.slug)}`} target="_blank" rel="noopener noreferrer" aria-label={`Open ${col.title} on storefront`} className="font-mono text-[11px] text-neutral-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline truncate">/collections/{col.slug}</a>
+                <button type="button" title="Copy link" aria-label={`Copy link for ${col.title}`} className="p-1 shrink-0 rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-400 hover:text-indigo-500" onClick={async()=>{try{await navigator.clipboard.writeText(new URL(`/collections/${encodeURIComponent(col.slug)}`,window.location.origin).href);setCopyMessage(`Link copied for ${col.title}.`)}catch{setCopyMessage('Unable to copy. Please copy the link manually.')}}}><Copy size={13}/></button>
+              </div>
+              <CommerceAction label={col.title} items={[{label:"Edit Collection",icon:<Edit2 size={15}/>,onClick:()=>{setEditingCollection(JSON.parse(JSON.stringify(col)));navigateEditor(col.id)}},{label:"Delete Collection",icon:<Trash2 size={15}/>,danger:true,onClick:()=>setPendingDeletion(col)}]}/>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Collection Editor Modal */}
       {pendingDeletion && <DeleteConfirmationModal
         isOpen
         itemType="Collection"

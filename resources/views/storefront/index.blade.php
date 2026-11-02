@@ -14,12 +14,18 @@
         return route($listingRouteName, array_merge($listingRouteParameters, $query));
     };
     $hasActiveFilters = $category || $filters['priceRequested'] || $filters['colors'] !== [] || $filters['materials'] !== [] || $filters['minRating'] > 0 || $filters['inStock'];
+$heroImage='';
+ $catalogBannerMedia=app(\App\Services\CatalogBannerMedia::class)->resolve($collection ?? $listingCategory, $listingTitle);
+ if($catalogBannerMedia['hidden']) $heroImage='';
 @endphp
 <x-layouts.app :title="$listingTitle . ' | ATELIER'">
     <div class="min-h-screen bg-zinc-50 font-sans text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
         <x-storefront.nav active="plp" />
 
         <main class="pb-20">
+        @if(filled($catalogBannerMedia['desktop']) && !$catalogBannerMedia['hidden'])
+        <div class="mx-auto max-w-7xl overflow-hidden">@include('storefront.partials.catalog-banner',['media'=>$catalogBannerMedia,'imageClass'=>'w-full h-48 sm:h-72 object-cover'])</div>
+        @endif
         <section class="border-b border-zinc-200 bg-zinc-50 px-4 py-10 sm:px-6 lg:px-8 dark:border-zinc-900 dark:bg-zinc-950">
                 <div class="mx-auto max-w-7xl">
                     <p class="font-mono text-xs uppercase tracking-widest text-amber-600 dark:text-amber-400">{{ $listingEyebrow }}</p>

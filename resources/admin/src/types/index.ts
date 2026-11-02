@@ -1,3 +1,4 @@
+export interface CatalogBannerSettings { mobile?: string; focus?: 'left' | 'center' | 'right'; focusY?: 'top' | 'middle' | 'bottom'; alt?: string; hidden?: boolean; }
 import type {PageStyle,BrandPalette} from '../cms/pageStyle';
 import type {SectionTypography} from '../cms/inspectorCapabilities';
 import type {
@@ -157,6 +158,7 @@ export interface FooterMenuL1 {
 // ---------------------------
 
 export interface Category {
+  imageSettings?: CatalogBannerSettings;
   id: string;
   name: string;
   slug: string;
@@ -184,6 +186,7 @@ export interface DynamicRule {
 }
 
 export interface Collection {
+  imageSettings?: CatalogBannerSettings;
   id: string;
   title: string;
   slug: string;

@@ -238,6 +238,7 @@ interface AdminContextType {
 
   // Catalog CRUD
   categories: Category[];
+  refreshCatalog: () => Promise<void>;
   saveCategory: (category: Category) => Promise<Category | null>;
   deleteCategory: (id: string) => Promise<void>;
   
@@ -1173,6 +1174,10 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     persistFooterMenus(next, { type: 'info', title: 'Link Removed', message: 'Footer link deleted.' });
   };
 
+  const refreshCatalog = async () => {
+    const catalog = await fetchCatalog(laravelBootstrap);
+    setCategories(catalog.categories); setProducts(catalog.products); setCollections(catalog.collections);
+  };
   // Categories CRUD
   const saveCategory = async (cat: Category): Promise<Category | null> => {
     try {
@@ -3658,7 +3663,7 @@ Would you like me to drill down into customer records, inventory allocation, or 
         saveStorefrontShellSettings,
         catalogListingSettings,
         saveCatalogListingSettings: persistCatalogListingSettings,
-        categories,
+        categories, refreshCatalog,
         saveCategory,
         deleteCategory,
         collections,

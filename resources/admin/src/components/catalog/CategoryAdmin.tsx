@@ -1,12 +1,14 @@
+import { CategoryProducts } from './CategoryProducts';
 import { CommerceAction } from '../commerce/CommerceUI';
 
 import {EntitySearchPanel} from '../search/EntitySearchPanel';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAdmin } from '../../context/AdminContext';
-import { CatalogImageUploadField } from './CatalogImageUploadField';
+import { CatalogBannerControls } from './CatalogBannerControls';
 import { DeleteConfirmationModal } from '../common/DeleteConfirmationModal';
 import { Category } from '../../types';
 import {
+  Copy,
   FolderTree,
   Plus,
   Trash2,
@@ -42,21 +44,48 @@ const AVAILABLE_ICONS = [
 export const CategoryAdmin: React.FC = () => {
   const { categories, saveCategory, deleteCategory } = useAdmin();
   const [searchTerm, setSearchTerm] = useState('');
+  const [copyMessage, setCopyMessage] = useState('');
+  const [parentKey,setParentKey]=useState<string|null>(()=>typeof window==='undefined'?null:new URLSearchParams(window.location.search).get('parent'));
+  const current=categories.find(c=>c.id===parentKey);
+  const chain=(id:string|null):Category[]=>{const result:Category[]=[];const seen=new Set<string>();while(id&&!seen.has(id)){seen.add(id);const item=categories.find(c=>c.id===id);if(!item)break;result.unshift(item);id=item.parentId||null}return result};
+  const ancestors=chain(current?.id||null);
+  const go=(id:string|null)=>{const url=new URL(window.location.href);if(id)url.searchParams.set('parent',id);else url.searchParams.delete('parent');url.searchParams.delete('category');history.pushState({},'',url);setParentKey(id);setSearchTerm('')};
+  useEffect(()=>{const sync=()=>{setParentKey(new URLSearchParams(location.search).get('parent'));setSearchTerm('')};window.addEventListener('popstate',sync);return()=>window.removeEventListener('popstate',sync)},[]);
+  const validParent=(candidate:Category)=>{if(!editingCategory)return true;const subtreeHeight=(id:string,seen=new Set<string>()):number=>{if(seen.has(id))return 99;seen.add(id);return 1+Math.max(0,...categories.filter(c=>c.parentId===id).map(c=>subtreeHeight(c.id,new Set(seen))))};return !chain(candidate.id).some(c=>c.id===editingCategory.id)&&chain(candidate.id).length+subtreeHeight(editingCategory.id)<=3};
+
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editorKey, setEditorKey] = useState<string | null>(() => typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('category'));
+  const navigateEditor = (id: string | null, replace = false) => {
+    const url = new URL(window.location.href);
+    if (id) url.searchParams.set('category', id); else url.searchParams.delete('category');
+    window.history[replace ? 'replaceState' : 'pushState']({}, '', url);
+    setEditorKey(id);
+    if (!id) setEditingCategory(null);
+  };
+  useEffect(() => {
+    const sync = () => { setEditingCategory(null); setEditorKey(new URLSearchParams(window.location.search).get('category')); };
+    window.addEventListener('popstate', sync);
+  return () => window.removeEventListener('popstate', sync);
+  }, []);
+  useEffect(() => {
+    if (!editorKey || editingCategory) return;
+    if (editorKey === 'new') { createEditor(); return; }
+    const found = categories.find(item => item.id === editorKey);
+    if (found) setEditingCategory(JSON.parse(JSON.stringify(found)));
+  }, [editorKey, categories, editingCategory]);
   const [pendingDeletion, setPendingDeletion] = useState<Category | null>(null);
 
-  const filteredCategories = categories.filter(c =>
+  const filteredCategories = categories.filter(c => (c.parentId||null)===(current?.id||null)).filter(c =>
     c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.slug.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const openCreateModal = () => {
+  const createEditor = () => {
     const newCat: Category = {
       id: 'cat-' + Date.now(),
       name: '',
       slug: '',
-      parentId: null,
+      parentId: current?.id||null,
       icon: 'Laptop',
       image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&auto=format&fit=crop&q=80',
       description: '',
@@ -68,8 +97,9 @@ export const CategoryAdmin: React.FC = () => {
       createdAt: new Date().toISOString().split('T')[0]
     };
     setEditingCategory(newCat);
-    setIsModalOpen(true);
+
   };
+  const openCreateModal = () => { createEditor(); navigateEditor('new'); };
 
   const handleNameChange = (name: string) => {
     if (!editingCategory) return;
@@ -91,147 +121,23 @@ export const CategoryAdmin: React.FC = () => {
     }
   };
 
-  return (
+    if (editorKey) return (
     <div className="space-y-6 pb-12">
-      {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-3xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
-              Taxonomy Structure
-            </span>
-            <span className="text-xs text-neutral-500">Categories & Hierarchies</span>
-          </div>
-          <h2 className="text-lg sm:text-xl font-bold text-neutral-900 dark:text-white tracking-tight mt-1">
-            Category Management (CRUD)
-          </h2>
-          <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
-            Define hierarchical product categories, parent-child relations, SERP SEO tags, and storefront icons.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={openCreateModal}
-            className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-md shadow-emerald-500/20 flex items-center gap-1.5"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Create Category</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Search & Filter */}
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-md">
-          <Search className="w-4 h-4 text-neutral-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            placeholder="Search categories by name or slug..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-xs rounded-xl border bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 text-neutral-900 dark:text-white"
-          />
-        </div>
-        <span className="text-xs text-neutral-400 font-mono">{filteredCategories.length} categories</span>
-      </div>
-
-      {/* Category Cards / Data Table */}
-      <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-3xl overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-800/50 text-neutral-500 uppercase text-[10px] font-bold tracking-wider">
-                <th className="py-3 px-4">Category</th>
-                <th className="py-3 px-4">Slug & URL</th>
-                <th className="py-3 px-4">Parent Level</th>
-                <th className="py-3 px-4">Products</th>
-                <th className="py-3 px-4">SEO Snippet</th>
-                <th className="py-3 px-4">Status</th>
-                <th className="py-3 px-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800 text-neutral-800 dark:text-neutral-200">
-              {filteredCategories.map((cat) => {
-                const parent = categories.find(p => p.id === cat.parentId);
-
-                return (
-                  <tr key={cat.id} className="hover:bg-neutral-50/50 dark:hover:bg-neutral-800/50 transition-colors">
-                    <td className="py-3.5 px-4">
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={cat.image}
-                          alt={cat.name}
-                          className="w-9 h-9 rounded-xl object-cover ring-1 ring-neutral-200 dark:ring-neutral-700"
-                        />
-                        <div>
-                          <div className="flex items-center gap-1.5">
-                            {renderIcon(cat.icon)}
-                            <span className="font-bold text-neutral-900 dark:text-white text-xs">{cat.name}</span>
-                          </div>
-                          <p className="text-[11px] text-neutral-400 truncate max-w-xs">{cat.description || 'No description'}</p>
-                        </div>
-                      </div>
-                    </td>
-
-                    <td className="py-3.5 px-4 font-mono text-[11px] text-neutral-500 dark:text-neutral-400">
-                      /categories/{cat.slug}
-                    </td>
-
-                    <td className="py-3.5 px-4">
-                      {parent ? (
-                        <span className="px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-medium text-[11px]">
-                          ↳ {parent.name}
-                        </span>
-                      ) : (
-                        <span className="text-neutral-400 text-[11px]">Root (Top Level)</span>
-                      )}
-                    </td>
-
-                    <td className="py-3.5 px-4 font-semibold text-neutral-900 dark:text-white">
-                      {cat.productCount} SKUs
-                    </td>
-
-                    <td className="py-3.5 px-4 max-w-xs">
-                      <div className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 truncate">
-                        {cat.seoTitle || cat.name}
-                      </div>
-                      <p className="text-[10px] text-neutral-400 truncate">{cat.seoDescription || 'Default storefront meta description'}</p>
-                    </td>
-
-                    <td className="py-3.5 px-4">
-                      <span
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full capitalize ${
-                          cat.status === 'active'
-                            ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
-                            : 'bg-neutral-200 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400'
-                        }`}
-                      >
-                        {cat.status}
-                      </span>
-                    </td>
-
-                    <td className="py-3.5 px-4 text-right">
-                      <CommerceAction label={cat.name} items={[{label:"Edit Category",icon:<Edit2 size={15}/>,onClick:()=>{setEditingCategory(cat);setIsModalOpen(true)}},{label:"Delete Category",icon:<Trash2 size={15}/>,danger:true,onClick:()=>setPendingDeletion(cat)}]}/>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Category Editor Modal with Live Google SERP SEO Preview */}
-      {isModalOpen && editingCategory && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
-          <div className="w-full max-w-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-3xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+      <nav aria-label="Breadcrumb" className="flex items-center gap-3 text-xs text-neutral-500">
+        <span>Products & Catalog</span><span>/</span>
+        <button onClick={() => navigateEditor(null)} className="text-indigo-600 dark:text-indigo-400">Categories</button><span>/</span>
+        <span>{editorKey === 'new' ? 'Create category' : editingCategory?.name || 'Edit category'}</span>
+      </nav>
+      {!editingCategory && <div className="p-6 rounded-xl border border-neutral-200 dark:border-neutral-800"><p>Loading category…</p><button onClick={() => navigateEditor(null)} className="mt-4 px-4 py-2 border rounded-xl text-xs">Back</button></div>}
+      {editingCategory && (
+        <div className="w-full">
+          <div className="w-full bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-3xl p-6 shadow-sm">
             <div className="flex items-center justify-between pb-3 border-b border-neutral-100 dark:border-neutral-800 mb-4">
               <h3 className="text-sm font-bold text-neutral-900 dark:text-white">
                 {editingCategory.name ? `Edit Category: ${editingCategory.name}` : 'Create New Category'}
               </h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-neutral-400 hover:text-neutral-600">
-                <X className="w-4 h-4" />
+              <button onClick={() => navigateEditor(null)} className="px-4 py-2 text-xs font-medium rounded-xl border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800">
+                Back
               </button>
             </div>
 
@@ -239,7 +145,7 @@ export const CategoryAdmin: React.FC = () => {
               onSubmit={async (e) => {
                 e.preventDefault();
                 const saved = await saveCategory(editingCategory);
-                if (saved) setIsModalOpen(false);
+                if (saved) { setEditingCategory(saved); navigateEditor(saved.id, true); }
               }}
               className="space-y-4"
             >
@@ -281,8 +187,8 @@ export const CategoryAdmin: React.FC = () => {
                     className="w-full px-3 py-2 text-xs rounded-xl border bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-white"
                   >
                     <option value="">None (Top-Level Root)</option>
-                    {categories.filter(c => c.id !== editingCategory.id).map(c => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
+                    {categories.filter(validParent).map(c => (
+                      <option key={c.id} value={c.id}>{chain(c.id).map(p=>p.name).join(" / ")}</option>
                     ))}
                   </select>
                 </div>
@@ -313,7 +219,7 @@ export const CategoryAdmin: React.FC = () => {
                 </div>
               </div>
 
-              <CatalogImageUploadField label="Image URL" value={editingCategory.image || ''} onChange={(image) => setEditingCategory({ ...editingCategory, image })} />
+              <CatalogBannerControls image={editingCategory.image} settings={editingCategory.imageSettings} onImage={(image) => setEditingCategory({ ...editingCategory, image })} onChange={imageSettings => setEditingCategory({ ...editingCategory, imageSettings })} />
 
               <div>
                 <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">Category Description</label>
@@ -331,7 +237,7 @@ export const CategoryAdmin: React.FC = () => {
               <div className="flex justify-end gap-2 pt-3 border-t border-neutral-100 dark:border-neutral-800">
                 <button
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={() => navigateEditor(null)}
                   className="px-4 py-2 text-xs font-medium rounded-xl border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300"
                 >
                   Cancel
@@ -347,6 +253,111 @@ export const CategoryAdmin: React.FC = () => {
           </div>
         </div>
       )}
+
+    </div>
+  );
+  return (
+    <div className="space-y-6 pb-12">
+      <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-3 text-xs text-neutral-500"><span>Products & Catalog</span><span>/</span><button onClick={()=>go(null)} className="text-indigo-600 dark:text-indigo-400">Categories</button>{ancestors.map(c=><React.Fragment key={c.id}><span>/</span><button onClick={()=>go(c.id)} className="text-indigo-600 dark:text-indigo-400">{c.name}</button></React.Fragment>)}</nav>
+      <div className="flex items-center justify-between gap-4"><div><h2 className="text-2xl font-bold">{current?.name||'Categories'}</h2><p className="text-xs text-neutral-500 mt-2">Organise your catalogue, one level at a time.</p></div>{ancestors.length<3&&<button onClick={openCreateModal} className="px-4 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold flex gap-2 items-center"><Plus size={16}/>{current?'Create subcategory':'Create Category'}</button>}</div>
+      {ancestors.length===3&&<p className="text-xs text-neutral-500">This is the final category level.</p>}
+      <span role="status" aria-live="polite" className={copyMessage ? "text-xs text-neutral-500" : "sr-only"}>{copyMessage}</span>
+      {/* Search & Filter */}
+      <div className="flex items-center gap-3">
+        <div className="relative flex-1 max-w-md">
+          <Search className="w-4 h-4 text-neutral-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            placeholder="Search categories by name or slug..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-9 pr-4 py-2 text-xs rounded-xl border bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 text-neutral-900 dark:text-white"
+          />
+        </div>
+        <span className="text-xs text-neutral-400 font-mono">{filteredCategories.length} categories</span>
+      </div>
+
+      {/* Category Cards / Data Table */}
+      <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-3xl overflow-hidden shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-800/50 text-neutral-500 uppercase text-[10px] font-bold tracking-wider">
+                <th className="py-3 px-4">Category</th>
+                <th className="py-3 px-4">Slug & URL</th>
+                <th className="py-3 px-4">Subcategories</th>
+                <th className="py-3 px-4">Products</th>
+
+                <th className="py-3 px-4">Status</th>
+                <th className="py-3 px-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800 text-neutral-800 dark:text-neutral-200">
+              {filteredCategories.map((cat) => {
+
+
+                return (
+                  <tr key={cat.id} className="hover:bg-neutral-50/50 dark:hover:bg-neutral-800/50 transition-colors">
+                    <td className="py-3.5 px-4">
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={cat.image}
+                          alt={cat.name}
+                          className="w-9 h-9 rounded-xl object-cover ring-1 ring-neutral-200 dark:ring-neutral-700"
+                        />
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            {renderIcon(cat.icon)}
+                            <button onClick={()=>go(cat.id)} className="font-bold text-neutral-900 dark:text-white text-xs hover:text-indigo-500">{cat.name}</button>
+                          </div>
+                          <p className="text-[11px] text-neutral-400 truncate max-w-xs">{cat.description || 'No description'}</p>
+                        </div>
+                      </div>
+                    </td>
+
+                    <td className="py-3.5 px-4 font-mono text-[11px] text-neutral-500 dark:text-neutral-400">
+                      <div className="flex items-center gap-2">
+                        <a href={`/categories/${encodeURIComponent(cat.slug)}`} target="_blank" rel="noopener noreferrer" className="hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline" aria-label={`Open ${cat.name} on storefront`}>/categories/{cat.slug}</a>
+                        <button type="button" title="Copy link" aria-label={`Copy link for ${cat.name}`} className="p-1 rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-400 hover:text-indigo-500" onClick={async()=>{try{await navigator.clipboard.writeText(new URL(`/categories/${encodeURIComponent(cat.slug)}`,window.location.origin).href);setCopyMessage(`Link copied for ${cat.name}.`)}catch{setCopyMessage('Unable to copy. Please copy the link manually.')}}}><Copy size={13}/></button>
+                      </div>
+                    </td>
+
+                    <td className="py-3.5 px-4">
+                      {categories.filter(c=>c.parentId===cat.id).length}
+                    </td>
+
+                    <td className="py-3.5 px-4 font-semibold text-neutral-900 dark:text-white">
+                      {cat.productCount}
+                    </td>
+
+
+
+                    <td className="py-3.5 px-4">
+                      <span
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full capitalize ${
+                          cat.status === 'active'
+                            ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
+                            : 'bg-neutral-200 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400'
+                        }`}
+                      >
+                        {cat.status}
+                      </span>
+                    </td>
+
+                    <td className="py-3.5 px-4 text-right">
+                      <CommerceAction label={cat.name} items={[{label:"Edit Category",icon:<Edit2 size={15}/>,onClick:()=>{setEditingCategory(JSON.parse(JSON.stringify(cat)));navigateEditor(cat.id)}},{label:"Delete Category",icon:<Trash2 size={15}/>,danger:true,onClick:()=>setPendingDeletion(cat)}]}/>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {!filteredCategories.length&&<p className="text-xs text-neutral-500">{searchTerm?'No matching categories.':ancestors.length<3?'No subcategories yet.':''}</p>}
+      {current&&<CategoryProducts key={current.id} id={current.id} name={current.name}/>}
+      {/* Category Editor Modal with Live Google SERP SEO Preview */}
       {pendingDeletion && <DeleteConfirmationModal
         isOpen
         itemType="Category"

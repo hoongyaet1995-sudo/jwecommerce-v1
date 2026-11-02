@@ -7,6 +7,9 @@
     if($isAllProducts)$heroImage=$allProductsMedia['hidden']?'':$allProductsMedia['desktop'];
     $resetUrl=route($listingRouteName,$listingRouteParameters);
     $activeCount=($filters['priceRequested']?1:0)+count($filters['colors'])+count($filters['materials'])+($filters['inStock']?1:0)+($filters['minRating']>0?1:0);
+
+ $catalogBannerMedia=app(\App\Services\CatalogBannerMedia::class)->resolve($collection ?? $listingCategory, $listingTitle);
+ if($catalogBannerMedia['hidden']) $heroImage='';
 @endphp
 <x-layouts.app :title="$listingTitle.' | '.$shopBrandName">
     <style>.all-products--compact{min-height:0!important;height:auto!important;display:block!important;padding:28px 0!important;margin-bottom:0!important}.all-products--compact .heroCopy,.all-products--compact .food-hero-copy{width:100%!important;max-width:none!important;padding:0!important;position:static!important}.all-products--compact h1{font-size:clamp(32px,4vw,52px)!important;max-width:none!important;width:100%!important}.home-deco-theme .all-products-picture{min-width:0}.home-deco-theme .all-products-picture img{width:100%;height:320px;object-fit:cover}.beauty-theme .all-products-picture,.food-theme .all-products-picture{position:absolute;inset:0;overflow:hidden}.beauty-theme .all-products-picture img,.food-theme .all-products-picture img{width:100%;height:100%;object-fit:cover}@media(max-width:760px){.home-deco-theme .all-products-picture img{height:240px}.all-products--compact{padding:20px 0!important}}</style>
@@ -16,8 +19,11 @@
         <x-storefront.nav active="plp" />
         <div class="frame"><main class="container">
             <div class="breadcrumbs"><a href="/">Home</a><span>/</span><a href="{{ route('storefront.index') }}">Shop</a>@if($collection || $listingCategory)<span>/</span><span>{{ $listingTitle }}</span>@endif</div>
-            <section @class(['hero'=>true,'all-products--compact'=>$isAllProducts&&!filled($heroImage)])><div><h1>{{ $listingTitle }}</h1>@if(filled($description))<p>{{ strip_tags($description) }}</p>@endif</div>@if(filled($heroImage))@if($isAllProducts)<div class="all-products-picture" data-all-products-media>@include('storefront.partials.theme-media',['media'=>$allProductsMedia,'imageClass'=>'heroPhoto'])</div>@else<img class="heroPhoto" src="{{ $heroImage }}" alt="{{ $listingTitle }}">@endif@endif</section>
-            <div class="catalogbar"><span>{{ $products->total() }} {{ $products->total()===1?'product':'products' }}</span><div class="barActions"><button type="button" @click="filtersOpen=true" aria-label="Open filters"><i data-lucide="sliders-horizontal" class="icon"></i>Filters @if($activeCount)({{ $activeCount }})@endif</button><form method="GET" action="{{ $resetUrl }}">
+            <section @class(['hero'=>true,'all-products--compact'=>$isAllProducts&&!filled($heroImage)])><div><h1>{{ $listingTitle }}</h1>@if(filled($description))<p>{{ strip_tags($description) }}</p>@endif</div>@if(filled($heroImage))@if($isAllProducts)<div class="all-products-picture" data-all-products-media>@include('storefront.partials.theme-media',['media'=>$allProductsMedia,'imageClass'=>'heroPhoto'])</div>@else
+@include('storefront.partials.catalog-banner',['media'=>$catalogBannerMedia,'imageClass'=>'heroPhoto'])
+@endif@endif</section>
+            <div class="catalogbar"><span>{{ $products->total() }} {{ $products->total()===1?'product':'products' }}</span><div class="barActions"><button type="button" @click="filtersOpen=true" aria-label="Open filters"><i data-lucide="sliders-horizontal" class="icon"></i>Filters @if($activeCount)({{ $activeCount }})
+@endif</button><form method="GET" action="{{ $resetUrl }}">
                 @foreach(array_intersect_key($listingRouteParameters,array_flip(['theme','scope','customization'])) as $key=>$value)<input type="hidden" name="{{ $key }}" value="{{ $value }}">@endforeach
                 @foreach(request()->except(['sort','page','theme','scope']) as $key=>$value)
                     @if(is_array($value))@foreach($value as $entry)<input type="hidden" name="{{ $key }}[]" value="{{ $entry }}">@endforeach

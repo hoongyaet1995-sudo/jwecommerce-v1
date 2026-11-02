@@ -9,6 +9,7 @@ class WebsiteDesignTest extends TestCase
     use RefreshDatabase;
     public function test_design_round_trip_inheritance_and_reset(): void
     {
+        $this->withoutMiddleware(\App\Http\Middleware\MarketingStorefrontTracking::class);
         $category=Category::create(['name'=>'Tables','slug'=>'design-tables','is_active'=>true]);
         $this->actingAs(User::factory()->create(['is_admin'=>true]));
         $settings=['theme'=>'home_deco','overrides'=>['category:'.$category->id=>'default']];
@@ -31,6 +32,7 @@ class WebsiteDesignTest extends TestCase
     }
     public function test_collection_override_retains_the_original_renderer_and_can_follow_store(): void
     {
+        $this->withoutMiddleware(\App\Http\Middleware\MarketingStorefrontTracking::class);
         $collection=Collection::create(['title'=>'Living room','slug'=>'design-living','type'=>'manual','is_active'=>true,'status'=>'published']);
         $this->actingAs(User::factory()->create(['is_admin'=>true]));
         $scope='collection:'.$collection->id;

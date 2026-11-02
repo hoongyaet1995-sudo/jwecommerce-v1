@@ -21,5 +21,5 @@ class CategoryController extends Controller
     }
     public function store(Request $request): RedirectResponse { Category::query()->create($request->validate(['slug' => ['required', 'alpha_dash', 'unique:categories,slug'], 'name' => ['required', 'string', 'max:255']])); return redirect()->route('admin.categories.index'); }
     public function update(Request $request, Category $category): RedirectResponse { $category->update($request->validate(['slug' => ['required', 'alpha_dash', 'unique:categories,slug,'.$category->id], 'name' => ['required', 'string', 'max:255']])); return redirect()->route('admin.categories.index'); }
-    public function destroy(Category $category): RedirectResponse { $category->delete(); return redirect()->route('admin.categories.index'); }
+    public function destroy(Category $category): RedirectResponse { app(\App\Domain\Catalog\CategoryHierarchy::class)->validateDelete($category); $category->delete(); return redirect()->route('admin.categories.index'); }
 }

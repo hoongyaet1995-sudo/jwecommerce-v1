@@ -7,6 +7,9 @@
     if($isAllProducts)$heroImage=$allProductsMedia['hidden']?'':$allProductsMedia['desktop'];
     $resetUrl=route($listingRouteName,$listingRouteParameters);
     $activeCount=($filters['priceRequested']?1:0)+count($filters['colors'])+count($filters['materials'])+($filters['inStock']?1:0)+($filters['minRating']>0?1:0);
+
+ $catalogBannerMedia=app(\App\Services\CatalogBannerMedia::class)->resolve($collection ?? $listingCategory, $listingTitle);
+ if($catalogBannerMedia['hidden']) $heroImage='';
 @endphp
 <x-layouts.app :title="$listingTitle.' | '.$shopBrandName">
 
@@ -14,13 +17,16 @@
     <div class="uv-theme" data-website-theme="universal" data-commerce-collection-anatomy x-data="{filtersOpen:false}" @keydown.escape.window="filtersOpen=false">
         <x-storefront.nav active="plp" />
             @if(filled($heroImage))
-            <section class="uv-listing-hero">@if($isAllProducts)<div data-all-products-media>@include('storefront.partials.theme-media',['media'=>$allProductsMedia])</div>@else<img src="{{ $heroImage }}" alt="{{ $listingTitle }}">@endif</section>
+            <section class="uv-listing-hero">@if($isAllProducts)<div data-all-products-media>@include('storefront.partials.theme-media',['media'=>$allProductsMedia])</div>@else
+@include('storefront.partials.catalog-banner',['media'=>$catalogBannerMedia,'imageClass'=>''])
+@endif</section>
             @endif
 
         <div class="frame"><main class="container">
             <div class="breadcrumbs"><a href="/">Home</a><span>/</span><a href="{{ route('storefront.index') }}">Shop</a>@if($collection || $listingCategory)<span>/</span><span>{{ $listingTitle }}</span>@endif</div>
             <header class="uv-listing-heading"><h1>{{ $listingTitle }}</h1>@if(filled($description))<p>{{ strip_tags($description) }}</p>@endif</header>
-            <div class="catalogbar"><span>{{ $products->total() }} {{ $products->total()===1?'product':'products' }}</span><div class="barActions"><button type="button" @click="filtersOpen=true" aria-label="Open filters"><i data-lucide="sliders-horizontal" class="icon"></i>Filters @if($activeCount)({{ $activeCount }})@endif</button><form method="GET" action="{{ $resetUrl }}">
+            <div class="catalogbar"><span>{{ $products->total() }} {{ $products->total()===1?'product':'products' }}</span><div class="barActions"><button type="button" @click="filtersOpen=true" aria-label="Open filters"><i data-lucide="sliders-horizontal" class="icon"></i>Filters @if($activeCount)({{ $activeCount }})
+@endif</button><form method="GET" action="{{ $resetUrl }}">
                 @foreach(array_intersect_key($listingRouteParameters,array_flip(['theme','scope','customization'])) as $key=>$value)<input type="hidden" name="{{ $key }}" value="{{ $value }}">@endforeach
                 @foreach(request()->except(['sort','page','theme','scope']) as $key=>$value)
                     @if(is_array($value))@foreach($value as $entry)<input type="hidden" name="{{ $key }}[]" value="{{ $entry }}">@endforeach
