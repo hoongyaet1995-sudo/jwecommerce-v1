@@ -1,12 +1,13 @@
+import {PromotionWorkflow} from './PromotionWorkflow';
 import React, { useEffect, useState } from 'react';
-import { 
-  Sparkles, 
-  Tag, 
-  Layers, 
-  History, 
-  Plus, 
-  Database, 
-  ShieldCheck, 
+import {
+  Sparkles,
+  Tag,
+  Layers,
+  History,
+  Plus,
+  Database,
+  ShieldCheck,
   Zap,
   Code2
 } from 'lucide-react';
@@ -19,7 +20,9 @@ import { readAdminBootstrap } from '../../integration/adminBootstrap';
 import { deleteCouponPromotion, fetchCoupons, saveCouponPromotion } from '../../integration/couponData';
 import { useAdmin } from '../../context/AdminContext';
 
-export const PromotionsHub: React.FC = () => {
+export const PromotionsHub: React.FC = () => <PromotionWorkflow />;
+
+const LegacyPromotionsHub: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'campaigns' | 'simulator' | 'logs'>('campaigns');
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [usages, setUsages] = useState<import('../../types/promotions').PromotionUsageLog[]>([]);
@@ -133,8 +136,8 @@ export const PromotionsHub: React.FC = () => {
               <span>{tab.label}</span>
               {tab.count !== undefined && (
                 <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${
-                  isActive 
-                    ? 'bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300' 
+                  isActive
+                    ? 'bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300'
                     : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-500'
                 }`}>
                   {tab.count}

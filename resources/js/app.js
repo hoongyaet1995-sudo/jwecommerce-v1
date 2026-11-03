@@ -1179,7 +1179,7 @@ const installStorefrontVariantSelectors = () => {
             dot?.classList.toggle('bg-amber-400', !outOfStock && Number(variant.stock) <= 5);
             dot?.classList.toggle('bg-emerald-400', !outOfStock && Number(variant.stock) > 5);
 
-            document.querySelectorAll('[data-pdp-variant-input]').forEach((input) => { input.value = variant.id; });
+            document.querySelectorAll('[data-pdp-variant-input], [data-addon-main]').forEach((input) => { input.value = variant.id; });
             document.querySelectorAll('[data-pdp-sku], [data-pdp-sticky-sku]').forEach((target) => target.replaceChildren(variant.sku || ''));
             document.querySelectorAll('[data-pdp-price], [data-pdp-sticky-price]').forEach((target) => target.replaceChildren((selector.dataset.purchaseMode === 'quote' && selector.dataset.priceDisplay === 'from' ? 'From ' : '') + storefrontMoney(variant.price)));
             document.querySelectorAll('[data-pdp-sticky-label]').forEach((target) => target.replaceChildren(label));
@@ -1871,4 +1871,16 @@ window.addEventListener('load', () => {
     if (window.location.hash === '#storefront-support-widget') {
         document.getElementById('sf-support-launcher')?.click();
     }
+});
+
+// Shared add-on controls. Offer, variant and inventory are validated again on the server.
+document.querySelectorAll('[data-addon-offer]').forEach(offer => {
+ offer.querySelector('.pdp-addon-expand')?.addEventListener('click', e => {
+  offer.querySelectorAll('[data-addon-more]').forEach(row => row.hidden = false);
+  e.currentTarget.hidden = true;
+ });
+ offer.querySelectorAll('select[name="addon_variant_id"]').forEach(select => select.addEventListener('change', () => {
+  const price = select.selectedOptions[0]?.dataset.price;
+  if (price) select.closest('form').querySelector('[data-addon-original]').textContent = storefrontMoney(Number(price));
+ }));
 });

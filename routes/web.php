@@ -97,6 +97,7 @@ Route::get('/page-template-sample/home-deco-pdp/{handle}', function (\Illuminate
 });
 
 Route::get('/shop', [StorefrontController::class, 'index'])->name('storefront.index');
+Route::get('/offers/mix-match/{offer}', \App\Http\Controllers\MixMatchOfferController::class)->whereNumber('offer')->name('storefront.offers.mix-match');
 Route::get('/categories/{category:slug}', [StorefrontController::class, 'category'])->name('storefront.categories.show');
 Route::get('/collections/{collection:slug}', [StorefrontController::class, 'collection'])->name('storefront.collections.show');
 Route::get('/products/{handle}', [StorefrontController::class, 'show'])->name('storefront.products.show');
@@ -105,6 +106,7 @@ Route::get('/csrf-token', fn () => response()->json(['token' => csrf_token()])->
     ->name('storefront.csrf-token');
 Route::get('/cart', [CartController::class, 'show'])->name('cart.show');
 Route::get('/cart/drawer', [CartController::class, 'drawer'])->name('cart.drawer');
+Route::post('/cart/addon', \App\Http\Controllers\AddonCartController::class)->name('cart.addon.store');
 Route::post('/cart/items', [CartController::class, 'store'])->name('cart.items.store');
 Route::patch('/cart/items/{variant}', [CartController::class, 'update'])->name('cart.items.update');
 Route::delete('/cart/items/{variant}', [CartController::class, 'destroy'])->name('cart.items.destroy');
@@ -388,6 +390,14 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::delete('/api/shipping/providers/easyparcel', [ShippingProviderApiController::class, 'disconnect'])->name('api.shipping.providers.easyparcel.disconnect');
     Route::post('/api/shipping/providers/easyparcel/authorize', [ShippingProviderApiController::class, 'beginAuthorization'])->name('api.shipping.providers.easyparcel.authorize');
     Route::post('/api/orders/{order}/refund', [OrderApiController::class, 'refund']);
+    Route::post('/api/promotion-offers/products/query', [\App\Http\Controllers\Admin\PromotionOfferController::class,'products']);
+    Route::get('/api/promotion-offers/products', [\App\Http\Controllers\Admin\PromotionOfferController::class,'products']);
+    Route::get('/api/addon-deals', [\App\Http\Controllers\Admin\AddonDealController::class,'index']);
+    Route::post('/api/addon-deals', [\App\Http\Controllers\Admin\AddonDealController::class,'store']);
+    Route::patch('/api/addon-deals/{deal}', [\App\Http\Controllers\Admin\AddonDealController::class,'update']);
+    Route::get('/api/promotion-offers', [\App\Http\Controllers\Admin\PromotionOfferController::class,'index']);
+    Route::post('/api/promotion-offers', [\App\Http\Controllers\Admin\PromotionOfferController::class,'store']);
+    Route::patch('/api/promotion-offers/{offer}', [\App\Http\Controllers\Admin\PromotionOfferController::class,'update']);
     Route::get('/api/coupons', [CouponApiController::class, 'index'])->name('api.coupons.index');
     Route::post('/api/coupons', [CouponApiController::class, 'store']);
     Route::patch('/api/coupons/{coupon}', [CouponApiController::class, 'update']);

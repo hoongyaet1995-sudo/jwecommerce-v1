@@ -68,6 +68,7 @@
 
 @if($reviews->isNotEmpty())<a class="bk-rating" href="#bk-reviews">{{ number_format($reviews->avg('rating'),1) }} / 5 · {{ $reviews->count() }} reviews</a>@endif
 
+
 @if($product->isBuyMode())<form method="POST" action="{{ route('cart.items.store') }}">@csrf<input data-pdp-variant-input type="hidden" name="variant_id" value="{{ $selectedVariant?->id }}">
 
 <x-storefront.variant-selector :product="$product" :variants="$product->variants" :images="$images" :selected-variant="$selectedVariant" presentation="baby">
@@ -79,7 +80,10 @@
 
 <button data-pdp-instant-buy class="bk-outline bk-buy" name="checkout" value="1" @disabled(!$canAdd)>Buy now</button>
 
-</form>@else @include('storefront.partials.product-enquiry-actions', ['actionClass'=>'bk-primary', 'optionPresentation'=>'baby']) @endif
+</form>
+@include('storefront.partials.mix-match-product')
+@include('storefront.partials.addon-product')
+@else @include('storefront.partials.product-enquiry-actions', ['actionClass'=>'bk-primary', 'optionPresentation'=>'baby']) @endif
 
 @if($highlights->isNotEmpty())<ul class="bk-highlights">@foreach($highlights as $item)<li>@if(is_array($item) && filled($item['icon'] ?? null))<i data-lucide="{{ \App\Services\ProductHighlightIcons::resolve($item['icon']) }}" style="width:18px;height:18px;display:inline-block;vertical-align:middle;margin-right:8px" aria-hidden="true"></i>@endif{{ is_array($item)?$item['text']:$item }}</li>@endforeach</ul>@endif
 

@@ -170,6 +170,20 @@ class OrderOperationsService
                         throw ValidationException::withMessages(['restock_items' => 'Refund stock quantities exceed the selected order items.']);
                     }
                 }
+                if (!empty($locked->promotion_snapshot['lines']) && $restockItems) {
+                    $ceiling = 0;
+                    foreach ($restockItems as $itemId => $quantity) {
+                        $item = $locked->items()->findOrFail($itemId);
+                        $offset = (int) $item->quantity - (int) ($available[$itemId] ?? 0);
+                        $ceiling += app(\App\Services\Promotions\OrderPromotionAmounts::class)
+                            ->itemAmount($locked, $item, $quantity, $offset) ?? 0;
+                    }
+                    // A complete remaining return may also refund original delivery charges.
+                    if ($restockItems == $available) $ceiling = $remaining;
+                    if ($amount > $ceiling) {
+                        throw ValidationException::withMessages(['amount' => 'Refund exceeds the selected items’ original paid amount after discounts and tax.']);
+                    }
+                }
             }
 
             $refund = OrderRefund::query()->create(['order_id' => $locked->id, 'order_payment_id' => $payment->id, 'user_id' => $userId, 'amount' => $amount, 'reason' => $reason, 'status' => 'completed']);

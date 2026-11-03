@@ -85,6 +85,8 @@ class ReturnRequestService
                 $updates += ['received_quantity' => $data['received_quantity'], 'condition' => $data['condition'], 'warehouse_note' => $data['warehouse_note'] ?? null, 'received_at' => now()];
             }
             if ($action === 'resolve_refund') {
+                // Match the Admin refund lock order: order, then payment.
+                Order::query()->whereKey($r->order_id)->lockForUpdate()->firstOrFail();
                 $r->loadMissing('order.payments', 'item');
                 $payment = $r->order->payments()->latest('id')->lockForUpdate()->firstOrFail();
                 $rate = (float) ($r->order->currency_exchange_rate ?? 1);
@@ -93,6 +95,13 @@ class ReturnRequestService
                 }
                 $amount = (int) round(((float) ($data['refund_amount'] ?? 0)) * 100 / $rate);
                 $refunded = (int) $r->order->refunds()->where('status', 'completed')->sum('amount');
+                $offset = (int) ReturnRequest::query()->where('order_item_id', $r->order_item_id)
+                    ->where('status', 'resolved_refund')->sum('quantity');
+                $itemCeiling = app(\App\Services\Promotions\OrderPromotionAmounts::class)
+                    ->itemAmount($r->order, $r->item, (int) $r->quantity, $offset);
+                if ($itemCeiling !== null && $amount > $itemCeiling) {
+                    throw ValidationException::withMessages(['refund_amount' => 'Refund exceeds the returned items’ original paid amount after discounts and tax.']);
+                }
                 if ($amount <= 0 || ! in_array($payment->status, ['paid', 'partially_refunded'], true) || ((float) $data['refund_amount']) * 100 > round(($r->order->total - $refunded) * $rate) || $amount > $r->order->total - $refunded) {
                     throw ValidationException::withMessages(['status' => 'The order does not have enough refundable paid balance.']);
                 }

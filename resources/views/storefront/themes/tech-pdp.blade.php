@@ -68,6 +68,7 @@
 
 @if($reviews->isNotEmpty())<a class="te-rating" href="#te-reviews">{{ number_format($reviews->avg('rating'),1) }} / 5 · {{ $reviews->count() }} reviews</a>@endif
 
+
 @if($product->isBuyMode())<form method="POST" action="{{ route('cart.items.store') }}">@csrf<input data-pdp-variant-input type="hidden" name="variant_id" value="{{ $selectedVariant?->id }}">
 
 <x-storefront.variant-selector :product="$product" :variants="$product->variants" :images="$images" :selected-variant="$selectedVariant" />
@@ -78,7 +79,10 @@
 
 <button data-pdp-instant-buy class="te-outline te-buy" name="checkout" value="1" @disabled(!$canAdd)>Buy now</button>
 
-</form>@else @include('storefront.partials.product-enquiry-actions', ['actionClass'=>'te-primary']) @endif
+</form>
+@include('storefront.partials.mix-match-product')
+@include('storefront.partials.addon-product')
+@else @include('storefront.partials.product-enquiry-actions', ['actionClass'=>'te-primary']) @endif
 
 <p class="te-fine">SKU <span data-pdp-sku>{{ $selectedVariant?->sku }}</span></p>
 

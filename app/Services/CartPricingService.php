@@ -17,6 +17,13 @@ class CartPricingService
     {
         $subtotal = $items->sum(fn (array $item): int => $item['variant']->price * $item['quantity']);
         $discount = $this->discountFor($subtotal, $coupon);
+        $promotionSnapshot = app(\App\Services\Promotions\AutomaticPromotionService::class)->quote($items);
+        // A single merchandise offer wins. Coupon wins ties; shipping coupons remain independent.
+        if ($promotionSnapshot['discount'] > $discount) {
+            $discount = $promotionSnapshot['discount'];
+        } else {
+            $promotionSnapshot = ['version'=>1,'type'=>$discount>0?'coupon':null,'discount'=>$discount,'allocations'=>[]];
+        }
         $settings = StoreSetting::query()->pluck('value', 'key');
         $setting = fn (string $key, float $default = 0): float => (float) data_get($settings->get($key), 'data', $default);
         $shippingRate = $this->configuredShipping($settings->get('shipping_rates'), $items, $delivery, $shippingAddress);
@@ -34,7 +41,7 @@ class CartPricingService
         $taxQuote = $this->taxQuoteService->quote($items, $shippingAddress, $shipping, $discount);
         $tax = $taxQuote['tax'];
 
-        return ['subtotal' => $subtotal, 'discount' => $discount, 'shipping' => $shipping, 'payment_surcharge' => $paymentSurcharge, 'tax' => $tax, 'tax_amount' => $tax, 'tax_quote' => $taxQuote, 'total' => max(0, $subtotal - $discount + $shipping + $paymentSurcharge + $tax)];
+        return ['promotion_snapshot'=>$promotionSnapshot, 'subtotal' => $subtotal, 'discount' => $discount, 'shipping' => $shipping, 'payment_surcharge' => $paymentSurcharge, 'tax' => $tax, 'tax_amount' => $tax, 'tax_quote' => $taxQuote, 'total' => max(0, $subtotal - $discount + $shipping + $paymentSurcharge + $tax)];
     }
 
     public function deliveryLabel(string $delivery): string

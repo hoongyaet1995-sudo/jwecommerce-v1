@@ -11,11 +11,20 @@ class Order extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['number', 'customer_id', 'coupon_id', 'coupon_code', 'email', 'currency', 'currency_exchange_rate', 'status', 'shipping_method', 'shipping_label', 'shipping_snapshot', 'tracking_carrier', 'tracking_number', 'customer_note', 'internal_note', 'shipped_at', 'subtotal', 'discount_amount', 'shipping_amount', 'payment_surcharge_amount', 'tax_amount', 'total'];
+    protected static function booted(): void
+    {
+        static::updating(function (self $order): void {
+            if ($order->isDirty('promotion_snapshot')) {
+                throw new \LogicException('The order promotion snapshot is immutable.');
+            }
+        });
+    }
+
+    protected $fillable = ['promotion_snapshot', 'number', 'customer_id', 'coupon_id', 'coupon_code', 'email', 'currency', 'currency_exchange_rate', 'status', 'shipping_method', 'shipping_label', 'shipping_snapshot', 'tracking_carrier', 'tracking_number', 'customer_note', 'internal_note', 'shipped_at', 'subtotal', 'discount_amount', 'shipping_amount', 'payment_surcharge_amount', 'tax_amount', 'total'];
 
     protected function casts(): array
     {
-        return ['shipped_at' => 'datetime', 'currency_exchange_rate' => 'decimal:8', 'shipping_snapshot' => 'array'];
+        return ['promotion_snapshot'=>'array', 'shipped_at' => 'datetime', 'currency_exchange_rate' => 'decimal:8', 'shipping_snapshot' => 'array'];
     }
 
     public function items(): HasMany

@@ -233,6 +233,7 @@ class CheckoutController extends Controller
             $data['email'] = $customerUser->email;
         }
         $order = $checkout->checkout($data['email'], $items, $coupon, collect($data)->except(['email', 'payment_method', 'delivery', 'bank_account_id', 'payment_proof'])->all(), $data['payment_method'], $data['delivery'], $currency->snapshot(), $request->file('payment_proof'), $data['bank_account_id'] ?? null);
+
         if (in_array($data['payment_method'], ['stripe', 'paypal', 'billplz'], true)) {
             $payment = $order->payments()->latest('id')->firstOrFail();
             $request->session()->put('pending_payment_id', $payment->id);
@@ -245,7 +246,7 @@ class CheckoutController extends Controller
                 return redirect()->route('checkout.payment-return', ['payment' => $payment, 'state' => 'failed']);
             }
         }
-        $request->session()->forget(['cart', 'coupon_code']);
+        $request->session()->forget(['cart', 'coupon_code', 'addon_selections']);
         $request->session()->put('last_order_id', $order->id);
 
         return redirect()->route('checkout.success');

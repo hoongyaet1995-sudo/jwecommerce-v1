@@ -19,7 +19,7 @@
         <x-storefront.nav active="plp" />
         <div class="frame"><main class="container">
             <div class="breadcrumbs"><a href="/">Home</a><span>/</span><a href="{{ route('storefront.index') }}">Shop</a>@if($collection || $listingCategory)<span>/</span><span>{{ $listingTitle }}</span>@endif</div>
-            @if($isAllProducts || filled($heroImage))
+            @if($isAllProducts || isset($offer) || filled($heroImage))
             <section data-all-products-hero @class(['hero'=>true,'hero--image'=>filled($heroImage),'all-products--compact'=>$isAllProducts&&!filled($heroImage)])>
                 @if(filled($heroImage))
                     @if($isAllProducts)
@@ -31,7 +31,7 @@
                         @include('storefront.partials.catalog-banner',['media'=>$catalogBannerMedia,'imageClass'=>'heroPhoto'])
                     @endif
                 @endif
-                @if($isAllProducts)
+                @if($isAllProducts || isset($offer))
                     <div class="heroCopy"><h1>{{ $listingTitle }}</h1>@if(filled($description))<p>{{ strip_tags($description) }}</p>@endif</div>
                 @endif
             </section>

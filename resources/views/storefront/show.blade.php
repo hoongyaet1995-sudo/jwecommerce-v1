@@ -107,7 +107,8 @@
                         @if($product->isBuyMode() && $pdpPaymentMethods !== [])<p class="flex items-center gap-1 text-xs text-zinc-600 dark:text-zinc-400"><i data-lucide="zap" class="h-3.5 w-3.5 text-amber-500 dark:text-amber-400"></i>Payment methods available at checkout: <strong>{{ implode(' · ', $pdpPaymentMethods) }}</strong>.</p>@endif
                     </div>
 
-                    @if($product->isBuyMode())<form method="POST" action="{{ route('cart.items.store') }}">
+
+@if($product->isBuyMode())<form method="POST" action="{{ route('cart.items.store') }}">
                         @csrf
                         <input data-pdp-variant-input type="hidden" name="variant_id" value="{{ $selectedVariant?->id }}" />
                         <x-storefront.variant-selector :product="$product" :variants="$product->variants" :images="$images" :selected-variant="$selectedVariant" />
@@ -115,7 +116,10 @@
                             <input name="quantity" type="number" value="1" min="1" max="{{ max(1, $selectedAvailable ?? 1) }}" class="w-28 rounded-xl border border-zinc-200 bg-white px-4 py-4 text-center font-mono text-zinc-900 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:text-white" />
                             <button data-pdp-add-to-cart @disabled(!$cartEnabled) class="flex-1 rounded-xl bg-zinc-900 px-5 py-4 text-base font-black text-white transition hover:bg-amber-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-amber-400">{{ $cartEnabled ? 'Add to Cart · '.app(\App\Support\StorefrontCurrencyContext::class)->format($price) : 'Sold out' }}</button>
                         </div>
-                    </form>@else @include('storefront.partials.product-enquiry-actions') @endif
+                    </form>
+@include('storefront.partials.mix-match-product')
+@include('storefront.partials.addon-product')
+@else @include('storefront.partials.product-enquiry-actions') @endif
                     @if($product->isBuyMode())<form method="POST" action="{{ route('cart.items.store') }}" class="mt-3">
                         @csrf
                         <input data-pdp-variant-input type="hidden" name="variant_id" value="{{ $selectedVariant?->id }}" />

@@ -18,3 +18,36 @@
         width: 3.5rem;
     }
 }
+
+/* Shared add-on structure inherits the active storefront palette and typography. */
+.pdp-addon-offer{margin-block:24px;border-block:1px solid color-mix(in srgb,currentColor 16%,transparent);padding-block:18px;font:inherit;color:inherit}
+.pdp-addon-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px}
+.pdp-addon-heading small{font-size:10px;font-weight:600;letter-spacing:.12em;opacity:.65}
+.pdp-addon-heading h3{font-family:inherit;font-size:18px;line-height:1.4;font-weight:600;margin:3px 0}
+.pdp-addon-heading>span{font-size:12px;opacity:.7}
+.pdp-addon-row{display:flex!important;align-items:center;gap:12px;padding:12px 0;margin:0!important;border-bottom:0}
+.pdp-addon-row[hidden]{display:none!important}
+.pdp-addon-row img{width:64px!important;height:64px!important;object-fit:contain;background:color-mix(in srgb,currentColor 4%,transparent);border-radius:6px;flex:none}
+.pdp-addon-info{flex:1;min-width:0;font-size:13px;line-height:1.5}
+.pdp-addon-info a{font:inherit;font-weight:600;text-decoration:none}
+.pdp-addon-info del{opacity:.55;margin-right:5px;font-size:12px}
+.pdp-addon-info select{font:inherit;max-width:100%;padding:5px;border:1px solid color-mix(in srgb,currentColor 20%,transparent);background:transparent;color:inherit;border-radius:4px}
+.pdp-addon-row>button{width:auto!important;flex:none;border:1px solid currentColor;border-radius:5px;padding:8px 13px;font-family:inherit;font-size:12px;font-weight:600;color:inherit;background:transparent;cursor:pointer}
+.pdp-addon-note,.pdp-addon-expand{font-size:11px!important;line-height:1.6;margin-top:10px;opacity:.7}
+.addon-cart-status{font:inherit;font-size:12px;line-height:1.5;margin-block:12px;padding:10px 12px;border-left:2px solid currentColor;background:color-mix(in srgb,currentColor 5%,transparent)}
+
+/* Shared PDP promotion identity; inherits the active storefront theme. */
+.pdp-addon-heading small{display:flex;align-items:center;gap:.5rem}
+.pdp-promotion-icon{flex:none;vertical-align:middle}
+.pdp-promotion-link{display:inline-flex;align-items:center;gap:.5rem;margin-top:.75rem;font:inherit;font-size:.8125rem;font-weight:600;color:inherit;text-decoration:none!important}
+.pdp-mix-offer .pdp-addon-note{margin-top:.65rem}
+
+.addon-cart-status{display:flex;align-items:center;gap:.4rem}
+.addon-cart-status .pdp-promotion-icon,[data-mix-match-compact] .pdp-promotion-icon{width:15px;height:15px;flex:none}
+
+/* Compact promotion ownership inside each cart line; inherits the storefront theme. */
+.cart-item-addon{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:10px;padding:8px 10px;font-size:12px;line-height:1.4;background:color-mix(in srgb,currentColor 5%,transparent);border-left:2px solid currentColor}
+.cart-item-addon .pdp-promotion-icon{width:15px;height:15px;flex:none}
+.cart-item-addon a{margin-left:auto;font-size:12px;text-decoration:none!important;color:inherit;white-space:nowrap}
+.cart-item-addon-saving strong{font-size:12px!important;line-height:1.4!important}
+[id^="addon-deal-"]{scroll-margin-top:110px}

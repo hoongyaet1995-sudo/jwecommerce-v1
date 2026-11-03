@@ -67,6 +67,7 @@
 
 @if($reviews->isNotEmpty())<a class="jg-rating" href="#jg-reviews">{{ number_format($reviews->avg('rating'),1) }} / 5 · {{ $reviews->count() }} reviews</a>@endif
 
+
 @if($product->isBuyMode())<form method="POST" action="{{ route('cart.items.store') }}">@csrf<input data-pdp-variant-input type="hidden" name="variant_id" value="{{ $selectedVariant?->id }}">
 
 <x-storefront.variant-selector :product="$product" :variants="$product->variants" :images="$images" :selected-variant="$selectedVariant" presentation="baby">
@@ -78,7 +79,10 @@
 
 <button data-pdp-instant-buy class="jg-outline jg-buy" name="checkout" value="1" @disabled(!$canAdd)>Buy now</button>
 
-</form>@else @include('storefront.partials.product-enquiry-actions', ['actionClass'=>'jg-primary', 'optionPresentation'=>'baby']) @endif
+</form>
+@include('storefront.partials.mix-match-product')
+@include('storefront.partials.addon-product')
+@else @include('storefront.partials.product-enquiry-actions', ['actionClass'=>'jg-primary', 'optionPresentation'=>'baby']) @endif
 <div class="jg-save-item">@if($preview)<button disabled><i data-lucide="heart"></i>Save item</button>@elseif($customer)<form method="POST" action="{{ route('customer.wishlist.store',$product) }}">@csrf<button><i data-lucide="heart"></i>Save item</button></form>@else<a href="{{ route('customer.login') }}"><i data-lucide="heart"></i>Save item</a>@endif</div>
 
 @if($highlights->isNotEmpty())<ul class="jg-highlights">@foreach($highlights as $item)<li>@if(is_array($item) && filled($item['icon'] ?? null))<i data-lucide="{{ \App\Services\ProductHighlightIcons::resolve($item['icon']) }}" style="width:18px;height:18px;display:inline-block;vertical-align:middle;margin-right:8px" aria-hidden="true"></i>@endif@if(is_array($item)&&filled($item['badge']??null))<strong>{{ $item['badge'] }}</strong>@endif<small>{{ is_array($item)?$item['text']:$item }}</small></li>@endforeach</ul>@endif

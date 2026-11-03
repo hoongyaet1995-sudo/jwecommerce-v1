@@ -15,13 +15,21 @@ class CheckoutCommerceRulesTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // This suite exercises legacy reservation/activation contracts explicitly.
+        // Current Stock checkout has separate ledger-backed fixtures.
+        config(['inventory.current_stock_only' => false]);
+    }
+
     public function test_managed_checkout_defers_reservation_and_unpaid_cancel_does_not_restore_legacy(): void
     {
         $variant=$this->variant();
         $this->configureStandardShipping();$this->configureBankTransfer();
         $balance=app(\App\Services\Inventory\InventoryBalanceProvisioner::class)->provision($variant->id,'shared',null);
         \Illuminate\Support\Facades\DB::table('inventory_configuration')->where('id',1)->update(['operating_mode'=>'shared_pool']);
-        \Illuminate\Support\Facades\DB::table('inventory_balances')->where('id',$balance['balance_id'])->update(['physical_stock'=>20,'safety_stock'=>2,'counted_at'=>now()]);
+        \Illuminate\Support\Facades\DB::table('inventory_balances')->where('id',$balance['balance_id'])->update(['physical_stock'=>20,'reserved_stock'=>0,'safety_stock'=>2,'counted_at'=>now()]);
         $activation=app(\App\Services\Inventory\ManagedInventoryActivation::class)->activate('website',$balance['balance_id'],\App\Models\User::factory()->create(['is_admin'=>true]),'New orders');
         $this->travel(2)->seconds();
         $variant->update(['stock'=>0]);

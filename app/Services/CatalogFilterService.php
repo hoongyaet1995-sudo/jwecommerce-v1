@@ -12,7 +12,7 @@ use Illuminate\Http\Request;
 /** The only storefront PLP filter authority: enabled variants and published reviews. */
 final class CatalogFilterService
 {
-    public function for(Request $request, Builder|Relation $base, ?string $forcedCategory = null): CatalogFilterResult
+    public function for(Request $request, Builder|Relation $base, ?string $forcedCategory = null, ?int $perPage = null): CatalogFilterResult
     {
         $theme = $this->resolvedTheme($request, $base, $forcedCategory);
         $wedding = $theme === 'wedding';
@@ -25,7 +25,7 @@ final class CatalogFilterService
                     : fn (HasMany $variants) => $variants,
             ]);
         if ($wedding) $products->orderBy('products.id');
-        $products = $products->paginate($wedding ? 3 : 12)->withQueryString();
+        $products = $products->paginate($perPage ?? ($wedding ? 3 : 12))->withQueryString();
 
         return new CatalogFilterResult($filters, $products, $this->facets($base, $filters));
     }

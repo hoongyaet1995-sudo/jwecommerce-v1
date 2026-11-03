@@ -61,6 +61,6 @@ class CouponApiController extends Controller
         return ['id'=>(string) $coupon->id,'code'=>$coupon->code,'name'=>$coupon->name,'description'=>$coupon->description,'discountType'=>$coupon->discount_type,
             'value'=>$coupon->discount_type === 'fixed_amount' ? $coupon->value / 100 : $coupon->value,'minimumSpend'=>$coupon->min_spend !== null ? $coupon->min_spend / 100 : null,
             'usageLimit'=>$coupon->usage_limit,'usageCount'=>$coupon->usage_count,'perCustomerLimit'=>$coupon->per_customer_limit,'isActive'=>$coupon->is_active,
-            'startsAt'=>$coupon->starts_at?->toIso8601String(),'endsAt'=>$coupon->ends_at?->toIso8601String(),'createdAt'=>$coupon->created_at?->toIso8601String(),'updatedAt'=>$coupon->updated_at?->toIso8601String()];
+            'startsAt'=>($coupon->starts_at && $coupon->starts_at->year > 0 ? $coupon->starts_at->toIso8601String() : null),'endsAt'=>($coupon->ends_at && $coupon->ends_at->year > 0 ? $coupon->ends_at->toIso8601String() : null),'createdAt'=>$coupon->created_at?->toIso8601String(),'updatedAt'=>$coupon->updated_at?->toIso8601String()];
     }
 }
