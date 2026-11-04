@@ -49,6 +49,7 @@ import {
     House,
     Ticket,
     TicketPercent,
+    Coins,
     ShoppingBag,
     SlidersHorizontal,
     Sparkles,
@@ -78,7 +79,7 @@ const renderIcons = () => {
         icons: {
             Container, Settings, UsersRound,
             AudioLines, Battery, Usb, Bluetooth, Wifi, Cpu, Monitor, Leaf, Droplets, Gem, Gift,
-            House, Ticket, TicketPercent,
+            House, Ticket, TicketPercent, Coins,
             ArrowLeft,
             ArrowRight,
             ArrowUpRight,
@@ -555,7 +556,7 @@ const installDeliveryMatrix = () => {
             // Tax is resolved server-side by TaxQuoteService; this browser only
             // displays the returned store-wide Tax Class quote.
             const tax = quotedTax;
-            const total = Math.max(0, subtotal - discount + shipping + tax);
+            const total = Math.max(0, subtotal - discount + shipping + tax - Number(matrix.dataset.rewardsAmount || 0));
             const definitionFor = (label) => [...(form?.querySelectorAll('dt') || [])].find((term) => term.textContent.trim() === label)?.nextElementSibling;
             const shippingDefinition = definitionFor('Shipping');
             const taxDefinition = form?.querySelector('[data-store-tax-amount]');
@@ -1879,8 +1880,28 @@ document.querySelectorAll('[data-addon-offer]').forEach(offer => {
   offer.querySelectorAll('[data-addon-more]').forEach(row => row.hidden = false);
   e.currentTarget.hidden = true;
  });
- offer.querySelectorAll('select[name="addon_variant_id"]').forEach(select => select.addEventListener('change', () => {
+ offer.querySelectorAll('select[name="addon_variant_id"], select[name="gift_variant_id"]').forEach(select => select.addEventListener('change', () => {
   const price = select.selectedOptions[0]?.dataset.price;
   if (price) select.closest('form').querySelector('[data-addon-original]').textContent = storefrontMoney(Number(price));
  }));
+});
+// Preserve checkout details when the customer changes their rewards preference.
+document.addEventListener('submit', (event) => {
+    const form = event.target;
+    if (!(form instanceof HTMLFormElement) || !form.matches('[data-rewards-preferences]')) return;
+    const checkout = Array.from(document.forms).find(candidate => candidate !== form && candidate.querySelector('[name="first_name"]'));
+    if (!checkout) return;
+    if (Array.from(checkout.querySelectorAll('input[type="file"]')).some(input => input.files?.length)) {
+        event.preventDefault();
+        alert('Choose your rewards before attaching payment proof. Your selected file has been kept.');
+        return;
+    }
+    const allowed = ['first_name','last_name','email','phone','line_1','line_2','city','state','postal_code','country','selected_address_id','payment_method','bank_account_id'];
+    const values = new FormData(checkout);
+    for (const name of allowed) {
+        if (!values.has(name)) continue;
+        const input = document.createElement('input');
+        input.type = 'hidden'; input.name = name; input.value = String(values.get(name));
+        form.appendChild(input);
+    }
 });

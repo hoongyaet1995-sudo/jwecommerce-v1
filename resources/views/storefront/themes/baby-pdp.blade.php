@@ -83,6 +83,7 @@
 </form>
 @include('storefront.partials.mix-match-product')
 @include('storefront.partials.addon-product')
+@include('storefront.partials.free-gift-product')
 @else @include('storefront.partials.product-enquiry-actions', ['actionClass'=>'bk-primary', 'optionPresentation'=>'baby']) @endif
 
 @if($highlights->isNotEmpty())<ul class="bk-highlights">@foreach($highlights as $item)<li>@if(is_array($item) && filled($item['icon'] ?? null))<i data-lucide="{{ \App\Services\ProductHighlightIcons::resolve($item['icon']) }}" style="width:18px;height:18px;display:inline-block;vertical-align:middle;margin-right:8px" aria-hidden="true"></i>@endif{{ is_array($item)?$item['text']:$item }}</li>@endforeach</ul>@endif

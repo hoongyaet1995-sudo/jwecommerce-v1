@@ -112,3 +112,23 @@
 
 /* Shared cart/quotation checkout: let the editorial title and emblem wrap on narrow screens. */
 @media(max-width:760px){.fd-checkout .fd-page-heading{flex-wrap:wrap;gap:24px}.fd-checkout .fd-checkout-emblem{max-width:100%}}
+
+/* Food checkout: coordinated rewards and order summary surfaces. */
+.fd-theme .fd-checkout-sidebar > .store-rewards-checkout.store-rewards-checkout,
+.fd-theme .fd-checkout-sidebar > .fd-checkout-summary {
+ box-sizing:border-box;width:100%;border:1px solid var(--fd-line,#dedbcf)!important;
+ border-radius:0;background:#fff!important;padding:24px;
+ box-shadow:0 3px 8px rgba(55,61,39,.035),0 12px 28px rgba(55,61,39,.065);
+}
+.fd-theme .fd-checkout-sidebar .rewards-checkout-icon {color:var(--fd-olive,#495238);background:rgba(73,82,56,.08);}
+@media(max-width:640px){
+.fd-theme .fd-checkout-sidebar > .store-rewards-checkout.store-rewards-checkout,
+.fd-theme .fd-checkout-sidebar > .fd-checkout-summary {padding:20px;}
+}
+
+/* Food account Rewards: native pantry palette and shared wallet. */
+
+
+.fd-rewards-wallet{display:grid;grid-template-columns:1fr 1fr;gap:32px;background:#fff;border:1px solid var(--fd-line);box-shadow:0 8px 28px #29302109;padding:30px;margin:28px 0 18px}.fd-rewards-wallet small{font-size:10px;letter-spacing:1.6px;color:var(--fd-muted)}.fd-rewards-balance{font:47px Georgia,serif;margin:12px 0}.fd-rewards-balance span{font:14px Arial;color:var(--fd-muted)}.fd-rewards-use{border-left:1px solid #e5e6de;padding-left:32px}.fd-rewards-use h3{font-size:14px}.fd-rewards-use p{font-size:13px;color:var(--fd-muted)}.fd-rewards-use a{display:inline-block;text-decoration:none;margin-top:12px}.fd-rewards-notice{background:#eef0e6;padding:15px 20px;font-size:13px}.fd-rewards-activity-title{margin-top:36px}.fd-rewards-filters{display:flex;gap:24px;border-bottom:1px solid var(--fd-line)}.fd-rewards-filters a{padding:12px 0;text-decoration:none}.fd-rewards-filters a[aria-current]{border-bottom:2px solid var(--fd-ink)}.fd-rewards-history{width:100%;border-collapse:collapse}.fd-rewards-history th{text-align:left;font-size:10px;letter-spacing:1px;color:var(--fd-muted);font-weight:normal;padding:18px 10px}.fd-rewards-history td{padding:22px 10px;border-top:1px solid var(--fd-line);font-size:13px}.fd-rewards-history th:last-child,.fd-rewards-history td:last-child{text-align:right}.fd-rewards-order{display:block;font-size:11px;color:var(--fd-muted);margin-top:7px}.fd-rewards-positive{color:#5b7151}.fd-rewards-empty{text-align:center!important;padding:40px!important}.fd-rewards-rules{border-top:1px solid var(--fd-line);padding:20px 0;margin-top:28px}.fd-rewards-rules summary{cursor:pointer}.fd-rewards-pagination{margin:20px 0}@media(max-width:760px){.fd-rewards-wallet{grid-template-columns:1fr;padding:24px;gap:24px}.fd-rewards-use{border-left:0;border-top:1px solid #e4e5db;padding:24px 0 0}.fd-rewards-history th:nth-child(2),.fd-rewards-history td:nth-child(2){display:none}}
+
+.fd-rewards-wallet{border-radius:0;box-shadow:0 8px 28px #2930210c}.fd-rewards-notice{border-radius:0}.fd-rewards-use .fd-primary{border-radius:0;width:auto;display:inline-flex}.fd-rewards-use h3{font-size:22px}.fd-rewards-balance{color:var(--fd-ink)}

@@ -246,7 +246,7 @@ class CheckoutController extends Controller
                 return redirect()->route('checkout.payment-return', ['payment' => $payment, 'state' => 'failed']);
             }
         }
-        $request->session()->forget(['cart', 'coupon_code', 'addon_selections']);
+        $request->session()->forget(['cart', 'coupon_code', 'addon_selections', 'gift_selections', 'use_rewards']);
         $request->session()->put('last_order_id', $order->id);
 
         return redirect()->route('checkout.success');

@@ -72,6 +72,7 @@ class CartController extends Controller
         foreach($selections as &$selected) unset($selected[$variant->id]);
         unset($selected);
         $request->session()->put('addon_selections',$selections);
+        $gifts=$request->session()->get('gift_selections',[]);foreach($gifts as &$selected)unset($selected[$variant->id]);unset($selected);$request->session()->put('gift_selections',$gifts);
         $request->session()->put('cart', $cart);
 
         return redirect()->route('cart.show');

@@ -111,9 +111,9 @@
 <x-layouts.app :title="'My account | '.$shopBrandName"><div
     data-fashion-account
     class="fs-theme"
-    @hashchange.window="activeTab=['dashboard','profile','addresses','latest_purchase','purchase_history','vouchers','wishlist'].includes(location.hash.slice(1))?location.hash.slice(1):'dashboard'"
+    @hashchange.window="activeTab=['dashboard','profile','addresses','latest_purchase','purchase_history','vouchers','wishlist','rewards'].includes(location.hash.slice(1))?location.hash.slice(1):'dashboard'"
     x-data="{
-        activeTab: ['dashboard','profile','addresses','latest_purchase','purchase_history','vouchers','wishlist'].includes(window.location.hash.slice(1)) ? window.location.hash.slice(1) : 'dashboard',
+        activeTab: ['dashboard','profile','addresses','latest_purchase','purchase_history','vouchers','wishlist','rewards'].includes(window.location.hash.slice(1)) ? window.location.hash.slice(1) : 'dashboard',
         profileFirstName: @js($user['firstName'] ?: str($user['name'])->before(' ')->toString()),
         profileLastName: @js($user['lastName'] ?: str($user['name'])->after(' ')->toString()),
         profilePhone: @js($user['phone'] ?? ''),
@@ -298,7 +298,7 @@
 
 <x-storefront.nav active="account"/><main class="fs-account-main fs-shell">@php($accountHero=app(\App\Services\WebsiteThemeCustomization::class)->media('fashion','account',asset('images/themes/fashion/hero.png?v=fashion2')))
 <header class="fs-account-heading">@if(!$accountHero['hidden'])<div class="fs-account-hero-media" data-account-page-media>@include('storefront.partials.theme-media',['media'=>$accountHero])</div>@endif<div class="fs-account-title"><p class="fs-eyebrow">MY ACCOUNT</p><h1>Hello, {{ $user['firstName'] ?? $user['name'] }}.</h1><p>Manage your account, orders and more.</p></div></header><div class="fs-account-layout">
-<nav class="fs-account-nav" aria-label="Account navigation">@foreach(['dashboard'=>'Overview','purchase_history'=>'Orders','addresses'=>'Addresses','wishlist'=>'Saved items','profile'=>'Profile','vouchers'=>'Vouchers'] as $key=>$label)<button type="button" @click="activeTab='{{ $key }}';location.hash='{{ $key }}'" :aria-current="activeTab==='{{ $key }}' ? 'page' : null">{{ $label }}</button>@endforeach <form method="POST" action="{{ route('customer.logout') }}">@csrf<button @disabled($preview)>Sign out</button></form></nav>
+<nav class="fs-account-nav" aria-label="Account navigation">@foreach(['dashboard'=>'Overview','purchase_history'=>'Orders','addresses'=>'Addresses','wishlist'=>'Saved items','profile'=>'Profile','vouchers'=>'Vouchers','rewards'=>'Rewards'] as $key=>$label)<button type="button" @click="activeTab='{{ $key }}';location.hash='{{ $key }}'" :aria-current="activeTab==='{{ $key }}' ? 'page' : null">{{ $label }}</button>@endforeach <form method="POST" action="{{ route('customer.logout') }}">@csrf<button @disabled($preview)>Sign out</button></form></nav>
 <div class="fs-account-content">@if(session('status'))<p role="status" class="fs-notice">{{ session('status') }}</p>@endif @if($errors->any())<p role="alert" class="fs-error">{{ $errors->first() }}</p>@endif
 @include('storefront.themes.fashion-account-overview')
 <section x-show="activeTab==='profile'" x-cloak><h2>Your profile</h2><div class="fs-profile-layout"><form class="fs-profile-editor" method="POST" action="{{ route('customer.profile.update') }}">@csrf @method('PATCH')<fieldset @disabled($preview)><label>Full name<input name="name" value="{{ old('name',$user['name']) }}" required autocomplete="name"></label><label>Phone<input name="phone" x-model="profilePhone" type="tel" autocomplete="tel"></label><label>Email address<input value="{{ $user['email'] }}" readonly autocomplete="email"></label><small>Email address cannot be changed here.</small><button class="fs-primary">Save changes</button></fieldset></form><aside class="fs-profile-help"><h3>Your account</h3><p>Keep your name and phone number up to date.</p><button type="button" class="fs-link" @click="activeTab='addresses';location.hash='addresses'">Manage addresses →</button></aside></div></section>
@@ -306,4 +306,5 @@
 @include('storefront.themes.fashion-account-saved')
 @include('storefront.themes.fashion-account-orders')
 @include('storefront.themes.fashion-account-vouchers')
+@include('storefront.themes.fashion-account-rewards')
 </div></div></main>@include('storefront.themes.fashion-account-dialogs')<x-storefront.footer/></div></x-layouts.app>

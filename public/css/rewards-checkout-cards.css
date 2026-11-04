@@ -1,0 +1,30 @@
+/* Checkout-only visual adapters; wallet and checkout behavior stay shared. */
+.rewards-refined-sidebar {--reward-card-radius:12px;--reward-card-line:#e2e5e9;--reward-card-accent:#334155;--reward-card-tint:#f1f5f9;--reward-card-shadow:0 3px 8px #1e293b06,0 12px 28px #1e293b0d;}
+.rewards-refined-sidebar[data-rewards-theme=tech]{--reward-card-radius:10px;--reward-card-accent:#1459bb;--reward-card-tint:#edf4ff;--reward-card-line:#dbe5f3;}
+.rewards-refined-sidebar[data-rewards-theme=fashion]{--reward-card-radius:0;--reward-card-accent:#242424;--reward-card-tint:#f3f2f0;--reward-card-line:#dedbd7;}
+.rewards-refined-sidebar[data-rewards-theme=baby]{--reward-card-radius:12px;--reward-card-accent:#6a7360;--reward-card-tint:#f0f3eb;--reward-card-line:#e3e7df;}
+.rewards-refined-sidebar[data-rewards-theme=jewelry]{--reward-card-radius:8px;--reward-card-accent:#967747;--reward-card-tint:#f7f1e8;--reward-card-line:#e8dfd1;}
+.rewards-refined-sidebar[data-rewards-theme=logistics]{--reward-card-radius:5px;--reward-card-accent:#234b60;--reward-card-tint:#eef3f6;--reward-card-line:#dce4e9;}
+.rewards-refined-sidebar[data-rewards-theme=universal]{--reward-card-radius:8px;--reward-card-accent:#344d60;--reward-card-tint:#eff3f6;--reward-card-line:#dfe5ea;}
+.rewards-refined-sidebar[data-rewards-theme=wedding]{--reward-card-radius:4px;--reward-card-accent:#956f73;--reward-card-tint:#faf1f1;--reward-card-line:#eadedf;}
+body .rewards-refined-sidebar[data-rewards-theme] > section.store-rewards-checkout,
+body .rewards-refined-sidebar[data-rewards-theme] > section.store-rewards-checkout + section {
+ box-sizing:border-box;width:100%;min-width:0;background:#fff!important;
+ border:1px solid var(--reward-card-line)!important;border-radius:var(--reward-card-radius)!important;
+ padding:24px!important;box-shadow:var(--reward-card-shadow)!important;
+}
+body .rewards-refined-sidebar[data-rewards-theme] > section.store-rewards-checkout {margin-bottom:20px;}
+body .rewards-refined-sidebar[data-rewards-theme] .rewards-checkout-icon {color:var(--reward-card-accent)!important;background:var(--reward-card-tint)!important;}
+body .rewards-refined-sidebar[data-rewards-theme] .store-rewards-switch[aria-checked=true] {background:var(--reward-card-accent)!important;}
+@media(max-width:640px){
+ body .rewards-refined-sidebar[data-rewards-theme] > section.store-rewards-checkout,
+ body .rewards-refined-sidebar[data-rewards-theme] > section.store-rewards-checkout + section {padding:20px!important;}
+}
+
+/* Let single-column checkout grids shrink below long product names. */
+.rewards-refined-sidebar{min-width:0;}
+@media(max-width:760px){
+ form:has(> .rewards-refined-sidebar){grid-template-columns:minmax(0,1fr)!important;}
+ form:has(> .rewards-refined-sidebar)>*{min-width:0;max-width:100%;}
+ .rewards-refined-sidebar article>div{min-width:0;}
+}

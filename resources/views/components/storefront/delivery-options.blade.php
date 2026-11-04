@@ -4,7 +4,7 @@
     $selected = old('delivery', $selected ?? array_key_first($options) ?? '');
 @endphp
 
-<section class="space-y-4 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/70" data-delivery-matrix @if($quoteUrl) data-delivery-quote-url="{{ $quoteUrl }}" @endif data-subtotal="{{ $summary['subtotal'] }}" data-discount="{{ $summary['discount'] }}" data-tax="{{ $summary['tax'] }}" data-tax-quote='@json($summary['tax_quote'] ?? [])'>
+<section class="space-y-4 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/70" data-rewards-amount="{{ $summary['rewards']['amount'] ?? 0 }}" data-delivery-matrix @if($quoteUrl) data-delivery-quote-url="{{ $quoteUrl }}" @endif data-subtotal="{{ $summary['subtotal'] }}" data-discount="{{ $summary['discount'] }}" data-tax="{{ $summary['tax'] }}" data-tax-quote='@json($summary['tax_quote'] ?? [])'>
     <div class="flex items-center gap-3 border-b border-zinc-200 pb-3 dark:border-zinc-800"><span class="grid h-7 w-7 place-items-center rounded-full bg-amber-400 text-xs font-black text-zinc-950">{{ $step }}</span><h2 class="font-serif text-sm font-bold text-zinc-900 dark:text-zinc-100">{{ $heading }}</h2></div>
     <div class="space-y-2.5">
         @foreach($options as $value => $option)

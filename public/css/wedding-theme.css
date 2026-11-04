@@ -7,3 +7,17 @@
 
 .wd-pdp-marquee header .wd-marquee-toggle{display:grid;place-items:center;width:32px;height:32px;flex:none;border:1px solid currentColor;border-radius:50%;padding:0;background:transparent;transition:background-color .18s ease,opacity .18s ease}.wd-marquee-toggle:hover{background:color-mix(in srgb,currentColor 8%,transparent)}.wd-marquee-toggle:focus-visible{outline:2px solid currentColor;outline-offset:3px}.wd-marquee-toggle svg{display:block}.wd-marquee-toggle .wd-marquee-play{transform:translateX(1px)}
 @media(max-width:760px){.wd-pdp-marquee header .wd-marquee-toggle{display:none}}
+
+/* Account Rewards: theme scoped adapter. */
+
+
+
+.wd-rewards-wallet{display:grid;grid-template-columns:1fr 1fr;gap:32px;background:#fff;border:1px solid var(--wd-line);box-shadow:0 8px 28px #29302109;padding:30px;margin:28px 0 18px}.wd-rewards-wallet small{font-size:10px;letter-spacing:1.6px;color:#716f68}.wd-rewards-balance{font:47px Georgia,serif;margin:12px 0}.wd-rewards-balance span{font:14px Arial;color:#716f68}.wd-rewards-use{border-left:1px solid #e5e6de;padding-left:32px}.wd-rewards-use h3{font-size:14px}.wd-rewards-use p{font-size:13px;color:#716f68}.wd-rewards-use a{display:inline-block;text-decoration:none;margin-top:12px}.wd-rewards-notice{background:#e8f1ff;padding:15px 20px;font-size:13px}.wd-rewards-activity-title{margin-top:36px}.wd-rewards-filters{display:flex;gap:24px;border-bottom:1px solid var(--wd-line)}.wd-rewards-filters a{padding:12px 0;text-decoration:none}.wd-rewards-filters a[aria-current]{border-bottom:2px solid var(--wd-ink)}.wd-rewards-history{width:100%;border-collapse:collapse}.wd-rewards-history th{text-align:left;font-size:10px;letter-spacing:1px;color:#716f68;font-weight:normal;padding:18px 10px}.wd-rewards-history td{padding:22px 10px;border-top:1px solid var(--wd-line);font-size:13px}.wd-rewards-history th:last-child,.wd-rewards-history td:last-child{text-align:right}.wd-rewards-order{display:block;font-size:11px;color:#716f68;margin-top:7px}.wd-rewards-positive{color:#5b7151}.wd-rewards-empty{text-align:center!important;padding:40px!important}.wd-rewards-rules{border-top:1px solid var(--wd-line);padding:20px 0;margin-top:28px}.wd-rewards-rules summary{cursor:pointer}.wd-rewards-pagination{margin:20px 0}@media(max-width:760px){.wd-rewards-wallet{grid-template-columns:1fr;padding:24px;gap:24px}.wd-rewards-use{border-left:0;border-top:1px solid #e4e5db;padding:24px 0 0}.wd-rewards-history th:nth-child(2),.wd-rewards-history td:nth-child(2){display:none}}
+
+.wd-rewards-wallet{border-radius:8px;box-shadow:0 8px 28px #1720330b}.wd-rewards-notice{border-radius:6px}.wd-rewards-use .wd-primary{border-radius:8px;width:auto;display:inline-flex}.wd-rewards-use h3{font-size:22px}.wd-rewards-balance{color:var(--wd-ink)}
+
+.wd-rewards-balance{font-size:44px;font-weight:600;color:var(--wd-main)}.wd-rewards-wallet{font-family:inherit}.wd-rewards-use{border-color:var(--wd-line)}.wd-rewards-use h3{font-size:20px}.wd-rewards-use .wd-primary{background:var(--wd-main);color:#fff}
+
+.wd-rewards-wallet{border-radius:0px}.wd-rewards-balance{font-family:inherit;color:var(--wd-main)}
+
+.wd-rewards-notice{background:color-mix(in srgb,var(--wd-main) 7%,white)}.wd-rewards{min-width:0}

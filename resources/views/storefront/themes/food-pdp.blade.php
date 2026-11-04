@@ -79,6 +79,7 @@
 </form>
 @include('storefront.partials.mix-match-product')
 @include('storefront.partials.addon-product')
+@include('storefront.partials.free-gift-product')
 @else @include('storefront.partials.product-enquiry-actions', ['actionClass'=>'fd-primary']) @endif
 
 <p class="fd-fine">SKU <span data-pdp-sku>{{ $selectedVariant?->sku }}</span></p>

@@ -51,7 +51,6 @@ export const SETTING_TABS: { id: NavSection; label: string; icon: React.ElementT
   { id: 'settings-users', label: 'User Login Setting', icon: Users },
   { id: 'settings-search', label: 'Search Visibility', icon: Globe },
   { id: 'settings-shop', label: 'My Shop Setting', icon: Store },
-  { id: 'settings-points', label: 'Points/Rewards', icon: Award },
   { id: 'settings-invoice', label: 'Invoice Information Setting', icon: FileText },
   { id: 'settings-email', label: 'Auto Email & WhatsApp Template', icon: Mail },
   { id: 'settings-ai-agent', label: 'AI Auto Reply & Bot', icon: Bot },
@@ -561,64 +560,6 @@ export const ShopSettingsHub: React.FC = () => {
         </div>
         <ReturnPolicySettingCard />
         </>
-      )}
-
-      {currentSection === 'settings-points' && (
-        <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-6 sm:p-8 shadow-sm space-y-6">
-          <div>
-            <h2 className="text-xl font-bold text-neutral-900 dark:text-white">Points & Rewards Setting</h2>
-            <p className="text-xs text-neutral-500 mt-0.5">Configure automated customer loyalty points earning and checkout redemption conversion rates.</p>
-          </div>
-
-          <form onSubmit={handleSave} className="space-y-5 max-w-2xl">
-            <div className="flex items-center justify-between p-4 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700">
-              <div>
-                <div className="text-xs font-bold text-neutral-900 dark:text-white">Enable Customer Points Engine</div>
-                <div className="text-[11px] text-neutral-500">Allow shoppers to accumulate loyalty rewards on completed orders.</div>
-              </div>
-              <input
-                type="checkbox"
-                checked={formData.enablePoints}
-                onChange={e => setFormData({ ...formData, enablePoints: e.target.checked })}
-                className="w-5 h-5 rounded text-indigo-600 accent-indigo-600 cursor-pointer"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-800 space-y-2">
-                <label className="text-xs font-bold text-neutral-800 dark:text-neutral-200">Earning Rate</label>
-                <p className="text-[11px] text-neutral-500">How many points earned per 1 {formData.currency} spent.</p>
-                <input
-                  type="number"
-                  min={1}
-                  value={formData.pointsRate}
-                  onChange={e => setFormData({ ...formData, pointsRate: Number(e.target.value) })}
-                  className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs font-semibold"
-                />
-              </div>
-
-              <div className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-800 space-y-2">
-                <label className="text-xs font-bold text-neutral-800 dark:text-neutral-200">Redemption Rate</label>
-                <p className="text-[11px] text-neutral-500">Points needed to deduct 1 {formData.currency} at checkout.</p>
-                <input
-                  type="number"
-                  min={1}
-                  value={formData.pointsRedeemRate}
-                  onChange={e => setFormData({ ...formData, pointsRedeemRate: Number(e.target.value) })}
-                  className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs font-semibold"
-                />
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold transition cursor-pointer"
-            >
-              <Save className="w-4 h-4" />
-              Update Rewards Logic
-            </button>
-          </form>
-        </div>
       )}
 
       {currentSection === 'settings-invoice' && (

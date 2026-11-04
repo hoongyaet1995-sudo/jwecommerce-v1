@@ -781,7 +781,7 @@ export const PaymentSettingAdmin: React.FC = () => {
               Global Checkout Payment Rules & Expirations
             </h2>
             <p className="text-xs text-neutral-500 mt-1">
-              Configure default gateway ordering, unpaid order automatic inventory release, reminder notices, and customer loyalty rewards split-payments.
+              Configure default gateway ordering, unpaid order automatic inventory release, reminder notices, .
             </p>
 
             <form onSubmit={handleSaveRulesSettings} className="mt-8 space-y-6 max-w-3xl">
@@ -820,19 +820,6 @@ export const PaymentSettingAdmin: React.FC = () => {
 
               {/* Toggles */}
               <div className="space-y-3">
-                <div className="flex items-center justify-between p-4 rounded-xl bg-neutral-50 dark:bg-neutral-800/40 border border-neutral-200 dark:border-neutral-700/60">
-                  <div>
-                    <label className="text-xs font-bold text-neutral-900 dark:text-white">Allow Loyalty Points Split Payment</label>
-                    <p className="text-[11px] text-neutral-500">Shoppers can redeem reward points to offset order total before paying the balance via FPX or Card</p>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={rulesForm.enableLoyaltyPointsSplitPayment}
-                    onChange={e => setRulesForm({ ...rulesForm, enableLoyaltyPointsSplitPayment: e.target.checked })}
-                    className="w-5 h-5 rounded text-indigo-600 accent-indigo-600 cursor-pointer"
-                  />
-                </div>
-
                 <div className="flex items-center justify-between p-4 rounded-xl bg-neutral-50 dark:bg-neutral-800/40 border border-neutral-200 dark:border-neutral-700/60">
                   <div>
                     <label className="text-xs font-bold text-neutral-900 dark:text-white">Send SMS Payment Reminders</label>

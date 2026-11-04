@@ -111,9 +111,9 @@
 <x-layouts.app :title="'My account | '.$shopBrandName"><div
     data-food-account
     class="fd-theme"
-    @hashchange.window="activeTab=['dashboard','profile','addresses','latest_purchase','purchase_history','vouchers','wishlist'].includes(location.hash.slice(1))?location.hash.slice(1):'dashboard'"
+    @hashchange.window="activeTab=['dashboard','profile','addresses','latest_purchase','purchase_history','vouchers','wishlist','rewards'].includes(location.hash.slice(1))?location.hash.slice(1):'dashboard'"
     x-data="{
-        activeTab: ['dashboard','profile','addresses','latest_purchase','purchase_history','vouchers','wishlist'].includes(window.location.hash.slice(1)) ? window.location.hash.slice(1) : 'dashboard',
+        activeTab: ['dashboard','profile','addresses','latest_purchase','purchase_history','vouchers','wishlist','rewards'].includes(window.location.hash.slice(1)) ? window.location.hash.slice(1) : 'dashboard',
         profileFirstName: @js($user['firstName'] ?: str($user['name'])->before(' ')->toString()),
         profileLastName: @js($user['lastName'] ?: str($user['name'])->after(' ')->toString()),
         profilePhone: @js($user['phone'] ?? ''),
@@ -305,9 +305,10 @@
 @if(!in_array($tab,['vouchers','addresses','profile'],true))<div class="fd-account-hero-copy"><h1>My account</h1><p>Welcome back, {{ $user['firstName'] ?: $user['name'] }}.</p></div>@endif
 </header>@endforeach
 @if(session('status'))<p role="status">{{ session('status') }}</p>@endif @if($errors->any())<p role="alert" class="fd-error">{{ $errors->first() }}</p>@endif
-<div class="fd-account-layout"><nav class="fd-account-nav" aria-label="Account navigation">@foreach(['dashboard'=>'Overview','purchase_history'=>'Orders','addresses'=>'Addresses','wishlist'=>'Saved items','profile'=>'Profile','vouchers'=>'Vouchers'] as $key=>$label)<button type="button" @click="activeTab='{{ $key }}';location.hash='{{ $key }}'" :aria-current="activeTab==='{{ $key }}' ? 'page' : null"><i data-lucide="{{ ['dashboard'=>'house','purchase_history'=>'package','addresses'=>'map-pin','wishlist'=>'heart','profile'=>'user','vouchers'=>'ticket'][$key] }}"></i>{{ $label }}</button>@endforeach @if(!$preview)<form method="POST" action="{{ route('customer.logout') }}">@csrf<button>Sign out</button></form>@endif</nav>
+<div class="fd-account-layout"><nav class="fd-account-nav" aria-label="Account navigation">@foreach(['dashboard'=>'Overview','purchase_history'=>'Orders','addresses'=>'Addresses','wishlist'=>'Saved items','profile'=>'Profile','vouchers'=>'Vouchers','rewards'=>'Rewards'] as $key=>$label)<button type="button" @click="activeTab='{{ $key }}';location.hash='{{ $key }}'" :aria-current="activeTab==='{{ $key }}' ? 'page' : null"><i data-lucide="{{ ['dashboard'=>'house','purchase_history'=>'package','addresses'=>'map-pin','wishlist'=>'heart','profile'=>'user','vouchers'=>'ticket','rewards'=>'coins'][$key] }}"></i>{{ $label }}</button>@endforeach @if(!$preview)<form method="POST" action="{{ route('customer.logout') }}">@csrf<button>Sign out</button></form>@endif</nav>
 <div class="fd-account-content">
 @include('storefront.themes.food-account-overview')
+@include('storefront.themes.food-account-rewards')
 <section x-show="activeTab==='profile'" x-cloak><h2>Your profile</h2><p class="fd-muted">Manage your personal details.</p><form class="fd-profile-editor" method="POST" action="{{ route('customer.profile.update') }}">@csrf @method('PATCH')<fieldset class="fd-address-fields" @disabled($preview)><label>Full name<input name="name" value="{{ old('name',$user['name']) }}" required autocomplete="name"></label><label>Email address<input value="{{ $user['email'] }}" readonly autocomplete="email"></label><label>Phone<input name="phone" type="tel" value="{{ old('phone',$user['phone']) }}" autocomplete="tel"></label><div class="fd-address-actions"><button class="fd-primary">Save changes</button></div></fieldset></form></section>
 @include('storefront.themes.food-account-addresses')
 @include('storefront.themes.food-account-saved')

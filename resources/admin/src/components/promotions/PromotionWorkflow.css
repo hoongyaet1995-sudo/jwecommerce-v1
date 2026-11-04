@@ -40,3 +40,10 @@
 .pw-addon-item:first-child{padding-top:0}.pw-addon-item label{margin:0}.pw-addon-item input{margin-top:6px}
 .promotion-workflow .pw-remove-product{color:#ef4444;padding:8px 10px;align-self:center;white-space:nowrap}
 @media(max-width:600px){.pw-addon-item{grid-template-columns:minmax(0,1fr) auto;gap:12px}.pw-addon-item>.pw-product-identity{grid-column:1/-1}.pw-addon-item label{max-width:180px}.pw-product-identity img,.pw-product-placeholder{width:42px;height:42px;flex-basis:42px}}
+
+/* Compact Rewards availability switch, retaining native checkbox semantics. */
+.promotion-workflow .pw-toggle{display:flex;align-items:center;justify-content:space-between;gap:16px;cursor:pointer}
+.promotion-workflow .pw-toggle input[role=switch]{appearance:none;-webkit-appearance:none;position:relative;display:inline-block;flex:0 0 36px;width:36px;height:20px;margin:0;border:0;border-radius:999px;background:#9ca3af;cursor:pointer;transition:background .15s ease}
+.promotion-workflow .pw-toggle input[role=switch]::after{content:"";position:absolute;left:3px;top:3px;width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 1px 2px #0002;transition:transform .15s ease}
+.promotion-workflow .pw-toggle input[role=switch]:checked{background:#6547ff}
+.promotion-workflow .pw-toggle input[role=switch]:checked::after{transform:translateX(16px)}

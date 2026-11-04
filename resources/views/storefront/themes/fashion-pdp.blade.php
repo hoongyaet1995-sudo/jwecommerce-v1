@@ -82,6 +82,7 @@
 </form>
 @include('storefront.partials.mix-match-product')
 @include('storefront.partials.addon-product')
+@include('storefront.partials.free-gift-product')
 @else @include('storefront.partials.product-enquiry-actions', ['actionClass'=>'fs-primary', 'optionPresentation'=>'baby']) @endif
 <div class="fs-save-item">@if($preview)<button disabled><i data-lucide="heart"></i>Save item</button>@elseif($customer)<form method="POST" action="{{ route('customer.wishlist.store',$product) }}">@csrf<button><i data-lucide="heart"></i>Save item</button></form>@else<a href="{{ route('customer.login') }}"><i data-lucide="heart"></i>Save item</a>@endif</div>
 

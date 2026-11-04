@@ -39,7 +39,7 @@
             @if($design['showThemeSwitch'])<button type="button" data-atelier-theme-toggle class="jw-shell-icon" aria-label="Switch light or dark appearance"><i data-atelier-theme-icon data-lucide="{{ $design['appearance']==='dark'?'sun':'moon' }}"></i></button>@endif
             @if($design['showAccount'])<a class="jw-shell-icon jw-shell-optional" href="{{ $memberUser?route('customer.account'):route('customer.login') }}" aria-label="Account"><i data-lucide="user"></i></a>@endif
             @if($design['showCurrency'])<select data-atelier-currency aria-label="Select currency" class="jw-shell-currency jw-shell-optional">@foreach($currencies as $currency)<option value="{{ $currency['code'] }}" @selected($currency['code']===$selectedCurrency['code'])>{{ $currency['code'] }}</option>@endforeach</select>@endif
-            @if(filled($design['ctaLabel']) && filled($design['ctaUrl']))<a href="{{ $design['ctaUrl'] }}" class="jw-shell-cta" aria-label="{{ $design['ctaLabel'] }}"><span>{{ $design['ctaLabel'] }}</span><i data-lucide="arrow-right"></i></a>@endif
+            @if(filled($design['ctaLabel']) && filled($design['ctaUrl']))<a href="{{ $design['ctaUrl'] }}" class="jw-shell-cta" aria-label="{{ $design['ctaLabel'] }}"><span>{{ $design['ctaLabel'] }}</span></a>@endif
         </div>
     </div>
     @if($design['business']==='commerce')<form data-shell-search-panel hidden class="jw-shell-search" action="{{ route('storefront.index') }}"><label for="shell-product-search" class="sr-only">Search products</label><input id="shell-product-search" name="search" placeholder="Search products…"><button type="submit" class="jw-shell-icon" aria-label="Submit search"><i data-lucide="search"></i></button></form>@endif

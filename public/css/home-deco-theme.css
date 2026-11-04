@@ -61,3 +61,21 @@
 .hd-order-filters>button{padding:10px 22px;border:0;border-radius:999px;color:var(--hd-ink);background:transparent;line-height:1.4;white-space:nowrap}
 .hd-order-filters>button[aria-pressed=true]{padding:10px 22px;border:0;background:var(--theme-main,var(--hd-olive));color:var(--theme-main-ink,#fff);border-radius:999px}
 .hd-order-filters>button:focus-visible{outline:2px solid var(--hd-olive);outline-offset:3px}
+
+/* Home & Deco checkout: aligned, softly elevated summary cards. */
+.hd-theme .hd-checkout-sidebar > .store-rewards-checkout.store-rewards-checkout,
+.hd-theme .hd-checkout-sidebar > .hd-checkout-summary {
+    box-sizing: border-box;
+    width: 100%;
+    border: 1px solid var(--hd-line, #deded2);
+    background: #fff;
+    padding: 24px;
+    box-shadow: 0 3px 8px rgba(48,51,40,.035), 0 12px 28px rgba(48,51,40,.065);
+}
+@media (max-width: 640px) {
+    .hd-theme .hd-checkout-sidebar > .store-rewards-checkout.store-rewards-checkout,
+    .hd-theme .hd-checkout-sidebar > .hd-checkout-summary { padding: 20px; }
+}
+
+/* Account rewards: shared wallet data, Home & Deco presentation. */
+.hd-rewards-wallet{display:grid;grid-template-columns:1fr 1fr;gap:32px;background:#fff;border:1px solid #dedfd5;box-shadow:0 8px 28px #29302109;padding:30px;margin:28px 0 18px}.hd-rewards-wallet small{font-size:10px;letter-spacing:1.6px;color:#747b64}.hd-rewards-balance{font:47px Georgia,serif;margin:12px 0}.hd-rewards-balance span{font:14px Arial;color:#73796b}.hd-rewards-use{border-left:1px solid #e5e6de;padding-left:32px}.hd-rewards-use h3{font-size:14px}.hd-rewards-use p{font-size:13px;color:#74776c}.hd-rewards-use a{display:inline-block;text-decoration:none;margin-top:12px}.hd-rewards-notice{background:#f0eee4;padding:15px 20px;font-size:13px}.hd-rewards-activity-title{margin-top:36px}.hd-rewards-filters{display:flex;gap:24px;border-bottom:1px solid #dedfd6}.hd-rewards-filters a{padding:12px 0;text-decoration:none}.hd-rewards-filters a[aria-current]{border-bottom:2px solid #606a49}.hd-rewards-history{width:100%;border-collapse:collapse}.hd-rewards-history th{text-align:left;font-size:10px;letter-spacing:1px;color:#7c8172;font-weight:normal;padding:18px 10px}.hd-rewards-history td{padding:22px 10px;border-top:1px solid #e0e2d7;font-size:13px}.hd-rewards-history th:last-child,.hd-rewards-history td:last-child{text-align:right}.hd-rewards-order{display:block;font-size:11px;color:#7d8272;margin-top:7px}.hd-rewards-positive{color:#5b7151}.hd-rewards-empty{text-align:center!important;padding:40px!important}.hd-rewards-rules{border-top:1px solid #dedfd4;padding:20px 0;margin-top:28px}.hd-rewards-rules summary{cursor:pointer}.hd-rewards-pagination{margin:20px 0}@media(max-width:760px){.hd-rewards-wallet{grid-template-columns:1fr;padding:24px;gap:24px}.hd-rewards-use{border-left:0;border-top:1px solid #e4e5db;padding:24px 0 0}.hd-rewards-history th:nth-child(2),.hd-rewards-history td:nth-child(2){display:none}}

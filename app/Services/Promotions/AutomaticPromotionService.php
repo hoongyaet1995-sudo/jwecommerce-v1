@@ -17,6 +17,10 @@ class AutomaticPromotionService {
   }
   $selected=request()->hasSession()?request()->session()->get('addon_selections',[]):[];
   $addon=app(AddonOfferService::class)->quote($lines,$selected);
-  return $addon['discount']>$best['discount']?$addon:$best;
+  $best=$addon['discount']>$best['discount']?$addon:$best;
+  $gift=app(FreeGiftOfferService::class)->quote($lines,request()->hasSession()?request()->session()->get('gift_selections',[]):[]);
+  $best=$gift['discount']>$best['discount']?$gift:$best;
+  $tiered=app(TieredOfferService::class)->quote($lines);
+  return $tiered['discount']>$best['discount']?$tiered:$best;
  }
 }

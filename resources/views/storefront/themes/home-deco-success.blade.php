@@ -6,7 +6,9 @@
  $media=app(\App\Services\WebsiteThemeCustomization::class)->media('home_deco','checkoutSuccess',asset('images/cms-samples/home-editorial-hero.png'));
 @endphp
 <x-layouts.app :title="'Order confirmation | '.$shopBrandName"><div class="hd-theme" data-home-deco-success><x-storefront.nav active="checkout"/>
-<main class="hd-confirmation hd-shell"><header class="hd-confirmation-heading"><span class="hd-confirmation-icon" aria-hidden="true">{{ $settled?'✓':'◷' }}</span>
+<main class="hd-confirmation hd-shell">
+@include('storefront.partials.rewards-order')
+<header class="hd-confirmation-heading"><span class="hd-confirmation-icon" aria-hidden="true">{{ $settled?'✓':'◷' }}</span>
 <h1>{{ $settled?'Considered pieces.':'Your order is awaiting payment.' }}@if($settled)<br>A home to make your own.@endif</h1><p>{{ $settled?'Payment received':'Payment pending' }} · Order {{ $order->number }}</p><p>{{ $settled?'Thank you for your order.':'Your order has been created. Payment confirmation is still pending.' }}</p>
 @if(session('status'))<p role="status">{{ session('status') }}</p>@endif @if($errors->any())<p role="alert">{{ $errors->first() }}</p>@endif
 @if($paymentProof)<section class="hd-proof"><h2>Payment proof</h2><p>{{ ucfirst($paymentProof['proofStatus']) }}</p>@if($paymentProof['originalFileName'])<p>{{ $paymentProof['originalFileName'] }}</p>@endif @if($paymentProof['rejectionReason'])<p role="alert">{{ $paymentProof['rejectionReason'] }}</p>@endif

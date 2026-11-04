@@ -7,6 +7,8 @@
  $media=app(\App\Services\WebsiteThemeCustomization::class)->media('beauty','checkoutSuccess',asset('images/themes/beauty/ritual-campaign.png'));
 @endphp
 <x-layouts.app :title="'Order confirmation | '.$shopBrandName"><div class="bs-theme" data-beauty-success><x-storefront.nav active="checkout"/><main class="bs-confirmation bs-shell">
+@include('storefront.partials.rewards-order')
+
 <header class="bs-confirmation-heading"><span class="bs-confirmation-icon" aria-hidden="true"><i data-lucide="{{ $settled?'check':'clock' }}"></i></span><h1>{{ $settled?'Your ritual, confirmed.':($pending?'Your ritual, almost ready.':'Your order update.') }}</h1><p>{{ $settled?'Payment received.':($pending?'Your order has been created. Payment confirmation is still pending.':'Review the latest order status below.') }}@if($settled&&$order->status==='processing') Your order is being processed.@endif</p><p>Order number {{ $order->number }} <span class="bs-status">{{ $settled?'Paid':str($latestPayment?->status??'pending')->replace('_',' ')->title() }}</span></p><div class="bs-confirmation-actions"><a class="bs-primary" href="{{ route('order-tracking.show') }}">Track your order</a><a class="bs-outline" href="{{ route('storefront.index') }}">Continue shopping</a></div></header>
 @if(session('status'))<p role="status">{{ session('status') }}</p>@endif @if($errors->any())<p role="alert">{{ $errors->first() }}</p>@endif
 <div class="bs-confirmation-body {{ $media['hidden']?'bs-no-media':'' }}">@if(!$media['hidden'])<section class="bs-success-media" data-checkout-success-media>@include('storefront.partials.theme-media')</section>@endif<div>

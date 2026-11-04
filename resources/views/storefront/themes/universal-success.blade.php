@@ -7,6 +7,8 @@
  $media=app(\App\Services\WebsiteThemeCustomization::class)->media('universal','checkoutSuccess',asset('images/themes/universal/hero.png?v=universal2'));
 @endphp
 <x-layouts.app :title="'Order confirmation | '.$shopBrandName"><div class="uv-theme" data-universal-success><x-storefront.nav active="checkout"/><main class="universal-result">
+@include('storefront.partials.rewards-order')
+
 @if(!$media['hidden']&&filled($media['desktop']))<section class="jr-hero" data-checkout-success-media>@include('storefront.partials.theme-media')</section>@endif
 <header class="jr-heading">@include('storefront.partials.universal-page-content',['contentPage'=>'checkoutSuccess'])<p class="uv-eyebrow">{{ $settled?'ORDER CONFIRMED':'PAYMENT PENDING' }}</p><span class="jr-icon"><i data-lucide="{{ $settled?'check':'clock' }}"></i></span><div><h1>{{ $settled?'Thank you, '.($order->addresses->firstWhere('type','shipping')?->first_name ?: 'for your order').'.':($pending?'Your order is awaiting payment':'Your order has been received.') }}</h1><p>Order {{ $order->number }}</p><p>{{ $settled?'Your order has been confirmed.':'Your order has been created. Payment confirmation is still pending.' }}</p></div><dl><div><dt>Payment status</dt><dd class="uv-status">{{ $settled?'Paid':($pending?'Awaiting payment':str($latestPayment?->status??'pending')->replace('_',' ')->title()) }}</dd></div><div><dt>Order status</dt><dd class="uv-status">{{ str($order->status)->replace('_',' ')->title() }}</dd></div></dl></header>
 @if(session('status'))<p role="status">{{ session('status') }}</p>@endif @if($errors->any())<p role="alert" class="uv-error">{{ $errors->first() }}</p>@endif

@@ -8,6 +8,15 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class OrderPayment extends Model
 {
+    protected static function booted(): void
+    {
+        static::saved(function (self $payment): void {
+            if (in_array($payment->status, ['paid', 'captured', 'succeeded'], true) && $payment->order) {
+                app(\App\Services\Rewards\RewardsWallet::class)->synchronize($payment->order);
+            }
+        });
+    }
+
     protected $fillable = [
         'order_id',
         'gateway',

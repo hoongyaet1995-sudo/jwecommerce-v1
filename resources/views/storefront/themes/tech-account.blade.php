@@ -111,9 +111,9 @@
 <x-layouts.app :title="'My account | '.$shopBrandName"><div
     data-tech-account
     class="te-theme"
-    @hashchange.window="activeTab=['dashboard','profile','addresses','latest_purchase','purchase_history','vouchers','wishlist'].includes(location.hash.slice(1))?location.hash.slice(1):'dashboard'"
+    @hashchange.window="activeTab=['dashboard','profile','addresses','latest_purchase','purchase_history','vouchers','wishlist','rewards'].includes(location.hash.slice(1))?location.hash.slice(1):'dashboard'"
     x-data="{
-        activeTab: ['dashboard','profile','addresses','latest_purchase','purchase_history','vouchers','wishlist'].includes(window.location.hash.slice(1)) ? window.location.hash.slice(1) : 'dashboard',
+        activeTab: ['dashboard','profile','addresses','latest_purchase','purchase_history','vouchers','wishlist','rewards'].includes(window.location.hash.slice(1)) ? window.location.hash.slice(1) : 'dashboard',
         profileFirstName: @js($user['firstName'] ?: str($user['name'])->before(' ')->toString()),
         profileLastName: @js($user['lastName'] ?: str($user['name'])->after(' ')->toString()),
         profilePhone: @js($user['phone'] ?? ''),
@@ -298,9 +298,10 @@
 
 <x-storefront.nav active="account"/><main class="te-account-main te-shell">@php($accountHero=app(\App\Services\WebsiteThemeCustomization::class)->media('tech','account',asset('images/themes/tech/hero.png')))
 <header class="te-account-heading">@if(!$accountHero['hidden'])<div class="te-account-hero-media" data-account-page-media>@include('storefront.partials.theme-media',['media'=>$accountHero])</div>@endif<div class="te-account-title"><p class="te-eyebrow">MY ACCOUNT</p><h1>My account</h1><p>Welcome back, {{ $user['firstName'] ?? $user['name'] }}.</p></div></header><div class="te-account-layout">
-<nav class="te-account-nav" aria-label="Account navigation">@foreach(['dashboard'=>'Overview','purchase_history'=>'Orders','addresses'=>'Addresses','wishlist'=>'Saved items','profile'=>'Profile','vouchers'=>'Vouchers'] as $key=>$label)<button type="button" @click="activeTab='{{ $key }}';location.hash='{{ $key }}'" :aria-current="activeTab==='{{ $key }}' ? 'page' : null"><i data-lucide="{{ ['dashboard'=>'house','purchase_history'=>'package','addresses'=>'map-pin','wishlist'=>'heart','profile'=>'user','vouchers'=>'ticket-percent'][$key] }}"></i>{{ $label }}</button>@endforeach <form method="POST" action="{{ route('customer.logout') }}">@csrf<button @disabled($preview)><i data-lucide="log-out"></i>Sign out</button></form></nav>
+<nav class="te-account-nav" aria-label="Account navigation">@foreach(['dashboard'=>'Overview','purchase_history'=>'Orders','addresses'=>'Addresses','wishlist'=>'Saved items','profile'=>'Profile','vouchers'=>'Vouchers','rewards'=>'Rewards'] as $key=>$label)<button type="button" @click="activeTab='{{ $key }}';location.hash='{{ $key }}'" :aria-current="activeTab==='{{ $key }}' ? 'page' : null"><i data-lucide="{{ ['dashboard'=>'house','purchase_history'=>'package','addresses'=>'map-pin','wishlist'=>'heart','profile'=>'user','vouchers'=>'ticket-percent','rewards'=>'coins'][$key] }}"></i>{{ $label }}</button>@endforeach <form method="POST" action="{{ route('customer.logout') }}">@csrf<button @disabled($preview)><i data-lucide="log-out"></i>Sign out</button></form></nav>
 <div class="te-account-content">@if(session('status'))<p role="status" class="te-notice">{{ session('status') }}</p>@endif @if($errors->any())<p role="alert" class="te-error">{{ $errors->first() }}</p>@endif
 @include('storefront.themes.tech-account-overview')
+@include('storefront.themes.tech-account-rewards')
 <section x-show="activeTab==='profile'" x-cloak><h2>Your profile</h2><form class="te-profile-editor" method="POST" action="{{ route('customer.profile.update') }}">@csrf @method('PATCH')<h3>Personal information</h3><fieldset @disabled($preview)><label>Full name<input name="name" value="{{ old('name',$user['name']) }}" required autocomplete="name"></label><label>Phone<input name="phone" x-model="profilePhone" type="tel" autocomplete="tel"></label><label>Email address<input value="{{ $user['email'] }}" readonly autocomplete="email"></label><small>Email address cannot be changed here.</small><button class="te-primary">Save changes</button></fieldset></form></section>
 @include('storefront.themes.tech-account-addresses')
 @include('storefront.themes.tech-account-saved')

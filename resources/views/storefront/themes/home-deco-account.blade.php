@@ -111,9 +111,9 @@
 <x-layouts.app :title="'My account | '.$shopBrandName"><div
     data-home-deco-account
     class="hd-theme"
-    @hashchange.window="activeTab=['dashboard','profile','addresses','latest_purchase','purchase_history','vouchers','wishlist'].includes(location.hash.slice(1))?location.hash.slice(1):'dashboard'"
+    @hashchange.window="activeTab=['dashboard','profile','addresses','latest_purchase','purchase_history','vouchers','wishlist','rewards'].includes(location.hash.slice(1))?location.hash.slice(1):'dashboard'"
     x-data="{
-        activeTab: ['dashboard','profile','addresses','latest_purchase','purchase_history','vouchers','wishlist'].includes(window.location.hash.slice(1)) ? window.location.hash.slice(1) : 'dashboard',
+        activeTab: ['dashboard','profile','addresses','latest_purchase','purchase_history','vouchers','wishlist','rewards'].includes(window.location.hash.slice(1)) ? window.location.hash.slice(1) : 'dashboard',
         profileFirstName: @js($user['firstName'] ?: str($user['name'])->before(' ')->toString()),
         profileLastName: @js($user['lastName'] ?: str($user['name'])->after(' ')->toString()),
         profilePhone: @js($user['phone'] ?? ''),
@@ -297,7 +297,7 @@
 >
 
 <x-storefront.nav active="account"/><main class="hd-account-main hd-shell"><header class="hd-account-heading"><p class="eyebrow">MY ACCOUNT</p><h1>Your home, collected.</h1></header>
-<nav class="hd-account-tabs" aria-label="Account navigation">@foreach(['dashboard'=>'Overview','purchase_history'=>'Orders','addresses'=>'Addresses','wishlist'=>'Saved pieces','profile'=>'Profile','vouchers'=>'Vouchers'] as $key=>$label)<button type="button" @click="activeTab='{{ $key }}';location.hash='{{ $key }}'" :aria-current="activeTab==='{{ $key }}' ? 'page' : null">{{ $label }}</button>@endforeach <form method="POST" action="{{ route('customer.logout') }}">@csrf<button @disabled($preview)>Sign out</button></form></nav>
+<nav class="hd-account-tabs" aria-label="Account navigation">@foreach(['dashboard'=>'Overview','purchase_history'=>'Orders','addresses'=>'Addresses','wishlist'=>'Saved pieces','profile'=>'Profile','vouchers'=>'Vouchers','rewards'=>'Rewards'] as $key=>$label)<button type="button" @click="activeTab='{{ $key }}';location.hash='{{ $key }}'" :aria-current="activeTab==='{{ $key }}' ? 'page' : null">{{ $label }}</button>@endforeach <form method="POST" action="{{ route('customer.logout') }}">@csrf<button @disabled($preview)>Sign out</button></form></nav>
 @if(session('status'))<p role="status" class="hd-notice">{{ session('status') }}</p>@endif @if($errors->any())<p role="alert" class="hd-error">{{ $errors->first() }}</p>@endif
 <div class="hd-account-content">
 @include('storefront.themes.home-deco-account-overview')
@@ -306,4 +306,5 @@
 @include('storefront.themes.home-deco-account-saved')
 @include('storefront.themes.home-deco-account-orders')
 @include('storefront.themes.home-deco-account-vouchers')
+@include('storefront.themes.home-deco-account-rewards')
 </div></main>@include('storefront.themes.home-deco-account-dialogs')<x-storefront.footer/></div></x-layouts.app>

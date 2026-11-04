@@ -7,6 +7,8 @@
  $media=app(\App\Services\WebsiteThemeCustomization::class)->media('tech','checkoutSuccess',asset('images/themes/tech/cart-scene.png'));
 @endphp
 <x-layouts.app :title="'Order confirmation | '.$shopBrandName"><div class="te-theme" data-tech-success><x-storefront.nav active="checkout"/><main class="technology-result">
+@include('storefront.partials.rewards-order')
+
 <header class="tr-heading"><span class="tr-icon"><i data-lucide="{{ $settled?'check':'clock' }}"></i></span><div><h1>{{ $settled?'Order received':($pending?'Your order is awaiting payment':'Your order update') }}</h1><p>Order {{ $order->number }}</p><p>{{ $settled?'Your payment has been received.':'Your order has been created. Payment confirmation is still pending.' }}</p></div><dl><div><dt>Payment status</dt><dd class="te-status">{{ $settled?'Paid':str($latestPayment?->status??'pending')->replace('_',' ')->title() }}</dd></div><div><dt>Order status</dt><dd class="te-status">{{ str($order->status)->replace('_',' ')->title() }}</dd></div></dl></header>
 @if(session('status'))<p role="status">{{ session('status') }}</p>@endif @if($errors->any())<p role="alert" class="te-error">{{ $errors->first() }}</p>@endif
 <div class="tr-actions"><a class="te-primary" href="{{ route('order-tracking.show') }}">Track your order →</a><a class="te-outline" href="{{ route('storefront.index') }}">Continue shopping</a></div>

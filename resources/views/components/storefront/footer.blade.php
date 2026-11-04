@@ -48,7 +48,7 @@
         @endforeach
         @endif
     </div>
-    <div class="mx-auto flex max-w-7xl flex-col gap-4 border-t border-zinc-200 px-4 py-6 text-xs sm:px-6 md:flex-row md:items-center md:justify-between lg:px-8 dark:border-zinc-900"><span>© 2026 {{ $shopBrandName }}. All rights reserved.</span><span class="font-mono">Privacy Policy&nbsp;&nbsp;•&nbsp;&nbsp;Terms of Service&nbsp;&nbsp;•&nbsp;&nbsp;Global Compliance</span></div>
+    <div data-privacy-entry class="mx-auto flex max-w-7xl flex-col gap-4 border-t border-zinc-200 px-4 py-6 text-xs sm:px-6 md:flex-row md:items-center md:justify-between lg:px-8 dark:border-zinc-900"><span>© 2026 {{ $shopBrandName }}. All rights reserved.</span><span class="font-mono">Privacy Policy&nbsp;&nbsp;•&nbsp;&nbsp;Terms of Service&nbsp;&nbsp;•&nbsp;&nbsp;Global Compliance</span></div>
 </footer>
 
 @endif

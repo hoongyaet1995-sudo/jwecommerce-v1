@@ -44,6 +44,23 @@ class ProductPurchaseRules
             $request->session()->put('cart', $kept);
             $request->session()->flash('cart_purchase_notice', 'Some items are no longer available for online purchase and were removed from your cart.');
         }
+        $gifts=$request->session()->get('gift_selections',[]);
+        if($gifts){
+            $variants=ProductVariant::with('product')->whereIn('id',array_keys($kept))->get()->keyBy('id');
+            $items=collect($kept)->map(fn($n,$id)=>['variant'=>$variants->get($id),'quantity'=>(int)$n])->filter(fn($i)=>$i['variant']);
+            $coupon=\App\Models\Coupon::where('code',$request->session()->get('coupon_code'))->first();
+            $summary=app(CartPricingService::class)->summarize($items,$coupon);
+            $snapshot=$summary['promotion_snapshot']??[];$removed=false;
+            foreach($gifts as $offerId=>&$selected){foreach($selected as $id=>&$n){
+                $price=(int)($variants->get($id)?->price??0);
+                $allowed=(($snapshot['type']??null)==='gift'&&($snapshot['offer_id']??null)==$offerId&&$price>0)?intdiv((int)($snapshot['allocations'][(string)$id]??0),$price):0;
+                $old=min((int)$n,(int)($kept[$id]??0));$keep=min($old,$allowed);
+                if($old>$keep){$kept[$id]-=$old-$keep;if($kept[$id]<=0)unset($kept[$id]);$removed=true;}
+                $n=$keep;
+            }unset($n);}unset($selected);
+            $request->session()->put(['cart'=>$kept,'gift_selections'=>$gifts]);
+            if($removed)$request->session()->flash('cart_purchase_notice','Your free gift selection was updated because this cart no longer qualifies for every selected gift. No removed gift is charged at its regular price.');
+        }
         return $kept;
     }
 }

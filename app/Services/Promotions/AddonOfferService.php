@@ -4,8 +4,9 @@ use App\Models\{AddonDeal,Product};
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 class AddonOfferService {
+ protected function kind():string {return 'addon';}
  public function active():Collection {
-  $q=AddonDeal::where('enabled',true)->where(fn($q)=>$q->whereNull('starts_at')->orWhere('starts_at','<=',now()))->where(fn($q)=>$q->whereNull('ends_at')->orWhere('ends_at','>=',now()))->orderBy('id');
+  $q=AddonDeal::where('kind',$this->kind())->where('enabled',true)->where(fn($q)=>$q->whereNull('starts_at')->orWhere('starts_at','<=',now()))->where(fn($q)=>$q->whereNull('ends_at')->orWhere('ends_at','>=',now()))->orderBy('id');
   if(DB::transactionLevel()>0)$q->lockForUpdate();return $q->get();
  }
  public function forProduct(Product $product):Collection {
@@ -24,6 +25,20 @@ class AddonOfferService {
    if($offers->contains(fn($d)=>in_array($product->id,$d->product_ids)))$result[$product->id]=$this->forProduct($product);
   }
   return $result;
+ }
+ /** Reminder capacity is derived from the applied offer, never another campaign. */
+ public function hasRemainingSlots(\App\Models\AddonDeal $deal,Collection $items,array $snapshot):bool {
+  $main=(int)$items->filter(fn($i)=>in_array($i['variant']->product_id,$deal->product_ids))->sum('quantity');
+  $capacity=$deal->kind==='gift'
+   ? min($deal->per_order_cap,intdiv($main,max(1,(int)$deal->buy_quantity))*(int)$deal->gift_quantity)
+   : min($main,$deal->per_order_cap);
+  if($capacity<=0)return false;
+  if(($snapshot['type']??null)!==$this->kind()||(int)($snapshot['offer_id']??0)!==$deal->id)return true;
+  $prices=array_column($deal->addons,'price','product_id');$used=0;
+  foreach($items as $item){$v=$item['variant'];$saving=(int)$v->price-(int)($prices[$v->product_id]??$v->price);
+   if($saving>0)$used+=intdiv((int)($snapshot['allocations'][(string)$v->id]??0),$saving);
+  }
+  return $used<$capacity;
  }
  public function quote(Collection $items,array $selections):array {
   $best=['version'=>1,'type'=>null,'discount'=>0,'allocations'=>[]];

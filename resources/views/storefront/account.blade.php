@@ -64,6 +64,7 @@
         ]],
         ['group' => '3. My Coupons', 'groupCn' => '我的优惠券', 'items' => [
             ['id' => 'vouchers', 'label' => 'Available Coupons', 'icon' => 'ticket', 'badge' => $voucherGroups['counts']['eligible'].' Active', 'badgeColor' => 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30'],
+            ['id' => 'rewards', 'label' => 'Rewards', 'icon' => 'coins', 'badge' => null, 'badgeColor' => ''],
         ]],
     ];
     $sessions = [
@@ -116,7 +117,7 @@
     data-original-account-workspace
     class="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex flex-col font-sans selection:bg-amber-400 selection:text-zinc-950 transition-colors duration-200"
     x-data="{
-        activeTab: ['dashboard','profile','security','addresses','latest_purchase','purchase_history','vouchers'].includes(window.location.hash.slice(1)) ? window.location.hash.slice(1) : 'dashboard',
+        activeTab: ['dashboard','profile','security','addresses','latest_purchase','purchase_history','vouchers','rewards'].includes(window.location.hash.slice(1)) ? window.location.hash.slice(1) : 'dashboard',
         profileFirstName: @js($user['firstName'] ?: str($user['name'])->before(' ')->toString()),
         profileLastName: @js($user['lastName'] ?: str($user['name'])->after(' ')->toString()),
         profilePhone: @js($user['phone'] ?? ''),
@@ -476,6 +477,7 @@
                             </div>
                         </section>
 
+                        @include('storefront.themes.default-account-rewards')
                         <section x-show="activeTab === 'vouchers'" x-cloak class="space-y-8 animate-fade-in font-sans">
                             <div><span class="text-[11px] font-mono text-amber-600 dark:text-amber-400 uppercase tracking-widest font-semibold">3. My Coupons</span><h2 class="text-xl sm:text-2xl font-bold font-serif text-zinc-900 dark:text-white mt-1">Available Coupons & Discounts</h2><p class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">Coupons currently available to use in your shopping cart, plus your actual redemption history.</p></div>
                             <div x-show="appliedToast" x-cloak class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 p-3.5 rounded-2xl border border-emerald-500/20 flex items-center gap-2"><i data-lucide="circle-check" class="w-4 h-4 shrink-0"></i><span x-text="appliedToast"></span></div>

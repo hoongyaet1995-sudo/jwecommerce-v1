@@ -111,9 +111,9 @@
 <x-layouts.app :title="'My account | '.$shopBrandName"><div
     data-wedding-account
     class="wd-theme"
-    @hashchange.window="activeTab=['dashboard','profile','addresses','latest_purchase','purchase_history','vouchers','wishlist'].includes(location.hash.slice(1))?location.hash.slice(1):'dashboard'"
+    @hashchange.window="activeTab=['dashboard','profile','addresses','latest_purchase','purchase_history','vouchers','wishlist','rewards'].includes(location.hash.slice(1))?location.hash.slice(1):'dashboard'"
     x-data="{
-        activeTab: ['dashboard','profile','addresses','latest_purchase','purchase_history','vouchers','wishlist'].includes(window.location.hash.slice(1)) ? window.location.hash.slice(1) : 'dashboard',
+        activeTab: ['dashboard','profile','addresses','latest_purchase','purchase_history','vouchers','wishlist','rewards'].includes(window.location.hash.slice(1)) ? window.location.hash.slice(1) : 'dashboard',
         profileFirstName: @js($user['firstName'] ?: str($user['name'])->before(' ')->toString()),
         profileLastName: @js($user['lastName'] ?: str($user['name'])->after(' ')->toString()),
         profilePhone: @js($user['phone'] ?? ''),
@@ -268,7 +268,7 @@
 
 <x-storefront.nav active="account"/><main class="wd-account-main">@php($accountHero=app(\App\Services\WebsiteThemeCustomization::class)->media('wedding','account',asset('images/themes/wedding/account.png')))
 <header class="wd-account-heading"><x-storefront.content-frame><div class="wd-account-title"><p class="wd-eyebrow">MY ACCOUNT</p><h1>Hello,<br><em>{{ ($user['firstName'] ?? '') ?: str($user['name'])->before(' ') }}.</em></h1><p>Your details. Your orders. All in one place.</p><span class="wd-welcome">WELCOME BACK</span></div></x-storefront.content-frame>@if(!$accountHero['hidden'])<div class="wd-account-hero-media" data-account-page-media>@include('storefront.partials.theme-media',['media'=>$accountHero])</div>@endif</header><x-storefront.content-frame><div class="wd-account-layout">
-<nav class="wd-account-nav" aria-label="Account navigation">@foreach(['dashboard'=>'Overview','purchase_history'=>'Orders','wishlist'=>'Saved items','addresses'=>'Addresses','profile'=>'Profile','vouchers'=>'Vouchers'] as $key=>$label)<button type="button" @click="activeTab='{{ $key }}';location.hash='{{ $key }}'" :aria-current="activeTab==='{{ $key }}' ? 'page' : null">{{ $label }}</button>@endforeach<form method="POST" action="{{ route('customer.logout') }}">@csrf<button @disabled($preview)>Sign out</button></form></nav>
+<nav class="wd-account-nav" aria-label="Account navigation">@foreach(['dashboard'=>'Overview','purchase_history'=>'Orders','wishlist'=>'Saved items','addresses'=>'Addresses','profile'=>'Profile','vouchers'=>'Vouchers','rewards'=>'Rewards'] as $key=>$label)<button type="button" @click="activeTab='{{ $key }}';location.hash='{{ $key }}'" :aria-current="activeTab==='{{ $key }}' ? 'page' : null">{{ $label }}</button>@endforeach<form method="POST" action="{{ route('customer.logout') }}">@csrf<button @disabled($preview)>Sign out</button></form></nav>
 <div class="wd-account-content">@if(session('status'))<p role="status" class="wd-notice">{{ session('status') }}</p>@endif @if($errors->any())<p role="alert" class="wd-error">{{ $errors->first() }}</p>@endif
 @include('storefront.themes.wedding-account-overview')
 <section x-show="activeTab==='profile'" x-cloak><h2>Your details</h2><p>Manage your contact details and password.</p><div class="wd-profile-layout"><form method="POST" action="{{ route('customer.profile.update') }}">@csrf @method('PATCH')<h3><small>01</small> Personal information</h3><fieldset @disabled($preview)><label>Full name<input name="name" value="{{ old('name',$user['name']) }}" required autocomplete="name"></label><label>Email address<input value="{{ $user['email'] }}" readonly autocomplete="email"></label><small>Email address cannot be changed here.</small><label>Phone (optional)<input name="phone" x-model="profilePhone" type="tel" autocomplete="tel"></label><button class="wd-primary">Save changes →</button></fieldset></form><form method="POST" action="{{ route('customer.security.update') }}">@csrf @method('PATCH')<h3><small>02</small> Change password</h3><fieldset @disabled($preview)>@foreach(['current_password'=>'Current password','password'=>'New password','password_confirmation'=>'Confirm password'] as $name=>$label)<label x-data="{visible:false}">{{ $label }}<span class="wd-password"><input :type="visible?'text':'password'" type="password" name="{{ $name }}" autocomplete="{{ $name==='current_password'?'current-password':'new-password' }}" required @if($name!=='current_password') minlength="8" @endif><button type="button" @click="visible=!visible" :aria-label="visible?'Hide password':'Show password'">◉</button></span></label>@endforeach<button class="wd-small-outline">Update password →</button></fieldset></form></div></section>
@@ -276,4 +276,5 @@
 @include('storefront.themes.wedding-account-saved')
 @include('storefront.themes.wedding-account-orders')
 @include('storefront.themes.wedding-account-vouchers')
+@include('storefront.themes.wedding-account-rewards')
 </div></div></x-storefront.content-frame></main>@include('storefront.themes.wedding-account-dialogs')<x-storefront.footer/></div></x-layouts.app>

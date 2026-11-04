@@ -111,9 +111,9 @@
 <x-layouts.app :title="'My account | '.$shopBrandName"><div
     data-jewelry-account
     class="jg-theme"
-    @hashchange.window="activeTab=['dashboard','profile','addresses','latest_purchase','purchase_history','vouchers','wishlist'].includes(location.hash.slice(1))?location.hash.slice(1):'dashboard'"
+    @hashchange.window="activeTab=['dashboard','profile','addresses','latest_purchase','purchase_history','vouchers','wishlist','rewards'].includes(location.hash.slice(1))?location.hash.slice(1):'dashboard'"
     x-data="{
-        activeTab: ['dashboard','profile','addresses','latest_purchase','purchase_history','vouchers','wishlist'].includes(window.location.hash.slice(1)) ? window.location.hash.slice(1) : 'dashboard',
+        activeTab: ['dashboard','profile','addresses','latest_purchase','purchase_history','vouchers','wishlist','rewards'].includes(window.location.hash.slice(1)) ? window.location.hash.slice(1) : 'dashboard',
         profileFirstName: @js($user['firstName'] ?: str($user['name'])->before(' ')->toString()),
         profileLastName: @js($user['lastName'] ?: str($user['name'])->after(' ')->toString()),
         profilePhone: @js($user['phone'] ?? ''),
@@ -298,7 +298,7 @@
 
 <x-storefront.nav active="account"/><main class="jg-account-main jg-shell">@php($accountHero=app(\App\Services\WebsiteThemeCustomization::class)->media('jewelry','account',asset('images/themes/jewelry/hero.png')))
 <header class="jg-account-heading">@if(!$accountHero['hidden'])<div class="jg-account-hero-media" data-account-page-media>@include('storefront.partials.theme-media',['media'=>$accountHero])</div>@endif<div class="jg-account-title"><p class="jg-eyebrow">MY ACCOUNT</p><h1>Hello, {{ $user['firstName'] ?? $user['name'] }}.</h1><p>Manage your account, orders and more.</p></div></header><div class="jg-account-layout">
-<nav class="jg-account-nav" aria-label="Account navigation">@foreach(['dashboard'=>'Overview','purchase_history'=>'Orders','addresses'=>'Addresses','wishlist'=>'Saved items','profile'=>'Profile','vouchers'=>'Vouchers'] as $key=>$label)<button type="button" @click="activeTab='{{ $key }}';location.hash='{{ $key }}'" :aria-current="activeTab==='{{ $key }}' ? 'page' : null"><i data-lucide="{{ ['dashboard'=>'house','purchase_history'=>'package','addresses'=>'map-pin','wishlist'=>'heart','profile'=>'user','vouchers'=>'ticket-percent'][$key] }}"></i>{{ $label }}</button>@endforeach <form method="POST" action="{{ route('customer.logout') }}">@csrf<button @disabled($preview)><i data-lucide="log-out"></i>Sign out</button></form></nav>
+<nav class="jg-account-nav" aria-label="Account navigation">@foreach(['dashboard'=>'Overview','purchase_history'=>'Orders','addresses'=>'Addresses','wishlist'=>'Saved items','profile'=>'Profile','vouchers'=>'Vouchers','rewards'=>'Rewards'] as $key=>$label)<button type="button" @click="activeTab='{{ $key }}';location.hash='{{ $key }}'" :aria-current="activeTab==='{{ $key }}' ? 'page' : null"><i data-lucide="{{ ['dashboard'=>'house','purchase_history'=>'package','addresses'=>'map-pin','wishlist'=>'heart','profile'=>'user','vouchers'=>'ticket-percent','rewards'=>'coins'][$key] }}"></i>{{ $label }}</button>@endforeach <form method="POST" action="{{ route('customer.logout') }}">@csrf<button @disabled($preview)><i data-lucide="log-out"></i>Sign out</button></form></nav>
 <div class="jg-account-content">@if(session('status'))<p role="status" class="jg-notice">{{ session('status') }}</p>@endif @if($errors->any())<p role="alert" class="jg-error">{{ $errors->first() }}</p>@endif
 @include('storefront.themes.jewelry-account-overview')
 <section x-show="activeTab==='profile'" x-cloak><h2>Your profile</h2><div class="jg-profile-layout"><form class="jg-profile-editor" method="POST" action="{{ route('customer.profile.update') }}">@csrf @method('PATCH')<fieldset @disabled($preview)><label>Full name<input name="name" value="{{ old('name',$user['name']) }}" required autocomplete="name"></label><label>Phone<input name="phone" x-model="profilePhone" type="tel" autocomplete="tel"></label><label>Email address<input value="{{ $user['email'] }}" readonly autocomplete="email"></label><small>Email address cannot be changed here.</small><button class="jg-primary">Save changes</button></fieldset></form><aside class="jg-profile-help"><i data-lucide="user-round" aria-hidden="true"></i><h3>Your details, beautifully together.</h3><p>Keep your details up to date so every order reaches the right place.</p></aside></div></section>
@@ -306,4 +306,5 @@
 @include('storefront.themes.jewelry-account-saved')
 @include('storefront.themes.jewelry-account-orders')
 @include('storefront.themes.jewelry-account-vouchers')
+@include('storefront.themes.jewelry-account-rewards')
 </div></div></main>@include('storefront.themes.jewelry-account-dialogs')<x-storefront.footer/></div></x-layouts.app>

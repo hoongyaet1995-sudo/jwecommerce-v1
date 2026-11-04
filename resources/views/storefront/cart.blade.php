@@ -1,3 +1,4 @@
+<?php $drawerAddonOffers = app(\App\Services\Promotions\AddonOfferService::class)->cartOffers($items); ?>
 <x-layouts.app :title="'Studio Cart | '.$shopBrandName">
     @php
         $itemCount = $items->sum('quantity');
@@ -43,7 +44,7 @@
                         </div>
                     @endif
 
-                    @include('storefront.partials.addon-cart-status')
+                    @include('storefront.partials.mix-match-progress', ['mixCompact' => true])
                     <div class="space-y-4 p-5">
                         @forelse($items as $item)
                             @php($variant = $item['variant'])
@@ -68,6 +69,7 @@
                                         <strong class="font-mono text-sm text-zinc-900 dark:text-zinc-100">@storefrontMoney($variant->price * $item['quantity'])</strong>
                                     </div>
                                 </div>
+                                @include('storefront.partials.addon-cart-item')
                             </article>
                         @empty
                             <div class="space-y-4 py-16 text-center"><div class="mx-auto grid h-12 w-12 place-items-center rounded-full bg-zinc-100 text-zinc-400 dark:bg-zinc-800 dark:text-zinc-500"><i data-lucide="shopping-bag" class="h-6 w-6"></i></div><div><h1 class="text-base font-semibold text-zinc-800 dark:text-zinc-200">Your cart is currently empty</h1><p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Discover handcrafted studio audio and workspace essentials.</p></div><a href="{{ route('storefront.index') }}" class="inline-block rounded-xl bg-zinc-900 px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-amber-400 hover:text-zinc-950 dark:bg-zinc-100 dark:text-zinc-950">Explore Collection</a></div>
@@ -94,7 +96,7 @@
                             @php($taxRowVisible = ($taxQuote['status'] ?? 'not_configured') !== 'not_configured')
                             @php($taxRate = rtrim(rtrim(number_format((float) ($taxQuote['rate_percent'] ?? 0), 4, '.', ''), '0'), '.'))
                             @php($taxLabel = ($taxQuote['label'] ?? 'Tax').' ('.($taxRate === '' ? '0' : $taxRate).'%)')
-                            <dl class="space-y-1.5 border-t border-zinc-200 pt-2 font-mono text-xs text-zinc-500 dark:border-zinc-800 dark:text-zinc-400"><div class="flex justify-between"><dt>Subtotal</dt><dd class="text-zinc-800 dark:text-zinc-200">@storefrontMoney($summary['subtotal'])</dd></div>@if($coupon) <div class="flex justify-between text-emerald-600 dark:text-emerald-400"><dt>{{ ($summary['promotion_snapshot']['type'] ?? null) === 'mix_match' ? 'Mix & Match savings' : (($summary['promotion_snapshot']['type'] ?? null) === 'addon' ? 'Add-on savings' : 'Discount') }}</dt><dd>-@storefrontMoney($summary['discount'])</dd></div> @endif <div class="flex justify-between"><dt>Estimated Shipping</dt><dd class="{{ $shippingEstimateAvailable && $summary['shipping'] === 0 ? 'font-bold text-emerald-600 dark:text-emerald-400' : 'text-zinc-800 dark:text-zinc-200' }}">{{ ! $shippingEstimateAvailable ? 'Shipping calculated at checkout' : ($summary['shipping'] === 0 ? 'FREE' : app(\App\Support\StorefrontCurrencyContext::class)->format($summary['shipping'])) }}</dd></div>@if($taxRowVisible)<div class="flex justify-between" data-store-tax-row><dt data-store-tax-label>{{ $taxLabel }}</dt><dd data-store-tax-amount class="text-zinc-800 dark:text-zinc-200">@storefrontMoney($summary['tax'])</dd></div>@endif<div class="flex justify-between border-t border-zinc-200 pt-2 text-sm font-bold text-zinc-900 dark:border-zinc-800 dark:text-white"><dt>Estimated Total</dt><dd class="font-serif text-base text-amber-600 dark:text-amber-400">@storefrontMoney($summary['total'])</dd></div></dl>
+                            <dl class="space-y-1.5 border-t border-zinc-200 pt-2 font-mono text-xs text-zinc-500 dark:border-zinc-800 dark:text-zinc-400"><div class="flex justify-between"><dt>Subtotal</dt><dd class="text-zinc-800 dark:text-zinc-200">@storefrontMoney($summary['subtotal'])</dd></div>@if($coupon) <div class="flex justify-between text-emerald-600 dark:text-emerald-400"><dt>{{ ($summary['promotion_snapshot']['type'] ?? null) === 'mix_match' ? 'Mix & Match savings' : (($summary['promotion_snapshot']['type'] ?? null) === 'addon' ? 'Add-on savings' : (($summary['promotion_snapshot']['type'] ?? null) === 'gift' ? 'Free gift savings' : (($summary['promotion_snapshot']['type'] ?? null) === 'tiered' ? 'Tiered savings' : 'Discount'))) }}</dt><dd>-@storefrontMoney($summary['discount'])</dd></div> @endif <div class="flex justify-between"><dt>Estimated Shipping</dt><dd class="{{ $shippingEstimateAvailable && $summary['shipping'] === 0 ? 'font-bold text-emerald-600 dark:text-emerald-400' : 'text-zinc-800 dark:text-zinc-200' }}">{{ ! $shippingEstimateAvailable ? 'Shipping calculated at checkout' : ($summary['shipping'] === 0 ? 'FREE' : app(\App\Support\StorefrontCurrencyContext::class)->format($summary['shipping'])) }}</dd></div>@if($taxRowVisible)<div class="flex justify-between" data-store-tax-row><dt data-store-tax-label>{{ $taxLabel }}</dt><dd data-store-tax-amount class="text-zinc-800 dark:text-zinc-200">@storefrontMoney($summary['tax'])</dd></div>@endif<div class="flex justify-between border-t border-zinc-200 pt-2 text-sm font-bold text-zinc-900 dark:border-zinc-800 dark:text-white"><dt>Estimated Total</dt><dd class="font-serif text-base text-amber-600 dark:text-amber-400">@storefrontMoney($summary['total'])</dd></div></dl>
                             <a href="{{ route('checkout.create') }}" class="flex w-full items-center justify-center gap-2 rounded-xl bg-zinc-900 py-3.5 text-sm font-bold text-white shadow-lg transition hover:bg-amber-400 hover:text-zinc-950 dark:bg-zinc-100 dark:text-zinc-950"><span>Proceed to Checkout</span><i data-lucide="arrow-right" class="h-4 w-4"></i></a>
                         </footer>
                     @endif

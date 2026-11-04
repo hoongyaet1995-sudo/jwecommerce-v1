@@ -29,3 +29,15 @@
 .bs-cart{font-family:BeautyInter,Arial,sans-serif}.bs-cart h2,.bs-cart h3{font-family:BeautyLora,Georgia,serif}.bs-theme .bs-auth-panel>p.bs-notice{display:none}.bs-theme .bs-auth-reset label small{font-family:BeautyInter,Arial,sans-serif}
 
 .bs-address-cards svg{display:none}.bs-theme .bs-address-buttons .bs-primary{width:auto}
+
+/* Beauty checkout: aligned white cards with the existing rounded corners. */
+.bs-theme .bs-checkout-sidebar > .store-rewards-checkout.store-rewards-checkout,
+.bs-theme .bs-checkout-sidebar > .bs-checkout-summary {
+ box-sizing:border-box;width:100%;border:1px solid var(--bs-line,#e7d9dc)!important;
+ border-radius:5px;background:#fff!important;padding:28px;
+ box-shadow:0 3px 8px rgba(80,43,64,.035),0 12px 28px rgba(80,43,64,.065);
+}
+@media(max-width:640px){
+.bs-theme .bs-checkout-sidebar > .store-rewards-checkout.store-rewards-checkout,
+.bs-theme .bs-checkout-sidebar > .bs-checkout-summary {padding:22px;}
+}

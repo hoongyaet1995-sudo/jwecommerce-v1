@@ -13,6 +13,9 @@ class Order extends Model
 
     protected static function booted(): void
     {
+        static::updated(function (self $order): void {
+            if ($order->wasChanged('status')) app(\App\Services\Rewards\RewardsWallet::class)->synchronize($order);
+        });
         static::updating(function (self $order): void {
             if ($order->isDirty('promotion_snapshot')) {
                 throw new \LogicException('The order promotion snapshot is immutable.');

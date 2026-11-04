@@ -111,9 +111,9 @@
 <x-layouts.app :title="'My account | '.$shopBrandName"><div
     data-beauty-account
     class="bs-theme"
-    @hashchange.window="activeTab=['dashboard','profile','addresses','latest_purchase','purchase_history','vouchers','wishlist'].includes(location.hash.slice(1))?location.hash.slice(1):'dashboard'"
+    @hashchange.window="activeTab=['dashboard','profile','addresses','latest_purchase','purchase_history','vouchers','wishlist','rewards'].includes(location.hash.slice(1))?location.hash.slice(1):'dashboard'"
     x-data="{
-        activeTab: ['dashboard','profile','addresses','latest_purchase','purchase_history','vouchers','wishlist'].includes(window.location.hash.slice(1)) ? window.location.hash.slice(1) : 'dashboard',
+        activeTab: ['dashboard','profile','addresses','latest_purchase','purchase_history','vouchers','wishlist','rewards'].includes(window.location.hash.slice(1)) ? window.location.hash.slice(1) : 'dashboard',
         profileFirstName: @js($user['firstName'] ?: str($user['name'])->before(' ')->toString()),
         profileLastName: @js($user['lastName'] ?: str($user['name'])->after(' ')->toString()),
         profilePhone: @js($user['phone'] ?? ''),
@@ -297,7 +297,7 @@
 >
 
 <x-storefront.nav active="account"/><main class="bs-account-main bs-shell"><header class="bs-account-heading"><h1>My account</h1></header><div class="bs-account-layout">
-<nav class="bs-account-nav" aria-label="Account navigation">@foreach(['dashboard'=>'Overview','purchase_history'=>'Orders','addresses'=>'Addresses','wishlist'=>'Saved items','profile'=>'Profile','vouchers'=>'Vouchers'] as $key=>$label)<button type="button" @click="activeTab='{{ $key }}';location.hash='{{ $key }}'" :aria-current="activeTab==='{{ $key }}' ? 'page' : null">{{ $label }}</button>@endforeach <form method="POST" action="{{ route('customer.logout') }}">@csrf<button @disabled($preview)>Sign out</button></form></nav>
+<nav class="bs-account-nav" aria-label="Account navigation">@foreach(['dashboard'=>'Overview','purchase_history'=>'Orders','addresses'=>'Addresses','wishlist'=>'Saved items','profile'=>'Profile','vouchers'=>'Vouchers','rewards'=>'Rewards'] as $key=>$label)<button type="button" @click="activeTab='{{ $key }}';location.hash='{{ $key }}'" :aria-current="activeTab==='{{ $key }}' ? 'page' : null">{{ $label }}</button>@endforeach <form method="POST" action="{{ route('customer.logout') }}">@csrf<button @disabled($preview)>Sign out</button></form></nav>
 <div class="bs-account-content">@if(session('status'))<p role="status" class="bs-notice">{{ session('status') }}</p>@endif @if($errors->any())<p role="alert" class="bs-error">{{ $errors->first() }}</p>@endif
 @include('storefront.themes.beauty-account-overview')
 <section x-show="activeTab==='profile'" x-cloak><h2>Profile</h2><form class="bs-profile-editor" method="POST" action="{{ route('customer.profile.update') }}">@csrf @method('PATCH')<h3>Personal details</h3><fieldset @disabled($preview)><input type="hidden" name="name" :value="[profileFirstName,profileLastName].filter(Boolean).join(' ')"><div class="bs-form-pair"><label>First name<input x-model="profileFirstName" required autocomplete="given-name"></label><label>Last name<input x-model="profileLastName" autocomplete="family-name"></label></div><label>Phone<input name="phone" x-model="profilePhone" type="tel" autocomplete="tel"></label><label>Email address<input value="{{ $user['email'] }}" readonly autocomplete="email"></label><small>Email address cannot be changed here.</small><button class="bs-primary">Save changes</button></fieldset></form></section>
@@ -305,4 +305,5 @@
 @include('storefront.themes.beauty-account-saved')
 @include('storefront.themes.beauty-account-orders')
 @include('storefront.themes.beauty-account-vouchers')
+@include('storefront.themes.beauty-account-rewards')
 </div></div></main>@include('storefront.themes.beauty-account-dialogs')<x-storefront.footer/></div></x-layouts.app>

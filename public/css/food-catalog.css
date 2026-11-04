@@ -53,3 +53,6 @@
 /* Align hero copy and catalog with the global navigation frame. */
 .food-theme .container{box-sizing:border-box;width:100%;max-width:var(--storefront-content-width,1440px);padding-inline:var(--storefront-content-gutter,20px)}
 .food-theme .food-hero{padding-inline:max(var(--storefront-content-gutter,20px),calc((100% - var(--storefront-content-width,1440px))/2 + var(--storefront-content-gutter,20px)))}
+
+/* Responsive catalog media retains the original hero background positioning. */
+.food-theme .food-hero > .catalog-banner-picture > img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.food-theme .food-hero-frame{flex:0 0 100%;min-width:0}

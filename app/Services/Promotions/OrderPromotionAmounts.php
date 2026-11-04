@@ -16,16 +16,17 @@ final class OrderPromotionAmounts
         foreach ($items as $item) {
             $gross[(string) $item['variant']->id] = (int) $item['variant']->price * (int) $item['quantity'];
         }
-        $discounts = in_array($snapshot['type'], ['mix_match','addon'], true)
+        $discounts = in_array($snapshot['type'], ['mix_match','addon','gift','tiered'], true)
             ? $snapshot['allocations'] : $this->spread((int) $summary['discount'], $gross);
         $net = [];
         foreach ($gross as $key => $amount) $net[$key] = $amount - ($discounts[$key] ?? 0);
         $tax = $this->spread((int) $summary['tax'], $net);
+        $rewards = $this->spread((int) ($summary['rewards']['amount'] ?? 0), $net);
         foreach ($items as $item) {
             $key = (string) $item['variant']->id;
             $snapshot['lines'][$key] = ['quantity' => (int) $item['quantity'],
                 'gross' => $gross[$key], 'discount' => $discounts[$key] ?? 0,
-                'net' => $net[$key], 'tax' => $tax[$key] ?? 0];
+                'net' => $net[$key], 'tax' => $tax[$key] ?? 0, 'rewards' => $rewards[$key] ?? 0];
         }
         return $snapshot;
     }
@@ -37,7 +38,7 @@ final class OrderPromotionAmounts
         if ($quantity < 1 || $offset < 0 || $quantity + $offset > $line['quantity']) {
             throw new \InvalidArgumentException('Invalid historical item quantity.');
         }
-        $paid = $line['net'] + $line['tax'];
+        $paid = $line['net'] + $line['tax'] - ($line['rewards'] ?? 0);
         return intdiv($paid * ($offset + $quantity), $line['quantity'])
             - intdiv($paid * $offset, $line['quantity']);
     }

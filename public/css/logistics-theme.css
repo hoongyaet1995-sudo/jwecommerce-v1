@@ -5,3 +5,17 @@
 .lg-theme,.lg-dialog,.eq-ui,.logistics-drawer{--lg-heading-font:"Barlow Semi Condensed",Arial,sans-serif;--lg-body-font:Inter,Arial,sans-serif}
 .lg-theme .lg-primary:hover{background:white!important;color:var(--lg-main)!important}.lg-theme .lg-outline:hover{background:var(--lg-main)!important;color:white!important}
 .jw-logistics-demo-brand{font:800 38px/.9 "Barlow Semi Condensed",Arial,sans-serif!important;color:var(--lg-main,#173247);display:block;letter-spacing:-.02em;text-align:left;white-space:nowrap}.jw-logistics-demo-brand>span{display:inline-block;width:25px;height:5px;background:var(--lg-sub,#EF7B32);margin-left:5px;vertical-align:middle}.jw-logistics-demo-brand small{display:block;font:600 8px/1.2 Inter,Arial,sans-serif;letter-spacing:.12em;margin-top:7px}
+
+/* Account Rewards: theme scoped adapter. */
+
+
+
+.lg-rewards-wallet{display:grid;grid-template-columns:1fr 1fr;gap:32px;background:#fff;border:1px solid #dce4ee;box-shadow:0 8px 28px #29302109;padding:30px;margin:28px 0 18px}.lg-rewards-wallet small{font-size:10px;letter-spacing:1.6px;color:#647188}.lg-rewards-balance{font:47px Georgia,serif;margin:12px 0}.lg-rewards-balance span{font:14px Arial;color:#647188}.lg-rewards-use{border-left:1px solid #e5e6de;padding-left:32px}.lg-rewards-use h3{font-size:14px}.lg-rewards-use p{font-size:13px;color:#647188}.lg-rewards-use a{display:inline-block;text-decoration:none;margin-top:12px}.lg-rewards-notice{background:#e8f1ff;padding:15px 20px;font-size:13px}.lg-rewards-activity-title{margin-top:36px}.lg-rewards-filters{display:flex;gap:24px;border-bottom:1px solid #dce4ee}.lg-rewards-filters a{padding:12px 0;text-decoration:none}.lg-rewards-filters a[aria-current]{border-bottom:2px solid var(--lg-main)}.lg-rewards-history{width:100%;border-collapse:collapse}.lg-rewards-history th{text-align:left;font-size:10px;letter-spacing:1px;color:#647188;font-weight:normal;padding:18px 10px}.lg-rewards-history td{padding:22px 10px;border-top:1px solid #dce4ee;font-size:13px}.lg-rewards-history th:last-child,.lg-rewards-history td:last-child{text-align:right}.lg-rewards-order{display:block;font-size:11px;color:#647188;margin-top:7px}.lg-rewards-positive{color:#5b7151}.lg-rewards-empty{text-align:center!important;padding:40px!important}.lg-rewards-rules{border-top:1px solid #dce4ee;padding:20px 0;margin-top:28px}.lg-rewards-rules summary{cursor:pointer}.lg-rewards-pagination{margin:20px 0}@media(max-width:760px){.lg-rewards-wallet{grid-template-columns:1fr;padding:24px;gap:24px}.lg-rewards-use{border-left:0;border-top:1px solid #e4e5db;padding:24px 0 0}.lg-rewards-history th:nth-child(2),.lg-rewards-history td:nth-child(2){display:none}}
+
+.lg-rewards-wallet{border-radius:8px;box-shadow:0 8px 28px #1720330b}.lg-rewards-notice{border-radius:6px}.lg-rewards-use .lg-primary{border-radius:8px;width:auto;display:inline-flex}.lg-rewards-use h3{font-size:22px}.lg-rewards-balance{color:var(--lg-main)}
+
+.lg-rewards-balance{font-size:44px;font-weight:600;color:var(--lg-main)}.lg-rewards-wallet{font-family:inherit}.lg-rewards-use{border-color:#dce4ee}.lg-rewards-use h3{font-size:20px}.lg-rewards-use .lg-primary{background:var(--lg-main);color:#fff}
+
+.lg-rewards-wallet{border-radius:8px}.lg-rewards-balance{font-family:inherit;color:var(--lg-main)}
+
+.lg-rewards-notice{background:color-mix(in srgb,var(--lg-main) 7%,white)}.lg-rewards{min-width:0}

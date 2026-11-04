@@ -7,6 +7,8 @@
  $media=app(\App\Services\WebsiteThemeCustomization::class)->media('jewelry','checkoutSuccess',asset('images/themes/jewelry/hero.png'));
 @endphp
 <x-layouts.app :title="'Order confirmation | '.$shopBrandName"><div class="jg-theme" data-jewelry-success><x-storefront.nav active="checkout"/><main class="jewelry-result">
+@include('storefront.partials.rewards-order')
+
 @if(!$media['hidden']&&filled($media['desktop']))<section class="jr-hero" data-checkout-success-media>@include('storefront.partials.theme-media')</section>@endif
 <header class="jr-heading"><span class="jr-icon"><i data-lucide="{{ $settled?'check':'clock' }}"></i></span><div><h1>{{ $settled?'Thank you, '.($order->addresses->firstWhere('type','shipping')?->first_name ?: 'for your order').'.':($pending?'Your order is awaiting payment':'Your order has been received.') }}</h1><p>Order {{ $order->number }}</p><p>{{ $settled?'Your order has been confirmed.':'Your order has been created. Payment confirmation is still pending.' }}</p></div><dl><div><dt>Payment status</dt><dd class="jg-status">{{ $settled?'Paid':str($latestPayment?->status??'pending')->replace('_',' ')->title() }}</dd></div><div><dt>Order status</dt><dd class="jg-status">{{ str($order->status)->replace('_',' ')->title() }}</dd></div></dl></header>
 @if(session('status'))<p role="status">{{ session('status') }}</p>@endif @if($errors->any())<p role="alert" class="jg-error">{{ $errors->first() }}</p>@endif

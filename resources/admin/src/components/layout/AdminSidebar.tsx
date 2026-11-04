@@ -326,7 +326,6 @@ export const AdminSidebar: React.FC<{ isOpen: boolean; onCloseMobile?: () => voi
     { id: 'settings-users', label: 'User Login & Staff' },
     { id: 'settings-search', label: 'Search Visibility' },
     { id: 'settings-shop', label: 'Shop Profile & SEO' },
-    { id: 'settings-points', label: 'Points & Rewards' },
     { id: 'settings-invoice', label: 'Invoice & Taxes' },
     { id: 'settings-email', label: 'Email Templates' },
     { id: 'settings-general', label: 'General Configuration' },
@@ -611,4 +610,3 @@ export const AdminSidebar: React.FC<{ isOpen: boolean; onCloseMobile?: () => voi
     </aside>
   );
 };
-

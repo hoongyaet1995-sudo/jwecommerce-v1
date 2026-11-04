@@ -41,7 +41,11 @@ class CartPricingService
         $taxQuote = $this->taxQuoteService->quote($items, $shippingAddress, $shipping, $discount);
         $tax = $taxQuote['tax'];
 
-        return ['promotion_snapshot'=>$promotionSnapshot, 'subtotal' => $subtotal, 'discount' => $discount, 'shipping' => $shipping, 'payment_surcharge' => $paymentSurcharge, 'tax' => $tax, 'tax_amount' => $tax, 'tax_quote' => $taxQuote, 'total' => max(0, $subtotal - $discount + $shipping + $paymentSurcharge + $tax)];
+        $wallet = app(\App\Services\Rewards\RewardsWallet::class);
+        $useRewards = request()->hasSession() && (bool) request()->session()->get('use_rewards', false);
+        $rewards = $wallet->quote(max(0, $subtotal - $discount), $wallet->customerId(), $useRewards);
+
+        return ['rewards' => $rewards, 'promotion_snapshot'=>$promotionSnapshot, 'subtotal' => $subtotal, 'discount' => $discount, 'shipping' => $shipping, 'payment_surcharge' => $paymentSurcharge, 'tax' => $tax, 'tax_amount' => $tax, 'tax_quote' => $taxQuote, 'total' => max(0, $subtotal - $discount + $shipping + $paymentSurcharge + $tax - $rewards['amount'])];
     }
 
     public function deliveryLabel(string $delivery): string

@@ -5,7 +5,9 @@
  $formatOrderAmount=fn($amount)=>app(\App\Support\StorefrontCurrencyContext::class)->formatSnapshot($amount,$order->currency,$order->currency_exchange_rate);
 @endphp
 <x-layouts.app :title="($settled?'Order confirmed':'Payment pending').' | '.$shopBrandName"><div class="fd-theme" data-food-success><x-storefront.nav active="checkout"/>
-<main class="fd-result fd-confirmation">@php($successMedia=app(\App\Services\WebsiteThemeCustomization::class)->media('food','checkoutSuccess',asset('images/themes/food/order-confirmation.png')))
+<main class="fd-result fd-confirmation">
+@include('storefront.partials.rewards-order')
+@php($successMedia=app(\App\Services\WebsiteThemeCustomization::class)->media('food','checkoutSuccess',asset('images/themes/food/order-confirmation.png')))
 @if(!$successMedia['hidden'])<aside class="fd-confirmation-scene" data-checkout-success-media>@include('storefront.partials.theme-media',['media'=>$successMedia])</aside>@endif<div class="fd-confirmation-content"><header><p class="eyebrow">{{ $order->number }}</p><h1>{{ $settled?'Thank you for your order.':'Your order is awaiting payment.' }}</h1><p>{{ $settled?'Payment has been recorded. You can follow your order below.':'Your order has been created. Payment confirmation is still pending.' }}</p></header>
 @if(session('status'))<p role="status">{{ session('status') }}</p>@endif
 @if($errors->any())<p role="alert" class="fd-error">{{ $errors->first() }}</p>@endif

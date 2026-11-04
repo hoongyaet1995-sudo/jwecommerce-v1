@@ -111,9 +111,9 @@
 <x-layouts.app :title="'My account | '.$shopBrandName"><div
     data-logistics-account
     class="lg-theme"
-    @hashchange.window="activeTab=['dashboard','profile','addresses','latest_purchase','purchase_history','vouchers','wishlist','quotations'].includes(location.hash.slice(1))?location.hash.slice(1):'dashboard'"
+    @hashchange.window="activeTab=['dashboard','profile','addresses','latest_purchase','purchase_history','vouchers','wishlist','rewards','quotations'].includes(location.hash.slice(1))?location.hash.slice(1):'dashboard'"
     x-data="{
-        activeTab: ['dashboard','profile','addresses','latest_purchase','purchase_history','vouchers','wishlist','quotations'].includes(window.location.hash.slice(1)) ? window.location.hash.slice(1) : 'dashboard',
+        activeTab: ['dashboard','profile','addresses','latest_purchase','purchase_history','vouchers','wishlist','rewards','quotations'].includes(window.location.hash.slice(1)) ? window.location.hash.slice(1) : 'dashboard',
         profileFirstName: @js($user['firstName'] ?: str($user['name'])->before(' ')->toString()),
         profileLastName: @js($user['lastName'] ?: str($user['name'])->after(' ')->toString()),
         profilePhone: @js($user['phone'] ?? ''),
@@ -268,7 +268,7 @@
 
 <x-storefront.nav active="account"/><main class="lg-account-main">@php($accountHero=app(\App\Services\WebsiteThemeCustomization::class)->media('logistics','account',asset('images/themes/logistics/account.png')))
 <header class="lg-account-heading">@if(!$accountHero['hidden'])<div class="lg-account-hero-media" data-account-page-media>@include('storefront.partials.theme-media',['media'=>$accountHero])</div>@endif<x-storefront.content-frame><div class="lg-account-title"><p class="lg-eyebrow">CONTAINERS. SOLUTIONS. FURTHER TOGETHER.</p><h1>BUILT FOR<br>A STRONGER<br>TOMORROW</h1><span class="lg-title-rule" aria-hidden="true"></span></div></x-storefront.content-frame></header><x-storefront.content-frame><div class="lg-account-layout">
-<nav class="lg-account-nav" aria-label="Account navigation"><p class="lg-eyebrow">MY ACCOUNT</p>@foreach(['dashboard'=>'Overview','purchase_history'=>'Orders','quotations'=>'Quotations','addresses'=>'Addresses','wishlist'=>'Saved Items','profile'=>'Profile','vouchers'=>'Vouchers'] as $key=>$label)<button type="button" @click="activeTab='{{ $key }}';location.hash='{{ $key }}'" :aria-current="activeTab==='{{ $key }}' ? 'page' : null">{{ $label }}</button>@endforeach<form method="POST" action="{{ route('customer.logout') }}">@csrf<button @disabled($preview)>Sign out</button></form></nav>
+<nav class="lg-account-nav" aria-label="Account navigation"><p class="lg-eyebrow">MY ACCOUNT</p>@foreach(['dashboard'=>'Overview','purchase_history'=>'Orders','quotations'=>'Quotations','addresses'=>'Addresses','wishlist'=>'Saved Items','profile'=>'Profile','vouchers'=>'Vouchers','rewards'=>'Rewards'] as $key=>$label)<button type="button" @click="activeTab='{{ $key }}';location.hash='{{ $key }}'" :aria-current="activeTab==='{{ $key }}' ? 'page' : null">{{ $label }}</button>@endforeach<form method="POST" action="{{ route('customer.logout') }}">@csrf<button @disabled($preview)>Sign out</button></form></nav>
 <div class="lg-account-content">@if(session('status'))<p role="status" class="lg-notice">{{ session('status') }}</p>@endif @if($errors->any())<p role="alert" class="lg-error">{{ $errors->first() }}</p>@endif
 @include('storefront.themes.logistics-account-overview')
 @include('storefront.themes.logistics-account-quotations')
@@ -277,4 +277,5 @@
 @include('storefront.themes.logistics-account-saved')
 @include('storefront.themes.logistics-account-orders')
 @include('storefront.themes.logistics-account-vouchers')
+@include('storefront.themes.logistics-account-rewards')
 </div></div></x-storefront.content-frame></main>@include('storefront.themes.logistics-account-dialogs')<x-storefront.footer/></div></x-layouts.app>

@@ -7,6 +7,8 @@
  $media=app(\App\Services\WebsiteThemeCustomization::class)->media('baby','checkoutSuccess',asset('images/themes/baby/hero.png'));
 @endphp
 <x-layouts.app :title="'Order confirmation | '.$shopBrandName"><div class="bk-theme" data-baby-success><x-storefront.nav active="checkout"/><main class="baby-result">
+@include('storefront.partials.rewards-order')
+
 <header class="br-heading"><span class="br-icon"><i data-lucide="{{ $settled?'check':'clock' }}"></i></span><div><h1>{{ $settled?'Thank you for your order.':($pending?'Your order is awaiting payment':'Your order has been received.') }}</h1><p>Order {{ $order->number }}</p><p>{{ $settled?'Your payment has been received.':'Your order has been created. Payment confirmation is still pending.' }}</p></div><dl><div><dt>Payment status</dt><dd class="bk-status">{{ $settled?'Paid':str($latestPayment?->status??'pending')->replace('_',' ')->title() }}</dd></div><div><dt>Order status</dt><dd class="bk-status">{{ str($order->status)->replace('_',' ')->title() }}</dd></div></dl></header>
 @if(session('status'))<p role="status">{{ session('status') }}</p>@endif @if($errors->any())<p role="alert" class="bk-error">{{ $errors->first() }}</p>@endif
 <div class="br-actions"><a class="bk-primary" href="{{ route('order-tracking.show') }}">Track your order →</a><a class="bk-outline" href="{{ route('storefront.index') }}">Continue shopping</a></div>

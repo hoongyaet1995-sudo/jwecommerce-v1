@@ -109,6 +109,8 @@ class CheckoutService
             $snapshot['shipping_amount'] = $summary['shipping'];
             $summary['promotion_snapshot'] = app(\App\Services\Promotions\OrderPromotionAmounts::class)->snapshot($summary, $checkoutItems);
             $order = Order::query()->create(['number' => 'JW-'.now()->format('YmdHis').'-'.str_pad((string) random_int(1, 9999), 4, '0', STR_PAD_LEFT), 'customer_id' => $customer->id, 'coupon_id' => $lockedCoupon?->id, 'coupon_code' => $lockedCoupon?->code, 'email' => $email, 'currency' => $currencySnapshot['code'] ?? 'USD', 'currency_exchange_rate' => $currencySnapshot['exchange_rate'] ?? 1, 'status' => 'pending_payment', 'shipping_method' => $shippingOption['id'], 'shipping_label' => $shippingOption['label'], 'shipping_snapshot' => $snapshot, 'subtotal' => $summary['subtotal'], 'discount_amount' => $summary['discount'], 'promotion_snapshot'=>$summary['promotion_snapshot'], 'shipping_amount' => $summary['shipping'], 'payment_surcharge_amount' => $summary['payment_surcharge'], 'tax_amount' => $summary['tax'], 'total' => $summary['total']]);
+            app(\App\Services\Rewards\RewardsWallet::class)->attach($order, $summary['rewards'],
+                app(\App\Services\Rewards\RewardsPresentation::class)->estimate($summary['subtotal'], $summary['discount'] + $summary['rewards']['amount']));
             foreach ($lines as $line) {
                 $variant = $line['variant'];
                 $product = $variant->product()->with('images')->firstOrFail();
@@ -146,7 +148,7 @@ class CheckoutService
 
                 $this->paymentProofs->storeCheckoutUpload($payment, $paymentProof);
             }
-            if ($lockedCoupon && (!in_array($summary['promotion_snapshot']['type'], ['mix_match','addon'], true) || $lockedCoupon->discount_type === 'free_shipping')) {
+            if ($lockedCoupon && (!in_array($summary['promotion_snapshot']['type'], ['mix_match','addon','gift','tiered'], true) || $lockedCoupon->discount_type === 'free_shipping')) {
                 $lockedCoupon->usages()->create(['order_id' => $order->id, 'customer_id' => $customer->id, 'customer_email' => $email, 'discount_amount' => $summary['discount']]);
                 $lockedCoupon->increment('usage_count');
             }
@@ -301,7 +303,7 @@ class CheckoutService
                 'from_status' => $from,
                 'to_status' => 'shipped',
                 'user_id' => $userId,
-                'note' => 'Dispatched via '.$carrier.' Â· '.$trackingNumber,
+                'note' => 'Dispatched via '.$carrier.' Ã‚Â· '.$trackingNumber,
             ]);
 
             return $locked;

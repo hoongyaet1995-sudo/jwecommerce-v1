@@ -119,6 +119,7 @@
                     </form>
 @include('storefront.partials.mix-match-product')
 @include('storefront.partials.addon-product')
+@include('storefront.partials.free-gift-product')
 @else @include('storefront.partials.product-enquiry-actions') @endif
                     @if($product->isBuyMode())<form method="POST" action="{{ route('cart.items.store') }}" class="mt-3">
                         @csrf
