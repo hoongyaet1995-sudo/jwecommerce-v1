@@ -688,11 +688,18 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/integration/ai-connect', AdminAppController::class)->name('integration.ai-connect');
     Route::get('/ai-auto-reply/{section}', AdminAppController::class)->whereIn('section',['personality','knowledge','guardrails','improvement']);
     Route::get('/ai-auto-reply', AdminAppController::class)->name('ai-auto-reply');
+    Route::get('/api/reports/sales', \App\Http\Controllers\Admin\SalesReportController::class)->middleware(\App\Http\Middleware\ReportReadBoundary::class);
+    Route::get('/api/reports/financial', \App\Http\Controllers\Admin\SalesReportController::class)->name('api.reports.financial')->middleware(\App\Http\Middleware\ReportReadBoundary::class);
+    Route::get('/api/reports/marketing', \App\Http\Controllers\Admin\MarketingReportBridgeController::class)->middleware(\App\Http\Middleware\ReportReadBoundary::class);
+    Route::get('/api/reports/staff', [\App\Http\Controllers\Admin\ReportStaffController::class, 'index']);
+    Route::put('/api/reports/staff/{staff}', [\App\Http\Controllers\Admin\ReportStaffController::class, 'update']);
+    Route::get('/api/reports/{type}', \App\Http\Controllers\Admin\OperationalReportController::class)->whereIn('type', ['orders', 'enquiries', 'products', 'merchandise', 'customers', 'customer-cohorts', 'shipping'])->middleware(\App\Http\Middleware\ReportReadBoundary::class);
     Route::get('/reports', AdminAppController::class)->name('reports');
     Route::get('/reports/sales', AdminAppController::class)->name('reports.sales');
     Route::get('/reports/orders', AdminAppController::class)->name('reports.orders');
     Route::get('/reports/products', AdminAppController::class)->name('reports.products');
     Route::get('/reports/customers', AdminAppController::class)->name('reports.customers');
+    Route::get('/reports/marketing', AdminAppController::class)->name('reports.marketing');
     Route::get('/reports/shipping', AdminAppController::class)->name('reports.shipping');
     Route::get('/reports/tax', AdminAppController::class)->name('reports.tax');
     Route::get('/settings', AdminAppController::class)->name('settings.index');

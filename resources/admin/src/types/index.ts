@@ -1256,6 +1256,7 @@ export type NavSection =
   | 'reports-customers'
   | 'reports-shipping'
   | 'reports-tax'
+  | 'reports-marketing'
   | 'ai-auto-reply'
   | 'ai-personality'
   | 'ai-knowledge'

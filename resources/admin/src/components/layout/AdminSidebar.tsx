@@ -150,7 +150,7 @@ export const AdminSidebar: React.FC<{ isOpen: boolean; onCloseMobile?: () => voi
     currentSection === 'reports-products' ||
     currentSection === 'reports-customers' ||
     currentSection === 'reports-shipping' ||
-    currentSection === 'reports-tax';
+    currentSection === 'reports-tax' || currentSection === 'reports-marketing';
 
   const isSettingsActive = (currentSection === 'settings' || currentSection.startsWith('settings-')) && currentSection !== 'settings-payment';
 
@@ -290,6 +290,7 @@ export const AdminSidebar: React.FC<{ isOpen: boolean; onCloseMobile?: () => voi
         { id: 'reports-customers' as NavSection, label: 'Customers & RFM' },
         { id: 'reports-shipping' as NavSection, label: 'Logistics SLA' },
         { id: 'reports-tax' as NavSection, label: 'Tax & Gateway P&L' },
+        { id: 'reports-marketing' as NavSection, label: 'Marketing & Conversion' },
       ],
     },
     {

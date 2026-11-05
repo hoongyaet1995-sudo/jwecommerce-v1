@@ -46,6 +46,7 @@ export const ADMIN_PATH_BY_SECTION = {
   'reports-customers': '/admin/reports/customers',
   'reports-shipping': '/admin/reports/shipping',
   'reports-tax': '/admin/reports/tax',
+  'reports-marketing': '/admin/reports/marketing',
   settings: '/admin/settings',
   'settings-users': '/admin/settings/users',
   'settings-search': '/admin/settings/search',
@@ -130,4 +131,3 @@ export function subscribeToSectionChanges(
   navigationWindow.addEventListener('popstate', onPopstate);
   return () => navigationWindow.removeEventListener('popstate', onPopstate);
 }
-

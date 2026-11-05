@@ -72,6 +72,17 @@ $app = Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        $exceptions->report(function (\Throwable $exception) {
+            $middleware=request()->route()?->gatherMiddleware()??[];
+            if(($exception instanceof \Illuminate\Database\QueryException||$exception instanceof \PDOException)
+                &&in_array(\App\Http\Middleware\ReportReadBoundary::class,$middleware,true)) {
+                \App\Http\Middleware\ReportReadBoundary::logFailure(request(),$exception);
+                return false;
+            }
+        });
+        $exceptions->render(function (\PDOException $exception,Request $request) {
+            if(in_array(\App\Http\Middleware\ReportReadBoundary::class,$request->route()?->gatherMiddleware()??[],true))return \App\Http\Middleware\ReportReadBoundary::failureResponse();
+        });
         $exceptions->render(function (\Illuminate\Routing\Exceptions\InvalidSignatureException $exception, Request $request) {
             if ($request->is('m/email/preferences/*') && ! $request->expectsJson()) {
                 return response()->view('marketing.email.preferences', ['expired' => true], 403)

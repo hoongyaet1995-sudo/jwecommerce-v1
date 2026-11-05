@@ -10,6 +10,16 @@ class OrderPayment extends Model
 {
     protected static function booted(): void
     {
+        static::saving(function (self $model): void {
+            // Capture the first terminal event, never infer it from later edits.
+            if (in_array($model->status, ['paid','captured','succeeded'], true) && (!$model->exists || $model->isDirty('status')) && !$model->confirmed_at) {
+                $model->confirmed_at = now();
+            }
+            if ($model->exists && $model->getRawOriginal('confirmed_at')) {
+                $model->confirmed_at = $model->getRawOriginal('confirmed_at');
+            }
+        });
+
         static::saved(function (self $payment): void {
             if (in_array($payment->status, ['paid', 'captured', 'succeeded'], true) && $payment->order) {
                 app(\App\Services\Rewards\RewardsWallet::class)->synchronize($payment->order);
