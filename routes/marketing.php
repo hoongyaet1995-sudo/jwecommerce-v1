@@ -5,6 +5,12 @@ use App\Http\Controllers\Admin\MarketingProductionController as Production;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'admin', \App\Http\Middleware\MarketingExecutionAvailability::class])->prefix('admin/marketing')->name('marketing.')->group(function () {
+    Route::get('/ai-posts', [\App\Http\Controllers\Admin\MarketingFreePostController::class,'page'])->name('free-posts.page');
+    Route::get('/free-post-products', [\App\Http\Controllers\Admin\MarketingFreePostController::class,'products'])->middleware('throttle:120,1');
+    Route::post('/free-posts', [\App\Http\Controllers\Admin\MarketingFreePostController::class,'create'])->name('free-posts.create')->middleware('throttle:10,1');
+    Route::get('/free-posts/{run}', [\App\Http\Controllers\Admin\MarketingFreePostController::class,'status'])->whereUuid('run');
+    Route::post('/free-posts/{run}/step', [\App\Http\Controllers\Admin\MarketingFreePostController::class,'step'])->whereUuid('run')->name('free-posts.step')->middleware('throttle:20,1');
+    Route::get('/daily-drafts/{run}', \App\Http\Controllers\Admin\MarketingDailyDraftController::class)->whereUuid('run')->name('daily-drafts.show');
     Route::prefix('audience')->name('audience.')->controller(\App\Http\Controllers\Admin\MarketingAudienceController::class)->group(function(){
         Route::get('/contacts','page')->defaults('page','contacts')->name('contacts');
         Route::get('/segments/create','segmentPage')->name('segment-create');

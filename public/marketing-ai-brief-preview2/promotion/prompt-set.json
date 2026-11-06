@@ -1,0 +1,86 @@
+{
+  "mode": "built-in image_gen",
+  "model_id": null,
+  "common_constraints": "One universal portrait 4:5 original finished promotion poster. Fictional STUDIO / EDITION brand; exact supplied headline, 30% OFF and Explore the edit (Christmas: Discover the collection). AI CONCEPT / SAMPLE footer. No real products/logos/dates/testimonials. Aesthetic reference only.",
+  "styles": [
+    {
+      "id": "christmas-atelier",
+      "name": "Christmas atelier",
+      "description": "Deep emerald, red satin ribbons and luxurious festive gifts.",
+      "headline": "CHRISTMAS SALE",
+      "offer": "30% OFF"
+    },
+    {
+      "id": "quiet-luxury",
+      "name": "Quiet luxury",
+      "description": "Ivory editorial space, sculptural ribbons and refined serif typography.",
+      "direction": "warm ivory stone backdrop, one monumental flowing ivory silk ribbon and minimalist sculptural gift box in lower right, extraordinarily refined Swiss editorial spacing with oversized deep charcoal serif typography, muted champagne highlights, daylight tactile shadows",
+      "headline": "THE SEASONAL EDIT",
+      "offer": "30% OFF"
+    },
+    {
+      "id": "black-gold",
+      "name": "Black & gold",
+      "description": "Dramatic black, liquid gold and luxurious sale typography.",
+      "direction": "deep velvety black space with photoreal flowing molten gold ribbon twisting around a matte black sculptural plinth, cinematic rim light, striking huge gold foil typography, precious brushed metal particles, editorial luxury, asymmetric sophisticated layout",
+      "headline": "EXCLUSIVE EVENT",
+      "offer": "30% OFF"
+    },
+    {
+      "id": "neon-flash",
+      "name": "Neon flash",
+      "description": "Electric violet, acid lime and energetic flash-sale graphics.",
+      "direction": "energetic midnight ultraviolet background, electric lime translucent 3D acrylic lightning and abstract iridescent rings, dramatic kinetic condensed italic typography, angled layered offer typography, futuristic nightclub art direction, striking fashion-campaign finish",
+      "headline": "FLASH SALE",
+      "offer": "30% OFF"
+    },
+    {
+      "id": "retro-collage",
+      "name": "Retro collage",
+      "description": "Torn paper, orange print and playful vintage promotion.",
+      "direction": "original sophisticated 1970s editorial collage, vermilion orange mustard cream and chocolate, torn paper layers, tactile paper grain, cut-out abstract gift parcels and hand-drawn starburst doodles, oversized playful warped serif headlines, crisp composition and balanced typography",
+      "headline": "GOOD FINDS",
+      "offer": "30% OFF"
+    },
+    {
+      "id": "pastel-play",
+      "name": "Pastel pop",
+      "description": "Candy-coloured 3D forms and cheerful, playful offer lettering.",
+      "direction": "joyful premium 3D art direction in pastel lilac butter yellow and peach, soft inflated sculptural gift bows floating around oversized butter-yellow dimensional typography, soft studio gradient, fluffy matte surfaces, playful asymmetrical composition, polished modern brand campaign",
+      "headline": "A LITTLE TREAT",
+      "offer": "30% OFF"
+    },
+    {
+      "id": "red-impact",
+      "name": "Bold red",
+      "description": "High-impact red, monumental typography and graphic confidence.",
+      "direction": "ultra-bold international typographic campaign, saturated vermilion red full bleed backdrop, gigantic offwhite condensed grotesk 30% typography as sculptural hero filling most frame, small black modular supporting type, subtle photoreal folded red satin fabric crossing lower corner, exceptionally precise grid, clean premium finish",
+      "headline": "BIG SALE ENERGY",
+      "offer": "30% OFF"
+    },
+    {
+      "id": "botanical-natural",
+      "name": "Botanical calm",
+      "description": "Organic greens, sunlit paper and nature-inspired promotion.",
+      "direction": "photoreal warm sunlit sage and forest green still life, textured cream handmade paper standing sculpturally among delicate olive branches, dappled afternoon shadows, original elegant deep green serif lettering printed on central paper, small natural linen-wrapped gift, calm sustainable editorial aesthetic",
+      "headline": "SOMETHING GOOD",
+      "offer": "30% OFF"
+    },
+    {
+      "id": "chrome-future",
+      "name": "Chrome future",
+      "description": "Reflective silver, cobalt blue and futuristic promotional art.",
+      "direction": "luxury futuristic silver liquid-chrome ribbon sculpture reflected on polished floor, cobalt-blue spotlight gradient space, crisp black and silver modern typography contrasted with small electric-blue labels, monumental sculptural silver 30% headline, high-fashion technology editorial, cinematic clean composition",
+      "headline": "THE NEXT EDIT",
+      "offer": "30% OFF"
+    },
+    {
+      "id": "midnight-countdown",
+      "name": "Midnight drop",
+      "description": "Midnight blue, luminous spotlight and dramatic launch energy.",
+      "direction": "dramatic midnight navy campaign with luminous cyan halo overhead illuminating a single abstract cobalt gift sculpture on a floating circular stage, precise white oversized typography, deep cinematic shadows, refined small editorial labels, powerful launch-event composition without any timer or invented deadline",
+      "headline": "THE MIDNIGHT DROP",
+      "offer": "30% OFF"
+    }
+  ]
+}

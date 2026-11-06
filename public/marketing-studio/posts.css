@@ -21,3 +21,22 @@
 
 /* Post detail: readable full-frame preview, independent of compact media strips. */
 .post-summary-media{display:grid;gap:16px;min-width:0}.post-summary-media video,.post-summary-media>img{display:block;width:100%;height:auto;max-height:440px;object-fit:contain;border-radius:12px;background:#f3f6f2}.post-summary-media .quiet{white-space:pre-wrap;overflow-wrap:anywhere;margin-top:8px}.delivery-actions a{display:inline-flex;align-items:center;gap:8px}.delivery-card details p{overflow-wrap:anywhere}@media(max-width:680px){.post-summary-media video,.post-summary-media>img{max-height:420px}}
+
+/* Existing Create post entry: manual / AI choice, Bootstrap grid handles stacking. */
+.create-post-choice{border:1px solid #dce4df;border-radius:14px;background:#fff;padding:24px;color:#092e20;display:flex;flex-direction:column;gap:12px;min-height:240px;transition:border-color .15s,box-shadow .15s}.create-post-choice:hover{border-color:#496a39;box-shadow:0 4px 18px #092e2010}.create-post-choice:focus-visible{outline:3px solid #739947;outline-offset:3px}.create-post-choice strong{font-size:18px}.create-post-choice>span:not(.create-post-choice-icon):not(.create-post-choice-link){color:#63746a;font-size:14px;line-height:1.6}.create-post-choice-icon{display:flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:12px;background:#eff4e5;color:#234b28;font-size:24px}.create-post-choice-link{margin-top:auto;font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px}@media(max-width:575px){.create-post-choice{min-height:190px;padding:20px}}
+
+/* Preserve author paragraph and point formatting in all caption previews. */
+.v2-read,.v2-social>p,.social-copy{white-space:pre-wrap;overflow-wrap:anywhere}
+
+/* Reserve space for delivery and actions regardless of generated title length. */
+.crm-post-table{table-layout:fixed;width:100%;min-width:800px}
+.crm-post-table th:nth-child(1){width:40%}
+.crm-post-table th:nth-child(2){width:20%}
+.crm-post-table th:nth-child(3){width:12%}
+.crm-post-table th:nth-child(4){width:20%}
+.crm-post-table th:nth-child(5){width:8%}
+.crm-post-table td{overflow-wrap:anywhere}
+.crm-post-table .post-title-cell{min-width:0;width:100%}
+.crm-post-table .post-title-cell>div:last-child{min-width:0;flex:1;overflow:hidden}
+.crm-post-table .post-title-cell strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.crm-post-table .post-title-cell>img,.crm-post-table .post-title-cell>.post-thumb{flex-shrink:0}

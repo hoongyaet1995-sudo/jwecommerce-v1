@@ -3,6 +3,8 @@
 $conversationPilot=json_decode((string)env('MARKETING_CONVERSATION_PILOT_GRANT','{}'),true);
 $conversationPilot=is_array($conversationPilot)?$conversationPilot:[];
 return [
+    'free_post_generation_enabled'=>(bool)env('MARKETING_FREE_POST_GENERATION_ENABLED',false),
+    'caption_public_origin'=>env('MARKETING_PUBLIC_ORIGIN',env('APP_URL')),
     'whatsapp_campaign_enabled'=>(bool)env('MARKETING_WHATSAPP_CAMPAIGN_ENABLED',false),
     // Operator-verified upper-bound rates only. No default/free inference.
     'whatsapp_campaign_rates'=>json_decode(env('MARKETING_WHATSAPP_CAMPAIGN_RATES','{}'),true) ?: [],

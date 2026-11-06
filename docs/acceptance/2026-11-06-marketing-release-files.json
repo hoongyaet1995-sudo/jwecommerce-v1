@@ -1,0 +1,776 @@
+{
+  "base": "3e855e63b65642d7d30463113f13b04608a35570",
+  "files": [
+    {
+      "path": ".env.example",
+      "bytes": 6003,
+      "sha256": "f4b806014210e022ffbf94d311ab5847397474e69f948d0c4c6ed6cc84fd466a"
+    },
+    {
+      "path": "app/Http/Controllers/Admin/MarketingDailyDraftController.php",
+      "bytes": 1172,
+      "sha256": "f5a43ab9b4f4dde1a4e30d13ba08c877e2920591facd7a3b9ba058cee7850eb9"
+    },
+    {
+      "path": "app/Http/Controllers/Admin/MarketingFreePostController.php",
+      "bytes": 2604,
+      "sha256": "a141203433a563937a80f52732e7ed5c13ffa3a3ff830de8ee04f8de15da858e"
+    },
+    {
+      "path": "app/Http/Middleware/MarketingExecutionAvailability.php",
+      "bytes": 2735,
+      "sha256": "d8b62e4034373beb4856c9c43f387e77a089e366172bb83c04abf1059b887f17"
+    },
+    {
+      "path": "app/Models/MarketingDailyDraftRun.php",
+      "bytes": 321,
+      "sha256": "23dd86a0f52d1da413c01627a28c05317bcb310dae3b32a8894dc5bb966913a9"
+    },
+    {
+      "path": "app/Services/Marketing/MarketingDailyDraftProvider.php",
+      "bytes": 4152,
+      "sha256": "e6065f14fd06caeda5c56b759c3b505274bf0b9838bd4387035a4b078ae3e616"
+    },
+    {
+      "path": "app/Services/Marketing/MarketingDailyDrafts.php",
+      "bytes": 15238,
+      "sha256": "1f510a5857c4dfdb518101c17da6697f2a5f2adbe22561f9bec41db1c48a365f"
+    },
+    {
+      "path": "app/Services/Marketing/MarketingFreePostProvider.php",
+      "bytes": 7949,
+      "sha256": "76d0eb695cfe9ff95e7068950d5ca9b304b661f46245fd8c098e71f7fbb8ba1e"
+    },
+    {
+      "path": "app/Services/Marketing/MarketingFreePosts.php",
+      "bytes": 16706,
+      "sha256": "73de5fa91b12add6923b4f3fe78fc6e6afcf6180912b36f1d6488f7e1aab293d"
+    },
+    {
+      "path": "app/Services/Marketing/MarketingPostCaption.php",
+      "bytes": 5222,
+      "sha256": "90c0d03d672e7e274eadc8950c0b046aac67c15dbddb801026b8b9e16668518f"
+    },
+    {
+      "path": "config/marketing.php",
+      "bytes": 7923,
+      "sha256": "8fa9680ec1aace55dacc3793366977814cf5e6413d517a435412a55de2fc08fa"
+    },
+    {
+      "path": "database/migrations/2026_11_05_230000_create_marketing_daily_draft_runs.php",
+      "bytes": 701,
+      "sha256": "17ce5bc5bf350a25af884ce0dd6851370c7e6cd5a69f744e4098a4d704ee748a"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview/brief.css",
+      "bytes": 7963,
+      "sha256": "211d32b5d13bc1492d7c3aef5b91175b72a9d2e47bbb9a8f38a559b088d18529"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/carousel/baby-kids-1.png",
+      "bytes": 2201059,
+      "sha256": "eeb1650f2d3d144305831164027d1d747e5b85840214d0c16a9bc33dc45553c5"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/carousel/baby-kids-2.png",
+      "bytes": 2209972,
+      "sha256": "8e0aaad774914c2dd98602a179e469adf6f1a6576c856464b8228ce3771bee08"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/carousel/baby-kids-3.png",
+      "bytes": 2159124,
+      "sha256": "4496430d1d3e6f5411eabb9ca9041ae16b131d88513e7ba3581c88815c896d47"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/carousel/beauty-skincare-1.png",
+      "bytes": 1862022,
+      "sha256": "03275f976c1b90699e334b9f25da225a97756be4dad144cc68b528b5dac9f56e"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/carousel/beauty-skincare-2.png",
+      "bytes": 2047621,
+      "sha256": "eb5e4659d870ba459f5bfab50d8095c0dcbd25890be5182e4b9f502cf4a8b899"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/carousel/beauty-skincare-3.png",
+      "bytes": 2003572,
+      "sha256": "dcd825b4c7b41ce57d27de6f25634dfff66263498bd4db4c90dccea8fc873dd0"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/carousel/fashion-design-1.png",
+      "bytes": 2331511,
+      "sha256": "66187722b4f0bb08c1b63a7e90eeaa602422aa86ddcd18ff5e16ed27d21f88fb"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/carousel/fashion-design-2.png",
+      "bytes": 2392193,
+      "sha256": "34b2fdba031f50871b0cf3b553ea83e9ca73200b08b7ace30acc4f01a87ff856"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/carousel/fashion-design-3.png",
+      "bytes": 2230696,
+      "sha256": "947f83d8150bb5bb361ff65bb7656c46110749bd0328f5f21ecf9903c04789b9"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/carousel/food-beverage-1.png",
+      "bytes": 2692089,
+      "sha256": "4e17ee50b430367e5eab32d39df20cdabf3c6867054851daef467b46d4e3e7d4"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/carousel/food-beverage-2.png",
+      "bytes": 2403813,
+      "sha256": "746588bd580d115d1c0415c9107bb62a8d09754a1c04e137aee18e9923f42b3f"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/carousel/food-beverage-3.png",
+      "bytes": 2654941,
+      "sha256": "4523bb5e0303321a67b3adcd07cd430b21ffaf98a5a231ff4a8fc3c9ed0e74e5"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/carousel/home-deco-1.png",
+      "bytes": 2681277,
+      "sha256": "83638ade931ae872e1bf34d923a6b2eefb6ba7ef043d651ccfa78d272569469e"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/carousel/home-deco-2.png",
+      "bytes": 2812143,
+      "sha256": "f04cf1e0355db5afca81c97d60fd87aba5200ea6f135cd354fe63db8842345d3"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/carousel/home-deco-3.png",
+      "bytes": 2704423,
+      "sha256": "fe2f749c75431e5a8bcd3cfa7ed2337b9fa767c1886a51698474038f0785d716"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/carousel/jewelry-gift-1.png",
+      "bytes": 2345542,
+      "sha256": "e5c8810d459a76be9f36ef89eb10b90d208469312ee508953a33958564f8caa3"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/carousel/jewelry-gift-2.png",
+      "bytes": 2398720,
+      "sha256": "21b607dcdad65f61f91943a4a3fb7e4c715f39b129c4d7ea3d3fefb5a3bb4bf3"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/carousel/jewelry-gift-3.png",
+      "bytes": 2311284,
+      "sha256": "1678a6712fcef67a50ecc8c871b1873a860131a71248ecac51569af93dc861e0"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/carousel/logistics-1.png",
+      "bytes": 1934041,
+      "sha256": "284a3429ae6a96fd5c4274a173d24b2e9c5abfe5d23851f93cc8c8a5266b7238"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/carousel/logistics-2.png",
+      "bytes": 1935251,
+      "sha256": "798f44426ff47eec8db6956958364b0275aee6855371a599d469f78d02275386"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/carousel/logistics-3.png",
+      "bytes": 1895904,
+      "sha256": "802b121b4c2f80c24b61e7da155f6c8ec1b3f3140983954247f8e55c888e0d7b"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/carousel/manifest.json",
+      "bytes": 58702,
+      "sha256": "227210191aade118428fa8e8232b9f9e782476a809732c7a83c7e28ae61ddbb2"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/carousel/technology-electronic-1.png",
+      "bytes": 1930888,
+      "sha256": "76a32935fa24260447ebe22673d6f903238714f8967dff95c1bf6f5a99151755"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/carousel/technology-electronic-2.png",
+      "bytes": 1825459,
+      "sha256": "0d78aa20a274e09a378b2ba921d0706703dbad215006ce127ffb0154da7bfd94"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/carousel/technology-electronic-3.png",
+      "bytes": 1914640,
+      "sha256": "1937cfb4a44b7bb30c7fe9320f903ddb2fc6f3b11b7022e8f69390dbca67a966"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/carousel/universal-1.png",
+      "bytes": 2241795,
+      "sha256": "fb0192468a1ce7fc1e318e96f8f0d24a1f0a1be2520e809366397d531cbec877"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/carousel/universal-2.png",
+      "bytes": 2206200,
+      "sha256": "d22d465a2bbc21124d8895c62aa377b902f724e99fbab45e726dc3ce6b8078c2"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/carousel/universal-3.png",
+      "bytes": 2141818,
+      "sha256": "9a33c540c31f40640f46824b9c93574bb07974084ffad44f8d736175694dd71e"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/carousel/wedding-photography-1.png",
+      "bytes": 2500275,
+      "sha256": "8aac47d366efd67027207cca8cee4cb390d0eef0cf54a975ad1bf1156c00dc06"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/carousel/wedding-photography-2.png",
+      "bytes": 2445454,
+      "sha256": "fe4fec7cfdbc582535885ef4d5135818df5bcc67b21dfd9b206351f7f6c01771"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/carousel/wedding-photography-3.png",
+      "bytes": 2433853,
+      "sha256": "a871c8ee597013f2ce4c297b0fe2d7bad10ca42ad97a0ec603f95559b58b4fa7"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/checklist/baby-kids.png",
+      "bytes": 2282913,
+      "sha256": "4c48f7ae6b65a3fd914c673e45f004288560a1b0ccd4b763a95e34efee8aaa66"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/checklist/beauty-skincare.png",
+      "bytes": 2109062,
+      "sha256": "723e9673effcba356b254013f5634e1bb364225f8c90280405bc888ab2598205"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/checklist/fashion-design.png",
+      "bytes": 2653090,
+      "sha256": "14eb19383d3e0f47109c4790b2c5693db52b263c57dc9b813b697f2f62cd2540"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/checklist/food-beverage.png",
+      "bytes": 2122336,
+      "sha256": "7f5e12b32217cd22514dc8ea8da98f8e0d3246dd1f36fb4dce13e87d45342f10"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/checklist/home-deco.png",
+      "bytes": 2646052,
+      "sha256": "9de3b9a787641845a173284c9a45d0b80af2ee48c93e2658484a3c413dba6412"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/checklist/jewelry-gift.png",
+      "bytes": 2642565,
+      "sha256": "3eac86a19b9a56884f1591408065dff14267a036765b1dec65acb832a29c6389"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/checklist/logistics.png",
+      "bytes": 2309101,
+      "sha256": "69b308fa6a6d2313914b3367afc6d3a360dbe6d47d0ca6de15f00d1191bb0d45"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/checklist/manifest.json",
+      "bytes": 21284,
+      "sha256": "688bc049591b3928b68853d17ad78a4a83e9604828a989bd222144ae4348fcef"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/checklist/technology-electronic.png",
+      "bytes": 2100590,
+      "sha256": "6053f277b0e92ff8b2b44a1d490f5ce86a5ec19a349c8ed0e7a67dfde7590880"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/checklist/universal.png",
+      "bytes": 2620653,
+      "sha256": "c244e2bb981a73dbe4aec74881e52e3709399227654b7db23cabd9d1d09304b9"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/checklist/wedding-photography.png",
+      "bytes": 2377533,
+      "sha256": "25d027f2cee3fb444f35afea36040a7843f48d477a2c9bf7c0eb70f3006ae75c"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/education/baby-kids.png",
+      "bytes": 2497294,
+      "sha256": "a38afd38ef6d668b102d8f21e86f7cce705c06c2580d23e37cdfee997f42d819"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/education/beauty-skincare.png",
+      "bytes": 1997715,
+      "sha256": "bb79985ee2daf09e513e1fc18f2f2f59e8bfc6cec6a52930a67f82e329ebb7ea"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/education/fashion-design.png",
+      "bytes": 2623230,
+      "sha256": "8c9dfff5c0221e85b453274dc9b1a32d24f47c7bc4bce8a5445482dbaa72498d"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/education/food-beverage.png",
+      "bytes": 2478672,
+      "sha256": "5855fd74de0f653f35db63b766c4bbb35696609f3ada6b9f25d9198cae3731f3"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/education/home-deco.png",
+      "bytes": 2614320,
+      "sha256": "4745ba60dd9b4da166d19aea3578f2c72d490175adeeee2f1883a9d20557495b"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/education/jewelry-gift.png",
+      "bytes": 2252530,
+      "sha256": "3bf89eb62d87abb96f58edc8c80d0a5e5d477715c5da69793098dc22dfbc06ad"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/education/logistics.png",
+      "bytes": 2338464,
+      "sha256": "52abc0836edc29c8f099d1900c8c8f7f1eb70a27f204cd468aa13801cce7c376"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/education/manifest.json",
+      "bytes": 21919,
+      "sha256": "a32afe9f8bcbe30f5c7d6b808746f77a7485591f4011eda1ec97d6a8c49475a1"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/education/technology-electronic.png",
+      "bytes": 2001328,
+      "sha256": "7cdabc6db4db81f6ea7390a4477bd2473e775e1e15ce5be7682b3b951aa6bfc8"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/education/universal.png",
+      "bytes": 2460422,
+      "sha256": "8acee8f5814db80cb969befc4d87197b2bf020cafab2d269dd029de670671304"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/education/wedding-photography.png",
+      "bytes": 2469473,
+      "sha256": "b9e3a7abd10acdacc118315e230b5c439e6b322eaaaae35e358f30cc90869f58"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/free-data.js",
+      "bytes": 55507,
+      "sha256": "debd736b4eb88239606785ecaaae28cd0daf7d55416d7cd0767d409638fd59ce"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/free-live-core.js",
+      "bytes": 1148,
+      "sha256": "5b0d743b6419f3a23498a85f3022b17efff344a6dee87f0a3b75310784309157"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/free-live.js",
+      "bytes": 15113,
+      "sha256": "625e4f9edf72b0267ab6f4bb3d927921dbf6bef6ba98e9545ebfb3674eab4f10"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/free.css",
+      "bytes": 6245,
+      "sha256": "90be7f8a154c39d188870c6ee1bbfc06a09adc65386b8df83c80cac9ede24c3f"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/free.js",
+      "bytes": 9418,
+      "sha256": "70afa1dae925fa61aabdcdc43c0667703ea3ad42256ae59f0d9f92416abfb295"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/infographic/baby-kids.png",
+      "bytes": 2500966,
+      "sha256": "e9b88980d6092e8a0300afca786344dc1a475aefb5c512a732bca3ffd281506c"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/infographic/beauty-skincare.png",
+      "bytes": 2152885,
+      "sha256": "d2af3535fe11621e767da953695e1ce9ea3757c4a26f92aa529fc03b5ab8ceab"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/infographic/fashion-design.png",
+      "bytes": 2685076,
+      "sha256": "d06a2dbc3b6c3bfddd3801128cef9b5249830ba33feaef3b4fb539728c81252d"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/infographic/food-beverage.png",
+      "bytes": 2843968,
+      "sha256": "6be1a407d47b3037b7166f0805b36f3a0374ddfa19400b722fdf10ab773595c6"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/infographic/home-deco.png",
+      "bytes": 2451126,
+      "sha256": "4c33874d3a7bb8c6a0d01ca41eefed71c5244148a9b65b2813d54afb16ab0d65"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/infographic/jewelry-gift.png",
+      "bytes": 2400289,
+      "sha256": "c085b0b7e854b9a77841a9d4bc593855c382dc68038d2e325a232f93e4b85fbb"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/infographic/logistics.png",
+      "bytes": 2235956,
+      "sha256": "a53584b127d4003e41addf927797f816d6a913299773035b15d57bc5658b6a8a"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/infographic/manifest.json",
+      "bytes": 20898,
+      "sha256": "5f43f32dd2193d53d73a4ad0e4f2e14c4b227fe5b230a49de4cfcff80b44d23e"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/infographic/technology-electronic.png",
+      "bytes": 2165514,
+      "sha256": "2aa77196d7e756249602abe20113df24236cf76a316de6cfdf223b5e3a8141a1"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/infographic/universal.png",
+      "bytes": 2698773,
+      "sha256": "fadd9a71c722d2b946e155634b0eb9fdd875fd2bea18d2cf623bc924616904fe"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/infographic/wedding-photography.png",
+      "bytes": 2462403,
+      "sha256": "125fc925ef3b6951353d8924f65a2028380a9a7eaa5ea89df8c83f0979fc3980"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/meme/baby-kids.png",
+      "bytes": 2306454,
+      "sha256": "c00ba85b69e9a96b47b74042af410e206f5d8a702873f783fd81d40e5f02a9ce"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/meme/beauty-skincare.png",
+      "bytes": 2146618,
+      "sha256": "ef604f7d13b89421fa98c60f17fbe97adb0f3c3df7d91d126a3b73f6fdbe86bb"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/meme/fashion-design.png",
+      "bytes": 2435264,
+      "sha256": "f34c48de3bf0ee7b72a2af52ec14c9a905ca6d5f230a4f41a2198ad8e9affd5f"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/meme/food-beverage.png",
+      "bytes": 2288314,
+      "sha256": "e27610917173b0d2cd7e10ffc0eb8af7273a50cf3730d3ab47e6bd46f5c55384"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/meme/home-deco.png",
+      "bytes": 2781729,
+      "sha256": "634e7b6e9772e8804ef506617e4e85c589b0db4cc91f1b66ff8c9a4b188e4cb8"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/meme/jewelry-gift.png",
+      "bytes": 2165717,
+      "sha256": "b23f26ad7c74f0c4ee3a63feb639aa3ea68f2b46b7dc18e0c64072d1dd7887b2"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/meme/logistics.png",
+      "bytes": 2052373,
+      "sha256": "93d09ca7ffd6ba6e1b40b3150ef2b80feb16255eb89f24e68e3d0e8b00975612"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/meme/manifest.json",
+      "bytes": 21040,
+      "sha256": "e4f49700629c31b73cce57ae73971691689ed11e4acb8e050c828f11c1db3efb"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/meme/technology-electronic.png",
+      "bytes": 1984357,
+      "sha256": "e2f22b4e3bfc1a08d0717e99de22c83a66dd2330807cdac585fe707dc88803fd"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/meme/universal.png",
+      "bytes": 2580528,
+      "sha256": "ab3243c1527bba853d2be4df3a49c2425edf24d326754e501873c14ab412a2a0"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/meme/wedding-photography.png",
+      "bytes": 2238196,
+      "sha256": "7f983abf86f16dadc1f7bb4cc7af570f66188c0b54adbf9777dd1363fbea2e71"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/posters/baby-kids.png",
+      "bytes": 2162259,
+      "sha256": "9d4acf2034e0cb36cbdc0470d9fd8efe8196ac3539b872e6e08094bae51cfaa0"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/posters/beauty-skincare.png",
+      "bytes": 2042235,
+      "sha256": "efad190b12f699f4b48d92612ab69eb97d0b70d6db4f309f15141e63b98bf9a4"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/posters/fashion-design.png",
+      "bytes": 2343873,
+      "sha256": "fafe9f671dfde3ade0fc83bd2ba4f5c4dd7c9fc7db87a005d8d37d3644ad0da0"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/posters/food-beverage.png",
+      "bytes": 2899893,
+      "sha256": "70f78afb332982d9a00d62333efb08fd6431b801ca43d59821855211ce6c9302"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/posters/home-deco.png",
+      "bytes": 2958787,
+      "sha256": "95f61eb6e9434a0595d7166fa19c7320e919c323af56b56b79001ec806fbc3c6"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/posters/jewelry-gift.png",
+      "bytes": 2177238,
+      "sha256": "3699d63032f98f2d5302b9de795f7f1dcd18da6867f31138e7472fc2b3dfc688"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/posters/logistics.png",
+      "bytes": 1984689,
+      "sha256": "ffdb877a8f033f7c8a5d7a67f01fee3c7d7372100bd720fe50118d1c3a1e739d"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/posters/manifest.json",
+      "bytes": 5719,
+      "sha256": "bf22e72ac51e16384a4ba6521ff8ed489bcc97f45dfe9599e71ca6a12c5d82da"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/posters/technology-electronic.png",
+      "bytes": 1978696,
+      "sha256": "7d6f4d1c3cd73c4636283ce17820f65a730abdfc87a960e952b9ab0cace81873"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/posters/universal.png",
+      "bytes": 2078713,
+      "sha256": "2e13237e16cea3681db73fb86ab09b30208263d5a7b537b86654abf80ac00d37"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/posters/wedding-photography.png",
+      "bytes": 2615399,
+      "sha256": "8b5ace8467bf5d4acdbc04c8cd95abc69f92e8711d4c13c0301ead7900a6f958"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/promotion/black-gold.png",
+      "bytes": 2258387,
+      "sha256": "7c7e2e3d1ca41373c8e4c057563a8962ecd3e22dfa4aecc493e250f6ed5ef1b9"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/promotion/botanical-natural.png",
+      "bytes": 2792234,
+      "sha256": "92eb229532262ad16df486340286b36d585f9ba5eb835683748e46c2cb076751"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/promotion/christmas-atelier.png",
+      "bytes": 2509014,
+      "sha256": "4b52b38f9aa12bb65ac9e1e73ea710914c06ae229a227dc032bfd5f8d229bda1"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/promotion/chrome-future.png",
+      "bytes": 2052741,
+      "sha256": "87a9f5bb728d6436464e97d36ccb923fe6c85abb993b59bdb0f33b855e3b28fa"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/promotion/manifest.json",
+      "bytes": 7167,
+      "sha256": "2730cdf606eac74deca9e84b2479e4db634598a445d916b5e6a4d7d0c17b414b"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/promotion/midnight-countdown.png",
+      "bytes": 1775504,
+      "sha256": "c423d1b2daabcfff143e27ed1286c4196a62af1b10dc6fbdddef77cbf318d479"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/promotion/neon-flash.png",
+      "bytes": 2044425,
+      "sha256": "bcb4e86fc76e897fe17b0ad3cd5a3b16929424b2b4feec6c164fdfd4cc0c380d"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/promotion/pastel-play.png",
+      "bytes": 1881334,
+      "sha256": "1b4ceaa019bd1f314dce11114ccedbc5f54f9d2816a6acd5d88f3806187ecc17"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/promotion/prompt-set.json",
+      "bytes": 5484,
+      "sha256": "643521e62e402f4380c3a71800287182f9b490578582a968ad5fb92a4f0b96fa"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/promotion/quiet-luxury.png",
+      "bytes": 2458335,
+      "sha256": "80f4d806099e9460284e28b4ce1356e0fb0819c9a7333bd0ec6d36b9ef60aa28"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/promotion/red-impact.png",
+      "bytes": 1621667,
+      "sha256": "b25a81d2f31191390ae9aed5b1fe5518f13663e30d98e462353ae939be30647d"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/promotion/retro-collage.png",
+      "bytes": 3293292,
+      "sha256": "9b46997249f8400318590cf0ede9b9d08aedaa5d573ee5818fa73587a6b5973d"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/real-photo/baby-kids.png",
+      "bytes": 2271060,
+      "sha256": "a563108563b3b322086ac79da1a0c6f7630713bc939b068bf24b1ec444993ffe"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/real-photo/beauty-skincare.png",
+      "bytes": 2149931,
+      "sha256": "6731c7e63c9dc75c9da12a07fa0a69fe613471c00d287ea38eba2aa75b67dcee"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/real-photo/fashion-design.png",
+      "bytes": 2211175,
+      "sha256": "7732f4ac1b2ee01b6b8c28a1ce467cbde72131aaa524a428c3d7686e2d033137"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/real-photo/food-beverage.png",
+      "bytes": 2623908,
+      "sha256": "50c6e7fd50ae60aa74d7c74e21f940a6fb9e62ba3ae227fa044bd4cbbba7d62d"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/real-photo/home-deco.png",
+      "bytes": 2743436,
+      "sha256": "b27ebd96aff85a7a9859a5293d41eaa8ca606e40c8065be8091116414f0645af"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/real-photo/jewelry-gift.png",
+      "bytes": 2279736,
+      "sha256": "d74f028921aa2a822152935ba3e10f990eb959fc02359dba63b28f43e869720f"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/real-photo/logistics.png",
+      "bytes": 2164382,
+      "sha256": "271b3210e42d71b4620dacfe7c110733c34b3a9c9e674099c9e8a6041fd2c821"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/real-photo/manifest.json",
+      "bytes": 21129,
+      "sha256": "833900f58decf225c09452857cabf1c4331511d10ab3dbca5623756ff323de2e"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/real-photo/technology-electronic.png",
+      "bytes": 2130238,
+      "sha256": "c3b5cb43a5460af554bafbe11fa433780165fbd1507b942e1b322fa1da827f8d"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/real-photo/universal.png",
+      "bytes": 2394601,
+      "sha256": "9913844231291ca1168556c20482f1fa6d5148af6f4549ee336248cb628a8e1e"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/real-photo/wedding-photography.png",
+      "bytes": 2344321,
+      "sha256": "033c1bd550b675333320c8cdee54fa2072b6045cbef16e1fb2a4dd34ec188c8f"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/storytelling/baby-kids.png",
+      "bytes": 2376995,
+      "sha256": "dd4db0c9a54ffb25603d914623c714ec1eb50e2e3c1bdfd7265f50a64fb717a3"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/storytelling/beauty-skincare.png",
+      "bytes": 2229469,
+      "sha256": "e41a3a68f4f55be9b7f6d0222cff614887bb9cac000e9665ace828d266017982"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/storytelling/fashion-design.png",
+      "bytes": 2646318,
+      "sha256": "1b0899511daaf1db11a14b7d43f982d5c14c13d8dc0648b8679f70e37f94725d"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/storytelling/food-beverage.png",
+      "bytes": 2921767,
+      "sha256": "9f05c79a242c772fa72b7a84c9e54cb44071b2976c64aaee31062056f515f678"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/storytelling/home-deco.png",
+      "bytes": 2850722,
+      "sha256": "9d2f6772acdab8bceae4276f408ebe82b24f577c1ab107c84781e8cdac1bbaaf"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/storytelling/jewelry-gift.png",
+      "bytes": 2327439,
+      "sha256": "9789c10dd56a388899ea78ec40db6cfe1d64ef3b3a64844eaabb7e4783eef274"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/storytelling/logistics.png",
+      "bytes": 2245752,
+      "sha256": "7b491f8dafa54bf66194af3c6371db0d1e21ec3599739afe5a18e019b4fe0651"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/storytelling/manifest.json",
+      "bytes": 21904,
+      "sha256": "624e43072c209e652920e25076b897aac5aa9dc88ea02bc4316ad281013facbc"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/storytelling/technology-electronic.png",
+      "bytes": 2284541,
+      "sha256": "bd1112c1f041f6ccd0b9f4ef953f08e13c3c1c9fa8be27538227630168f12a4b"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/storytelling/universal.png",
+      "bytes": 2650702,
+      "sha256": "c61e12a0936fa5902d8537a2eefc64a750a0859bf2dbb87a0472774d915a2cfa"
+    },
+    {
+      "path": "public/marketing-ai-brief-preview2/storytelling/wedding-photography.png",
+      "bytes": 2438162,
+      "sha256": "a6f296c278adb47364f028797d117e569b2ac2b5b438f32f21c9758a350a8333"
+    },
+    {
+      "path": "public/marketing-daily-drafts-preview/sample.css",
+      "bytes": 15133,
+      "sha256": "d97b22cc94ee77527b89fa1b95566c36ca0a840b515790cf423e81efc9942af8"
+    },
+    {
+      "path": "public/marketing-studio/posts.css",
+      "bytes": 17920,
+      "sha256": "0939886cd7829ac91e0862f694c8e2b74910a6e8ac2defdb91c8f17170bff323"
+    },
+    {
+      "path": "public/marketing-studio/posts.js",
+      "bytes": 83819,
+      "sha256": "821dc2a09f09499231da5bc743ffeb706a85871d6f3a30fcc2b9017ce23d46bb"
+    },
+    {
+      "path": "resources/views/marketing/layout.blade.php",
+      "bytes": 2720,
+      "sha256": "91de5fd9c82e55dc9dd74f1b6b84ffae7f60a32b27762f52be13e088152839a2"
+    },
+    {
+      "path": "resources/views/marketing/navigation/chrome.blade.php",
+      "bytes": 2313,
+      "sha256": "71fd32ecef8f669759a03e66ef1e21d2177b6b8f0b9c6f84b5e6c114839ca986"
+    },
+    {
+      "path": "resources/views/marketing/posts/daily-draft.blade.php",
+      "bytes": 6374,
+      "sha256": "5d00d8a80644ed486261d37997c637f88dcf9c406768f433366b7943f4a73a78"
+    },
+    {
+      "path": "resources/views/marketing/posts/free-create.blade.php",
+      "bytes": 2745,
+      "sha256": "cbe031ef6d402e2e7e12cf37257e8658011ac4b0950de3322469ffd1ed0a85bb"
+    },
+    {
+      "path": "resources/views/marketing/posts/free-post-form.blade.php",
+      "bytes": 9300,
+      "sha256": "ccedd3fb442ec2d49928fe7efe7765b1d3e546db21c20a3f03a431976e3b7532"
+    },
+    {
+      "path": "routes/marketing.php",
+      "bytes": 35246,
+      "sha256": "dd4f305d739ea5ef1782cfdcdbc822a4926b38b972623066d2eaddeffc467392"
+    },
+    {
+      "path": "tests/Feature/MarketingCaptionTest.php",
+      "bytes": 2490,
+      "sha256": "d328830e5678b4a162a2174304796908ee5ea0260319f1f71ee1d34de28dfbe9"
+    },
+    {
+      "path": "tests/Feature/MarketingDailyDraftTest.php",
+      "bytes": 12436,
+      "sha256": "c572f703ce3864325c54f975eb865e430306e5b5c15c743ee559575c8ce6c65c"
+    },
+    {
+      "path": "tests/Feature/MarketingFreePostTest.php",
+      "bytes": 20832,
+      "sha256": "662cf63135a4c9b1d81adf6c093007a4daa58fcc4a0904b9b56cb9d3f98c41c1"
+    },
+    {
+      "path": "tests/javascript/marketing-free-brief.test.cjs",
+      "bytes": 5351,
+      "sha256": "63798a12eb37c3fcdc68ad084cb8d891f8bad8caa293ed2e9dc2fdfc26068bca"
+    },
+    {
+      "path": "tests/javascript/marketing-free-live.test.cjs",
+      "bytes": 2432,
+      "sha256": "ee8621adb00ce40cf36f221c9a332a1b6ed92e7279fa4b9b063a728957e65385"
+    },
+    {
+      "path": "tests/javascript/marketing-post-title.test.cjs",
+      "bytes": 2762,
+      "sha256": "476b8f9512e5ef0b57324cf26cfcc775869e84e4a5ec9ccf708bc59a21d6c920"
+    },
+    {
+      "path": "tests/javascript/marketing-reference-library.test.cjs",
+      "bytes": 1326,
+      "sha256": "f83503b6f585dbfe2afea64c5782fc691b01a2ce018e1596f8ae42fc996518d1"
+    }
+  ],
+  "excluded": "Unrelated dirty code/builds, .env/private files/local drafts, cancelled Insights tables, old template Canvas and static preview index."
+}
