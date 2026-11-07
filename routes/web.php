@@ -55,6 +55,7 @@ use App\Http\Controllers\StorefrontController;
 use App\Http\Controllers\StorefrontCurrencyController;
 use App\Http\Controllers\StorefrontPageController;
 use Illuminate\Support\Facades\Route;
+Route::post('/api/automation/tick',[\App\Http\Controllers\SocialHubReceiverController::class,'receive'])->middleware('throttle:30,1');
 Route::post('/api/social/hub/challenge',[\App\Http\Controllers\SocialHubReceiverController::class,'receive'])->middleware('throttle:60,1');
 Route::post('/api/social/hub/events',[\App\Http\Controllers\SocialHubReceiverController::class,'receive'])->middleware('throttle:60,1');
 Route::post('/api/social/hub/instagram',[\App\Http\Controllers\SocialHubReceiverController::class,'receive']);

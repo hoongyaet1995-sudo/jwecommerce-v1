@@ -24,6 +24,8 @@ final class SocialHubReceiverController extends Controller
         if ($r->is('api/social/hub/challenge')) {
             $d = $r->validate(['check_id' => 'required|string|max:100', 'challenge' => 'required|regex:/^[a-f0-9]{64}$/D']);
             $response = ['status' => 'verified', 'check_id' => $d['check_id'], 'challenge' => $d['challenge']];
+        } elseif ($r->is('api/automation/tick')) {
+            abort_if(strlen($r->getContent())>4096,413);$r->validate(['dispatch_id'=>'required|uuid']);$response=['status'=>'accepted'];
         } elseif ($r->is('api/social/hub/instagram','api/social/hub/whatsapp')) {
             abort_if(strlen($r->getContent())>1048576,413);
             abort_unless(is_array($d['payload']??null)&&($d['payload']['object']??null)===($r->is('api/social/hub/whatsapp')?'whatsapp_business_account':'instagram'),422);
@@ -34,6 +36,7 @@ final class SocialHubReceiverController extends Controller
         }
         DB::table('social_hub_request_nonces')->where('expires_at', '<', now())->delete();
         abort_unless(DB::table('social_hub_request_nonces')->insertOrIgnore(['client_id' => $s->client_id, 'key_id' => $s->key_id, 'nonce' => $h['X-Social-Nonce'], 'expires_at' => now()->addMinutes(10)]), 409, 'request_replayed');
+        if ($r->is('api/automation/tick')) {$response=app(\App\Services\Marketing\MarketingAutomationTrigger::class)->accept($s,$d['dispatch_id'],hash('sha256',$r->getContent()));}
         if ($r->is('api/social/hub/instagram')) {
             $response['processed']=app(\App\Services\Social\MessengerInboundService::class)->receive($d['payload']);
         }
@@ -47,6 +50,8 @@ final class SocialHubReceiverController extends Controller
             abort_unless($row->client_id === $s->client_id && $row->payload_hash === $hash, 409, 'event_payload_conflict');
         }
 
-        return SocialProtocol::response($response,$h,$secret,'hub-to-client');
+        $reply=SocialProtocol::response($response,$h,$secret,'hub-to-client');
+        if($r->is('api/automation/tick'))$reply->headers->set('Content-Length',(string)strlen($reply->getContent()));
+        return $reply;
     }
 }

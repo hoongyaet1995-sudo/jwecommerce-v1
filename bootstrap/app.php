@@ -24,6 +24,7 @@ $app = Application::configure(basePath: dirname(__DIR__))
             'payments/webhooks/paypal',
             'webhooks/easyparcel',
             'webhooks/easyparcel/*',
+            'api/automation/tick',
             'api/social/hub/challenge',
             'api/social/hub/events',
             'api/social/hub/instagram',
