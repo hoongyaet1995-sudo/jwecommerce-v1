@@ -24,11 +24,19 @@ function purpose(){
  for(const button of document.querySelectorAll('[data-post-type]'))button.setAttribute('aria-pressed',String(button.dataset.postType===v.type));
  for(const button of document.querySelectorAll('[data-image-mode]'))button.setAttribute('aria-pressed',String(button.dataset.imageMode===v.image_mode));
  const hex=document.getElementById('automation-theme-hex');if(hex)hex.textContent=v.theme;
- const summary=document.getElementById('automation-summary');if(!summary)return;summary.replaceChildren();
- const sourceNames=sourcePool?sourcePool.description():(v.source_scope==='all'?['All eligible resources']:Object.values(selected).flat().map(x=>x.label)),week=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
- const entries=[['Automation',v.name||'Untitled automation'],['Data sources',sourceNames.length?sourceNames.join(' · '):'Choose your sources'],['Content type',type?.name||v.type],['Image plan',v.image_mode==='multiple'?'AI decides: 2–10 images, adapted per platform':'One image, adapted per platform'],['Company',boot.company],['Theme colour',v.theme],['Language',v.language],['Voice',v.tone],['Versions',v.platforms.join(', ')||'Not selected'],['Timing preference',v.days.length?v.days.map(d=>week[d-1]).join(', ')+' · '+v.time+' (UTC+8)':'Not set']];
- entries.push(['Market',v.market],['Creative intelligence',(v.occasions?'Occasions · ':'')+'Shared memory · Angle rotation'],['Live trends',v.live_trends?'Optional · On':'Off']);
- for(const [label,value]of entries){const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=label;dd.textContent=value||'Not specified';summary.append(dt,dd);}
+ const summary=document.getElementById('automation-summary');if(!summary)return;const directionOpen=!!summary.querySelector('details[open]');summary.replaceChildren();
+ const sourceNames=sourcePool?sourcePool.description():(v.source_scope==='all'?['All eligible resources']:Object.values(selected).flat().map(x=>x.label));
+ const format=document.getElementById('automation-format');if(format)format.textContent=(type?.name||v.type)+' \u00b7 '+(v.image_mode==='multiple'?'AI chooses 2\u201310 images':'Single image');
+ const field=(label)=>{const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=label;summary.append(dt,dd);return dd;};
+ field('Source pool').textContent=sourceNames.length?sourceNames.join(' \u00b7 '):'Choose your sources';
+ const direction=field('Creative direction'),prompt=(v.prompt||'').trim();
+ if(!prompt)direction.textContent='Add your creative direction';else{const excerpt=document.createElement('p');excerpt.className='summary-direction';excerpt.textContent=prompt;direction.append(excerpt);if(prompt.length>60){const details=document.createElement('details'),toggle=document.createElement('summary'),full=document.createElement('p');details.className='summary-full-direction';details.open=directionOpen;toggle.textContent='View full direction';full.textContent=v.prompt;details.append(toggle,full);direction.append(details);}}
+ const channels=field('Platforms & language');channels.className='summary-channels';
+ for(const platform of v.platforms){const chip=document.createElement('span'),symbol=document.createElement('i');chip.className='summary-platform';chip.setAttribute('role','img');chip.setAttribute('aria-label',platform);chip.title=platform;symbol.className='bi bi-'+platform.toLowerCase();symbol.setAttribute('aria-hidden','true');chip.append(symbol);channels.append(chip);}
+ const language=document.createElement('span');language.textContent=(v.platforms.length?'\u00b7 ':'No platforms selected \u00b7 ')+(v.language||'Not selected');channels.append(language);
+ const destination=field('CTA destination'),url=(v.cta_url||'').trim();
+ if(!url){destination.textContent='Not set';destination.classList.add('text-muted');}else{try{const target=new URL(url);if(target.protocol!=='https:'||target.username||target.password)throw Error('Invalid destination');const link=document.createElement('a');link.href=target.href;link.target='_blank';link.rel='noopener noreferrer';link.title=target.href;const path=target.pathname==='/'?'':target.pathname;link.textContent=target.hostname+(path.length>40?path.slice(0,37)+'\u2026':path);destination.append(link);}catch{destination.textContent='Enter a valid HTTPS URL';destination.classList.add('text-warning');}}
+
 }
 function renderSelected(){const box=document.getElementById('source-selected');if(!box)return;box.replaceChildren();for(const [kind,items]of Object.entries(selected))for(const item of items){const row=document.createElement('div');row.className='automation-source-row';const text=document.createElement('span');text.textContent=kind+' · '+item.label;const remove=document.createElement('button');remove.type='button';remove.className='btn-crm-secondary';remove.textContent='Remove';remove.onclick=()=>{if(busy)return;selected[kind]=selected[kind].filter(x=>x.id!==item.id);renderSelected();remember();};row.append(text,remove);box.append(row);}}
 try{const saved=JSON.parse(sessionStorage.getItem(draftKey)||'null');if(saved&&saved.version===current.version){selected=saved.selected;current.source_modes=saved.values.source_modes??current.source_modes;for(const [k,v]of Object.entries(saved.values)){const el=form.elements[k];if(!el)continue;if(['platforms','days'].includes(k)||(k==='image_mode'&&el.type==='radio')){for(const input of form.querySelectorAll('[name="'+k+'"]'))input.checked=Array.isArray(v)?v.map(String).includes(input.value):input.value===v;}else if(['occasions','live_trends'].includes(k))el.checked=!!v;else el.value=v;}}}catch{}
@@ -42,14 +50,24 @@ async function save(data){if(!form.reportValidity())throw Error('Complete the re
 function refreshAction(){
  const button=document.getElementById('automation-generate');delete button.dataset.reviewUrl;
  if(busy){button.textContent=operation==='generate'?'Generating…':operation==='save'||operation==='settings'?'Saving…':'Checking…';return;}
- if(activeRun?.status==='completed'){button.textContent='View drafts';button.dataset.reviewUrl=activeRun.review_url;}
+ if(activeRun?.status==='completed'){button.textContent='Generate Post';}
  else if(activeRun?.can_save)button.textContent='Finish saving';
  else if(activeRun?.can_step)button.textContent='Continue generation';
  else if(activeRun&&activeRun.status.endsWith('_requesting'))button.textContent='View progress';
  else if(activeRun)button.textContent='View issue';
  else button.textContent=sessionStorage.getItem(runKey)?'View progress':'Generate Post';
 }
+function recordDraft(run){
+ if(!run.review_url)return;
+ let box=document.getElementById('automation-history');
+ if(!box){box=document.createElement('section');box.id='automation-history';box.className='brief-card';const h=document.createElement('h2');h.className='h6';h.textContent='Recent generations';box.append(h);(document.querySelector('.brief-summary')||progress.parentElement).append(box);}
+ box.hidden=false;
+ let row=[...box.querySelectorAll('[data-history-run]')].find(x=>x.dataset.historyRun===run.id);
+ if(!row){row=document.createElement('div');row.dataset.historyRun=run.id;row.className='border-bottom py-3';box.insertBefore(row,box.children[1]||null);}
+ row.replaceChildren();const time=document.createElement('span');time.className='field-note';time.textContent='Drafts ready';const link=document.createElement('a');link.className='btn-crm-secondary mt-2 w-100 justify-content-center';link.href=run.review_url;link.textContent='View drafts';row.append(time,link);
+}
 function renderRun(run){
+ if(run.status==='completed'){recordDraft(run);sessionStorage.removeItem(runKey);}
  activeRun=run;refreshAction();progress.replaceChildren();const text=document.createElement('p');text.textContent=run.status==='completed'?'Drafts are ready for review.':run.status.replaceAll('_',' ')+(run.total_images?' · '+run.completed_images+'/'+run.total_images+' images':'');progress.append(text);
  if(run.status!=='completed'&&!run.can_step&&!run.can_save&&!run.status.endsWith('_requesting')){
   const details=document.createElement('details'),summary=document.createElement('summary'),warning=document.createElement('p');details.id='automation-issue';summary.textContent='Generation details';warning.className='field-note mt-2';warning.textContent='This request result could not be confirmed. It may already have been charged. No automatic retry was sent. Keep this record for review. Run: '+run.id+'. '+(run.error||'');details.append(summary,warning);progress.append(details);
@@ -62,7 +80,7 @@ async function continueRun(id){let run=await request('/runs/'+id);renderRun(run)
 form.onsubmit=async e=>{e.preventDefault();if(busy)return;try{const data=values();if(!form.reportValidity())return;lock(true,'settings');await save(data);if(activeRun?.status==='status_unconfirmed'&&!pendingRequest()){activeRun=null;progress.replaceChildren();}refreshAction();message('Automation saved. No generation was started.');}catch(e){message(e.message);}finally{lock(false);}};
 document.getElementById('automation-generate').onclick=async()=>{
  if(busy)return;
- if(activeRun?.status==='completed'){window.location.assign(activeRun.review_url);return;}
+ if(activeRun?.status==='completed'){activeRun=null;progress.replaceChildren();}
  try{
   const pending=pendingRequest();
   if(pending){lock(true,activeRun?.can_save?'save':activeRun?.can_step?'generate':'inspect');const id=pending.id||pending;
@@ -76,6 +94,6 @@ document.getElementById('automation-generate').onclick=async()=>{
  }catch(e){message(e.message+' Existing generation state is retained.');activeRun=activeRun||{id:pendingRequest()?.id||'',status:'status_unconfirmed',can_step:false,error:'result_unconfirmed'};renderRun(activeRun);}
  finally{lock(false);refreshAction();}
 };
-for(const b of document.querySelectorAll('[data-resume-run]'))b.onclick=async()=>{if(busy)return;try{lock(true);const run=await inspectRun(b.dataset.resumeRun);sessionStorage.setItem(runKey,JSON.stringify({id:run.id}));}catch(e){message(e.message);}finally{lock(false);refreshAction();}};
+for(const b of document.querySelectorAll('[data-resume-run]'))b.onclick=async()=>{if(busy)return;try{lock(true);const run=await inspectRun(b.dataset.resumeRun);if(run.status!=='completed')sessionStorage.setItem(runKey,JSON.stringify({id:run.id}));}catch(e){message(e.message);}finally{lock(false);refreshAction();}};
 refreshAction();const initial=pendingRequest();if(initial){inspectRun(initial.id||initial).catch(e=>{renderRun({id:initial.id||initial,status:'status_unconfirmed',can_step:false,error:'result_unconfirmed'});message(e.message+' Nothing was resent.');});}
 })();

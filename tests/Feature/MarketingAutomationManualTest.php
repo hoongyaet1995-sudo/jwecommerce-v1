@@ -34,7 +34,7 @@ class MarketingAutomationManualTest extends TestCase
             ->assertSee('marketing-ai-brief-preview/brief.css')->assertSee('marketing-ai-brief-preview2/free.css')
             ->assertSee('class="brief-grid"',false)->assertSee('id="automation-types" class="content-types"',false)
             ->assertSee('id="automation-images" class="content-types"',false)->assertSee('class="platform-choices automation-days"',false)
-            ->assertSee('Your brand stays recognisable')->assertSee('Test Company')->assertSee('Designed around your idea')
+            ->assertSee('Your brand stays recognisable')->assertSee('Test Company')->assertSee('Generation preview')
             ->assertDontSee('form-check-inline',false)->assertDontSee('form-check-input',false);
         Http::assertNothingSent();$this->assertDatabaseCount('marketing_posts',0);
     }
