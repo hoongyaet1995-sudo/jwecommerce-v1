@@ -12,8 +12,10 @@
 @endif
 <link rel="stylesheet" href="{{ asset('marketing-studio/automation-intelligence.css') }}?v={{ filemtime(public_path('marketing-studio/automation-intelligence.css')) }}">@if(($screen??'')==='editor')<link rel="stylesheet" href="{{ asset('marketing-studio/source-pool.css') }}?v={{ filemtime(public_path('marketing-studio/source-pool.css')) }}">@endif</head><body class="{{ ($screen??'')==='editor'?'marketing-free-post marketing-automation-post':'' }}">
 @include('marketing.navigation.chrome',['freePostChrome'=>true])
-<div class="page-header"><div><div class="eyebrow">MARKETING STUDIO @if($settings) / AUTOMATION @endif</div><h1 class="page-title">{{ $settings?'AI Post Generation':'Automation' }}</h1><p class="page-subtitle">{{ $settings?'Manage your AI post automations.':'Prepare your next marketing workflow, in one place.' }}</p></div></div>
 <main class="crm-page-content">
+@if(!$settings)
+<div class="page-header"><div><div class="eyebrow">MARKETING STUDIO @if($settings) / AUTOMATION @endif</div><h1 class="page-title">{{ $settings?'AI Post Generation':'Automation' }}</h1><p class="page-subtitle">{{ $settings?'Manage your AI post automations.':'Prepare your next marketing workflow, in one place.' }}</p></div></div>
+@endif
 @if(!$settings)
 <div class="row g-4"><div class="col-12 col-md-8 col-xl-5"><article class="studio-card h-100">
 <div class="d-flex align-items-start gap-3"><div class="rounded-3 p-3 bg-light"><i class="bi bi-stars fs-4" aria-hidden="true"></i></div><div><h2 class="h5 fw-bold mb-2">AI Post Generation</h2><p class="text-muted mb-0">Turn your products and brand into social posts, ready for review.</p></div></div>
@@ -24,7 +26,7 @@
 @include('marketing.automation.workspace')
 @endif
 </main>
-<footer class="footer-custom"><span>JW Marketing Studio &copy; {{ date('Y') }}</span><span class="text-muted small">Nothing is generated or published automatically.</span></footer></div>
+<footer class="footer-custom"><span>JW Marketing Studio &copy; {{ date('Y') }}</span><span class="text-muted small">Only Active schedules generate automatically. Nothing is published automatically.</span></footer></div>
 <script src="{{ asset('marketing-studio/bootstrap.bundle.min.js') }}" defer></script><script src="{{ asset('marketing-studio/studio.js') }}" defer></script>
 <script src="{{ asset('marketing-studio/campaign-navigation.js') }}" defer></script><script src="{{ asset('marketing-studio/audience-navigation.js') }}" data-audience-visible="{{ \App\Domain\Marketing\MarketingPermission::allows(auth()->user(),\App\Domain\Marketing\MarketingPermission::VIEW_AUDIENCE)?'1':'0' }}" defer></script>
 </body></html>

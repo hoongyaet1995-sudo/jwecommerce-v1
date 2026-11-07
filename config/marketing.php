@@ -3,6 +3,7 @@
 $conversationPilot=json_decode((string)env('MARKETING_CONVERSATION_PILOT_GRANT','{}'),true);
 $conversationPilot=is_array($conversationPilot)?$conversationPilot:[];
 return [
+    'automation_cron_enabled' => (bool) env('MARKETING_AUTOMATION_CRON_ENABLED', false),
     'free_post_generation_enabled'=>(bool)env('MARKETING_FREE_POST_GENERATION_ENABLED',false),
     'caption_public_origin'=>env('MARKETING_PUBLIC_ORIGIN',env('APP_URL')),
     'whatsapp_campaign_enabled'=>(bool)env('MARKETING_WHATSAPP_CAMPAIGN_ENABLED',false),

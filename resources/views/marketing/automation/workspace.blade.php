@@ -1,7 +1,7 @@
 @php($typeLabels=['promotion'=>'Promotion / Sale','carousel'=>'Carousel / Swipable post','poster'=>'Poster','infographic'=>'Infographic','meme'=>'Meme','real-photo'=>'UG / Real Photo','storytelling'=>'Storytelling','education'=>'Educational / Case Study','checklist'=>'Checklist / Cheat Sheet'])
-<div class="d-flex justify-content-between align-items-center gap-3 flex-wrap mb-4">
- <div><p class="text-muted small mb-1">AI Post Generation</p><strong>{{ $screen==='presets'?'Choose a starting point':($screen==='editor'?'Configure your automation':'Automation settings') }}</strong></div>
- <a class="btn-crm-secondary" href="{{ $screen==='list'?route('marketing.automation.index'):route('marketing.automation.ai-posts') }}">← {{ $screen==='list'?'Back to Automation':'All AI Post Automations' }}</a>
+<div class="d-flex justify-content-between align-items-center gap-3 flex-wrap mb-4 automation-page-heading">
+ <div><div class="eyebrow">MARKETING STUDIO / AUTOMATION</div><h1 class="page-title">AI Post Generation</h1><p class="page-subtitle mb-0">Manage your AI post automations.</p></div>
+ <div class="d-flex align-items-center gap-2 flex-wrap"><a class="btn-crm-secondary" href="{{ url('/admin/marketing/posts') }}">View Post</a><a class="btn-crm-secondary" href="{{ $screen==='list'?route('marketing.automation.index'):route('marketing.automation.ai-posts') }}"><i class="bi bi-arrow-left" aria-hidden="true"></i> {{ $screen==='list'?'Back to Automation':'All AI Post Automations' }}</a></div>
 </div>
 @if($screen==='presets')
 @php($presetIcons=['blank'=>'pencil-square','spotlight'=>'box-seam','offers'=>'tag','education'=>'book','guide'=>'signpost-split','checklist'=>'list-check','moments'=>'emoji-smile','story'=>'journal-text','case'=>'clipboard-data'])
@@ -12,10 +12,10 @@
 </div></section>
 @include('marketing.automation.intelligence-overview')
 @elseif($screen==='list')
-<section class="studio-card"><div class="d-flex justify-content-between align-items-center gap-3 flex-wrap mb-4"><div><h2 class="h5 fw-bold">AI Post Automations</h2><p class="text-muted mb-0">Save a direction, then generate drafts when you are ready. Automatic generation is not enabled.</p></div><a class="btn-crm-primary" href="{{ route('marketing.automation.create') }}">+ Create automation</a></div>
+<section class="studio-card"><div class="d-flex justify-content-between align-items-center gap-3 flex-wrap mb-4"><div><h2 class="h5 fw-bold">AI Post Automations</h2><p class="text-muted mb-0">Save a direction and enable its schedule when ready. New automations are paused by default.</p></div><a class="btn-crm-primary" href="{{ route('marketing.automation.create') }}">+ Create automation</a></div>
 @if($automations->isEmpty())<div class="text-center py-5"><i class="bi bi-diagram-3 fs-1 text-muted"></i><h3 class="h5 mt-3">No automations yet</h3><p class="text-muted">Start with a preset or create your own direction.</p></div>
 @else<div class="table-responsive"><table class="table align-middle"><thead><tr><th>Automation</th><th>Post type</th><th>Sources</th><th>Status</th><th></th></tr></thead><tbody>
-@foreach($automations as $a)<tr><td><strong>{{ $a->name }}</strong><div class="small text-muted">{{ $presets[$a->preset]['name']??'Custom' }}</div></td><td>{{ $typeLabels[$a->settings['type']] }}</td><td>@include('marketing.automation.source-range-summary',['sourceSettings'=>$a->settings])</td><td><span class="badge text-bg-light">Manual generation</span></td><td><a class="btn-crm-secondary" href="{{ url('/admin/marketing/automation/ai-posts/'.$a->id.'/edit') }}">Configure →</a></td></tr>@endforeach
+@foreach($automations as $a)<tr><td><strong>{{ $a->name }}</strong><div class="small text-muted">{{ $presets[$a->preset]['name']??'Custom' }}</div></td><td>{{ $typeLabels[$a->settings['type']] }}</td><td>@include('marketing.automation.source-range-summary',['sourceSettings'=>$a->settings])</td><td><span class="badge text-bg-light">{{ $a->schedule_enabled?'Active schedule':'Paused' }}</span></td><td><a class="btn-crm-secondary" href="{{ url('/admin/marketing/automation/ai-posts/'.$a->id.'/edit') }}">Configure →</a></td></tr>@endforeach
 </tbody></table></div>@endif</section>
 @else
 @include('marketing.automation.editor')

@@ -28,6 +28,27 @@ class MarketingAutomationManualTest extends TestCase
         return ['id'=>(string)Str::uuid(),'version'=>0,'name'=>'Monday product ideas','preset'=>'spotlight','sources'=>['products'=>[$p->id],'categories'=>[],'collections'=>[],'promotions'=>[],'pages'=>[]], 'prompt'=>'Show a useful workspace idea.','type'=>'poster','image_mode'=>'single','cta_url'=>'https://shop.example/workspace','platforms'=>['Facebook'],'language'=>'English','tone'=>'Professional','theme'=>'#123e5a','days'=>[1,3],'time'=>'10:00','timezone'=>'Asia/Kuala_Lumpur'];
     }
 
+    public function test_schedule_activation_is_explicit_and_requires_days():void
+    {
+        $p=$this->setupSource();$v=$this->settings($p);
+        $a=app(\App\Services\Marketing\MarketingPostAutomations::class)->save(auth()->user(),$v);
+        $this->assertFalse($a->schedule_enabled);
+        $v['version']=$a->version;$v['schedule_enabled']=true;
+        $a=app(\App\Services\Marketing\MarketingPostAutomations::class)->save(auth()->user(),$v);
+        $this->assertTrue($a->schedule_enabled);$this->assertNotNull($a->schedule_epoch);
+        $this->get('/admin/marketing/automation/ai-posts/'.$a->id.'/edit')->assertOk()->assertSee('Schedule status')->assertSee('Next scheduled generation');
+        $v['version']=$a->version;$v['days']=[];
+        $this->postJson('/admin/marketing/automation/ai-posts',$v)->assertUnprocessable()->assertJsonValidationErrors('days');
+    }
+
+    public function test_unchanged_save_preserves_schedule_version_and_legacy_days_are_normalized():void
+    {
+        $p=$this->setupSource();$v=$this->settings($p);$v['schedule_enabled']=true;$v['days']=['1','3'];$svc=app(\App\Services\Marketing\MarketingPostAutomations::class);
+        $a=$svc->save(auth()->user(),$v);$this->assertSame([1,3],$a->settings['days']);
+        $v['version']=$a->version;$again=$svc->save(auth()->user(),$v);$this->assertSame($a->version,$again->version);
+        unset($v['schedule_enabled']);$v['days']=[];$this->postJson('/admin/marketing/automation/ai-posts',$v)->assertUnprocessable()->assertJsonValidationErrors('days');
+    }
+
     public function test_editor_reuses_ai_post_cards_brand_and_platform_layout_without_floating_checks():void
     {
         $this->setupSource();$this->get('/admin/marketing/automation/ai-posts/new?preset=spotlight')->assertOk()
@@ -75,6 +96,23 @@ class MarketingAutomationManualTest extends TestCase
         $plan=['angle'=>'Workspace offer','headline'=>'A useful desk','cta'=>'Explore','variants'=>['facebook'=>'Desk Lamp. Explore the voucher offer.'],'slides'=>[['headline'=>'Workspace offer','prompt'=>'Desk Lamp with the verified voucher offer.']]];
         Http::fake(['api.openai.com/*'=>function($r)use($p,$voucher,$plan){return Http::response(['status'=>'completed','output'=>[['content'=>[['type'=>'output_text','text'=>json_encode(str_contains(json_encode($r->data()),'AUTOMATION_SOURCE_SELECTION')?['product_ids'=>[$p->id],'page_ids'=>[],'promotion_ids'=>[$voucher->id],'reason'=>'Current offer']:$plan)]]]]]);}]);
         $id=(string)Str::uuid();$this->postJson('/admin/marketing/automation/ai-posts/'.$v['id'].'/generate',['id'=>$id,'version'=>1])->assertOk();for($i=0;$i<3;$i++)$r=$this->postJson('/admin/marketing/automation/runs/'.$id.'/step')->assertOk();$r->assertJsonPath('status','free_text_completed');$copy=\App\Models\MarketingDailyDraftRun::findOrFail($id)->creative['variants']['facebook'];$this->assertStringContainsString('RM 10.00 off',$copy);$this->assertStringContainsString('SAVE10',$copy);$this->assertStringContainsString('Minimum spend RM 50.00',$copy);
+    }
+
+    public function test_scheduled_runner_saves_multislide_drafts_with_mock_ai_and_never_repeats():void
+    {
+        $p=$this->setupSource();config(['marketing.automation_cron_enabled'=>true]);
+        $this->travelTo(\Carbon\Carbon::parse('2026-11-09 01:59:00','UTC'));
+        $v=$this->settings($p);$v['schedule_enabled']=true;$v['image_mode']='multiple';
+        $a=app(\App\Services\Marketing\MarketingPostAutomations::class)->save(auth()->user(),$v);
+        $plan=['angle'=>'Workspace ideas','headline'=>'A useful desk','cta'=>'Explore','variants'=>['facebook'=>'Desk Lamp. No stand included.'],'slides'=>[['headline'=>'Useful desk','prompt'=>'Lamp artwork.'],['headline'=>'Workspace checklist','prompt'=>'Lamp checklist artwork.']]];
+        $im=imagecreatetruecolor(1024,1280);ob_start();imagepng($im);$png=base64_encode(ob_get_clean());imagedestroy($im);
+        Http::fake(['api.openai.com/v1/responses'=>function($request)use($p,$plan){return Http::response(['status'=>'completed','id'=>'mock-scheduled','output'=>[['content'=>[['type'=>'output_text','text'=>json_encode(str_contains(json_encode($request->data()),'AUTOMATION_SOURCE_SELECTION')?['product_ids'=>[$p->id],'page_ids'=>[],'promotion_ids'=>[],'reason'=>'Useful workspace']:$plan)]]]]]);},'api.openai.com/v1/images/edits'=>Http::response(['data'=>[['b64_json'=>$png]]])]);
+        $this->travelTo(\Carbon\Carbon::parse('2026-11-09 02:00:00','UTC'));
+        for($i=0;$i<9;$i++)app(\App\Services\Marketing\MarketingAutomationRunner::class)->tick(\Carbon\CarbonImmutable::now('UTC'));
+        $this->assertDatabaseHas('marketing_automation_occurrences',['automation_id'=>$a->id,'status'=>'completed']);
+        $this->assertDatabaseCount('marketing_posts',1);$this->assertDatabaseCount('marketing_post_attempts',0);Http::assertSentCount(4);
+        $run=\App\Models\MarketingDailyDraftRun::first();$this->assertSame('completed',$run->status);$this->assertCount(2,$run->snapshot['images']);
+        $this->travelBack();
     }
 
     public function test_settings_are_independent_owned_versioned_and_do_not_generate(): void

@@ -8,6 +8,14 @@ use Illuminate\Support\Facades\Schedule;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
+Artisan::command('marketing:automation-tick {--client=}', function () {
+    $client=(string)$this->option('client');
+    $installation=\Illuminate\Support\Facades\Schema::hasTable('social_hub_settings')?app(\App\Services\Social\SocialHubInstallation::class)->settings():null;
+    if($client===''||!$installation||!$installation->enabled||!hash_equals((string)$installation->client_id,$client)){ $this->line(json_encode(['status'=>'disabled','reason'=>'installation_mismatch']));return 1; }
+
+    $this->line(json_encode(app(\App\Services\Marketing\MarketingAutomationRunner::class)->tick(\Carbon\CarbonImmutable::now('UTC')), JSON_THROW_ON_ERROR));
+})->purpose('Advance one opted-in AI Automation step; invoked only by the registered central dispatcher');
+
 Schedule::command('support:prune-attachment-analyses')->daily()->withoutOverlapping();
 
 Artisan::command('inspire', function () {
