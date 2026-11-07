@@ -1,0 +1,56 @@
+<div id="automation-workspace" class="brief-grid">
+<form id="automation-form">
+ <section class="brief-card">
+  <div class="section-label"><span>1</span><h2>Name &amp; data sources</h2></div>
+  <label for="automation-name" class="form-label">Automation name</label><input id="automation-name" name="name" class="form-control" maxlength="120" value="{{ $form['name'] }}" placeholder="e.g. Monday product spotlight" required>
+  <input type="hidden" name="source_scope" value="{{ $form['source_scope'] }}">
+<fieldset class="mt-4"><legend class="form-label">Where can AI find ideas?</legend><div class="content-types scope-options" role="group" aria-label="Source scope">
+<button type="button" class="content-type" data-scope="all" aria-pressed="true"><i class="bi bi-stars" aria-hidden="true"></i><span><strong>All eligible resources <span class="recommended-label">Recommended</span></strong><small>AI chooses from your whole business. New resources join automatically.</small></span></button>
+<button type="button" class="content-type" data-scope="selected" aria-pressed="false"><i class="bi bi-collection" aria-hidden="true"></i><span><strong>Selected sources</strong><small>Keep this automation focused on a specific range or campaign.</small></span></button></div></fieldset>
+<div id="all-sources-panel" class="scope-panel mt-3"><div class="d-flex gap-2 align-items-center"><i class="bi bi-arrow-repeat" aria-hidden="true"></i><strong>A source pool that stays fresh</strong></div><p>AI picks the relevant resources each time. You don’t need to choose every product.</p><div class="resource-chips"><span>Products</span><span>Categories</span><span>Collections</span><span>Valid promotions</span><span>Published CMS pages</span></div><p class="field-note mt-3 mb-0">Only eligible, published resources are considered. Expired offers and unavailable resources are left out.</p></div>
+@include('marketing.automation.source-pool')
+ </section>
+ <section class="brief-card">
+  <div class="section-label"><span>2</span><h2>What kind of post?</h2></div>
+  <p class="field-note">Choose the content format. AI will create the composition, rather than fill a fixed layout.</p>
+  <input type="hidden" name="type" id="automation-type" value="{{ $form['type'] }}">
+  <div id="automation-types" class="content-types" role="group" aria-label="Visual content type"></div>
+  <p id="post-purpose" class="format-note mt-3"></p>
+  <input type="hidden" name="image_mode" value="{{ $form['image_mode'] }}"><fieldset class="mt-4"><legend class="form-label">How many images?</legend><div id="automation-images" class="content-types" role="group" aria-label="Image plan"></div><p class="field-note mt-2 mb-0">Multiple images require a separate AI image generation for each slide. All images are saved together as drafts for review.</p></fieldset>
+ </section>
+ <section class="brief-card">
+  <div class="section-label"><span>3</span><h2>Give AI a direction</h2></div>
+  <label for="automation-prompt" class="form-label">Post direction prompt</label><textarea id="automation-prompt" name="prompt" rows="5" maxlength="1200" class="form-control" placeholder="Describe the idea, campaign or story you want AI to create…" required>{{ $form['prompt'] }}</textarea>
+  <p class="field-note mt-2">Start with the preset, then make it your own. AI will use the confirmed facts in your source pool.</p>
+  <label class="form-label mt-2" for="automation-cta">CTA Destination URL <span class="text-muted fw-normal">Optional</span></label><input type="url" id="automation-cta" name="cta_url" maxlength="2048" class="form-control" value="{{ $form['cta_url'] }}" placeholder="https://your-store.com/offer">
+  <p class="field-note mt-2 mb-0">Use a public HTTPS destination. Instagram and TikTok profile-link setup is still required for a clickable profile CTA.</p>
+<div class="mt-4"><details class="advanced-preferences"><summary>Advanced preferences <span>Optional</span></summary><div class="row g-3 mt-1"><div class="col-12"><label class="form-label" for="automation-market">Target market</label><select id="automation-market" name="market" class="form-select">@foreach(\App\Services\Marketing\MarketingCreativeIntelligence::MARKETS as $market)<option @selected($form['market']===$market)>{{ $market }}</option>@endforeach</select><p class="field-note mt-2">Choose the audience market for dates and optional trends.</p></div><div class="col-6"><label for="automation-occasions" class="preference-toggle"><input type="checkbox" id="automation-occasions" name="occasions" @checked($form['occasions'])><span><strong>Use relevant occasions</strong><small>Keep everyday content in the mix.</small></span></label></div><div class="col-6"><label for="automation-live-trends" class="preference-toggle"><input type="checkbox" id="automation-live-trends" name="live_trends" @checked($form['live_trends'])><span><strong>Use verified live trends</strong><small>Optional enhancement. Uses evergreen ideas when no suitable trend is available.</small></span></label></div><div class="col-12"><p id="automation-trend-note" class="field-note mt-2 mb-0">Uses Google Trends public search-interest signals (up to 48 hours old). No news claims are inferred; unavailable or unrelated signals use evergreen content.</p></div></div></details></div>
+ </section>
+ <section class="brief-card">
+  <div class="section-label"><span>4</span><h2>Your brand stays recognisable</h2></div>
+  <div class="brand-preview">@if($brand['logo'])<img src="{{ str_starts_with($brand['logo'],'/')||str_starts_with($brand['logo'],'http')?$brand['logo']:StorageUrl($brand['logo']) }}" alt="{{ $brand['name'] }} original logo">@else<span class="automation-brand-icon"><i class="bi bi-building" aria-hidden="true"></i></span>@endif<div><strong>{{ $brand['name'] }}</strong><p class="field-note mb-0">Original company name and Logo supplied as brand references.</p></div></div>
+  <div class="row g-3 mt-2"><div class="col-sm-6"><label for="automation-theme" class="form-label">Theme colour</label><div class="color-field"><input type="color" id="automation-theme" name="theme" value="{{ $form['theme'] }}"><span id="automation-theme-hex">{{ $form['theme'] }}</span></div><p class="field-note mt-2">Choose the theme colour for this automation.</p></div><div class="col-sm-6"><label for="automation-company" class="form-label">Company name</label><input id="automation-company" class="form-control" value="{{ $brand['name'] }}" readonly></div></div>
+  <p class="field-note mb-0">AI can redesign the marketing artwork while preserving the confirmed product facts and your company identity.</p>
+ </section>
+ <section class="brief-card">
+  <div class="section-label"><span>5</span><h2>Make the image and words work together</h2></div>
+  <div class="row g-3"><div class="col-sm-6"><label class="form-label" for="automation-language">Language</label><select id="automation-language" name="language" class="form-select">@foreach(['English','中文','Bahasa Melayu'] as $lang)<option @selected($form['language']===$lang)>{{ $lang }}</option>@endforeach</select></div><div class="col-sm-6"><label class="form-label" for="automation-tone">Voice</label><select id="automation-tone" name="tone" class="form-select">@foreach(array_unique([$form['tone'],'Professional and approachable','Warm and conversational','Bold and playful']) as $tone)<option @selected($form['tone']===$tone)>{{ $tone }}</option>@endforeach</select></div></div>
+  <fieldset class="mt-4"><legend class="form-label">Platform versions</legend><div class="platform-choices">@foreach(['Facebook'=>'facebook','Instagram'=>'instagram','TikTok'=>'tiktok'] as $platform=>$icon)<label><input type="checkbox" name="platforms" value="{{ $platform }}" @checked(in_array($platform,$form['platforms']))><i class="bi bi-{{ $icon }}" aria-hidden="true"></i>{{ $platform }}</label>@endforeach</div></fieldset>
+  <p class="field-note mt-3 mb-0">Matching platform-specific copy and artwork. Connected accounts are chosen when you review the drafts.</p>
+ </section>
+ <section class="brief-card">
+  <div class="section-label"><span>6</span><h2>Timing preferences</h2></div>
+  <p class="field-note">Saved for the next phase. These settings do not trigger generation.</p>
+  <fieldset><legend class="form-label">Days</legend><div class="platform-choices automation-days">@foreach(['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] as $i=>$day)<label><input type="checkbox" name="days" value="{{ $i+1 }}" @checked(in_array($i+1,$form['days']))>{{ $day }}</label>@endforeach</div></fieldset>
+  <div class="row g-3 mt-2"><div class="col-sm-6"><label for="automation-time" class="form-label">Time</label><input type="time" id="automation-time" name="time" class="form-control" value="{{ $form['time'] }}" required></div><div class="col-sm-6"><label for="automation-timezone" class="form-label">Timezone</label><input id="automation-timezone" class="form-control" value="Asia/Kuala_Lumpur (UTC+8)" readonly></div></div>
+ </section>
+</form>
+<aside class="brief-summary"><section class="brief-card"><span class="eyebrow">YOUR CREATIVE DIRECTION</span><h2 class="mt-3">Designed around your idea</h2><span class="fact-tag d-inline-block mt-3">{{ $presets[$form['preset']]['name'] }}</span><dl id="automation-summary"></dl><div class="tint-panel"><strong>Image + post copy, one idea</strong><p class="mt-2 mb-0">AI selects the source content, designs the artwork and writes matching platform copy. Each automation keeps its own direction.</p></div><div id="automation-status" role="status" aria-live="polite" class="small mt-3"></div><div id="automation-progress" class="mt-3"></div><button class="btn-crm-primary w-100 mt-4 justify-content-center" type="button" id="automation-generate">Generate Post <i class="bi bi-arrow-right" aria-hidden="true"></i></button><button class="btn-crm-secondary w-100 mt-2 justify-content-center" type="submit" form="automation-form" id="automation-save">Save automation</button><p class="field-note text-center mt-3 mb-0">Saves drafts for review. Nothing is scheduled or published automatically.</p></section>
+@if($recent->isNotEmpty())<section class="brief-card"><h2 class="h6">Recent generations</h2>@foreach($recent as $run)<div class="border-bottom py-3"><span class="field-note">{{ $run->created_at->timezone('Asia/Kuala_Lumpur')->format('d M, H:i') }}</span><button type="button" class="btn-crm-secondary mt-2 w-100 justify-content-center" data-resume-run="{{ $run->id }}">Open generation <i class="bi bi-arrow-right" aria-hidden="true"></i></button></div>@endforeach</section>@endif
+</aside></div>
+@include('marketing.automation.source-picker')
+@php($automationBoot=['form'=>$form,'labels'=>$labels,'base'=>url('/admin/marketing/automation'),'csrf'=>csrf_token(),'company'=>$brand['name']])
+<script>window.MarketingAutomationBoot=@json($automationBoot);</script>
+<script src="{{ asset('marketing-ai-brief-preview2/free-data.js') }}?v={{ filemtime(public_path('marketing-ai-brief-preview2/free-data.js')) }}"></script>
+<script src="{{ asset('marketing-studio/automation-source-pool.js') }}?v={{ filemtime(public_path('marketing-studio/automation-source-pool.js')) }}" defer></script>
+<script src="{{ asset('marketing-studio/automation.js') }}?v={{ filemtime(public_path('marketing-studio/automation.js')) }}" defer></script>

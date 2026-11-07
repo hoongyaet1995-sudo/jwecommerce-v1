@@ -38,7 +38,7 @@ class DynamicCollectionService
     }
 
     /** @param array{field?: string, operator?: string, value?: string} $rule */
-    private function matches(Product $product, array $rule): bool
+    public function matches(Product $product, array $rule): bool
     {
         $actual = match ($rule['field'] ?? '') {
             'price' => $product->base_price / 100,

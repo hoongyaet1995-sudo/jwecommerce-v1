@@ -5,6 +5,19 @@ use App\Http\Controllers\Admin\MarketingProductionController as Production;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'admin', \App\Http\Middleware\MarketingExecutionAvailability::class])->prefix('admin/marketing')->name('marketing.')->group(function () {
+    Route::get('/automation', \App\Http\Controllers\Admin\MarketingAutomationController::class)->name('automation.index');
+    Route::get('/automation/ai-posts', \App\Http\Controllers\Admin\MarketingAutomationController::class)->name('automation.ai-posts');
+    Route::controller(\App\Http\Controllers\Admin\MarketingAutomationController::class)->group(function(){
+        Route::get('/automation/ai-posts/create','create')->name('automation.create');
+        Route::get('/automation/ai-posts/new','editor')->name('automation.new');
+        Route::get('/automation/ai-posts/{automation}/edit','editor')->whereUuid('automation');
+        Route::post('/automation/source-preview','preview')->name('automation.source-preview')->middleware('throttle:120,1');
+        Route::get('/automation/sources','sources')->middleware('throttle:120,1');
+        Route::post('/automation/ai-posts','save')->name('automation.save')->middleware('throttle:30,1');
+        Route::post('/automation/ai-posts/{automation}/generate','generate')->name('automation.generate')->whereUuid('automation')->middleware('throttle:10,1');
+        Route::get('/automation/runs/{run}','status')->whereUuid('run');
+        Route::post('/automation/runs/{run}/step','step')->name('automation.step')->whereUuid('run')->middleware('throttle:20,1');
+    });
     Route::get('/ai-posts', [\App\Http\Controllers\Admin\MarketingFreePostController::class,'page'])->name('free-posts.page');
     Route::get('/free-post-products', [\App\Http\Controllers\Admin\MarketingFreePostController::class,'products'])->middleware('throttle:120,1');
     Route::post('/free-posts', [\App\Http\Controllers\Admin\MarketingFreePostController::class,'create'])->name('free-posts.create')->middleware('throttle:10,1');

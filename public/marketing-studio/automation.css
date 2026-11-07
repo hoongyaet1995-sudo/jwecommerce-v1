@@ -1,0 +1,18 @@
+/* Reuse the approved AI Post brief/free components; only Automation-specific additions live here. */
+.marketing-automation-post #automation-workspace>*{min-width:0}
+.marketing-automation-post #automation-form legend{float:none}
+.marketing-automation-post #automation-form .content-types,.marketing-automation-post #automation-form .content-type{min-width:0}
+.marketing-automation-post .automation-source-row{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#f7f9f7;border-radius:12px;padding:14px}
+.marketing-automation-post .automation-source-row>span{min-width:0;font-size:13px;overflow-wrap:anywhere}
+.marketing-automation-post .automation-source-row>button{flex-shrink:0;font-size:11px;padding:7px}
+.marketing-automation-post #source-results:empty{display:none}
+.marketing-automation-post #source-results:not(:empty){max-height:240px;overflow:auto;border:1px solid #dfe6e0;border-radius:9px;padding:6px;margin-top:10px}
+.marketing-automation-post #automation-progress{overflow-wrap:anywhere}
+.marketing-automation-post .platform-choices label{margin:0;float:none}
+.marketing-automation-post .platform-choices input{float:none;margin-left:0;flex-shrink:0}
+.marketing-automation-post .platform-choices label:has(input:checked){background:#f4f7ed;border-color:#6d873e}
+.marketing-automation-post .automation-days{gap:8px}
+.marketing-automation-post .automation-days label{padding:10px 12px}
+.marketing-automation-post .automation-brand-icon{display:grid;place-items:center;width:64px;height:56px;flex-shrink:0;border-radius:10px;background:#eaf0df;font-size:26px;color:#315a33}
+.marketing-automation-post .content-type{width:100%}
+@media(max-width:520px){.marketing-automation-post .automation-source-row{align-items:flex-start}.marketing-automation-post .automation-days label{flex:1 0 calc(33.333% - 8px);justify-content:center}.marketing-automation-post .platform-choices{gap:8px}.marketing-automation-post .platform-choices label{padding:10px}}

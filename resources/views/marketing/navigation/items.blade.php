@@ -3,7 +3,7 @@ $navigationStyle=$navigationStyle??'items';
 $studioNavActive=$studioNavActive??(request()->routeIs('marketing.home')?'overview':(request()->routeIs('marketing.preview.*')?str_replace('marketing.preview.','',request()->route()->getName()):'content'));
 if($studioNavActive==='campaign-templates')$studioNavActive='campaigns';
 if($studioNavActive==='templates')$studioNavActive='content';
-$studioNavigation=[['overview','grid-fill','Overview',route('marketing.home')],['campaigns','flag','Campaigns',route('marketing.preview.campaigns')],['posts','file-earmark-text','Posts',route('marketing.preview.posts')],['calendar','calendar3','Calendar',route('marketing.preview.calendar')],['analytics','bar-chart-line','Analytics',route('marketing.preview.analytics')],['content','collection-play','Content Library',route('marketing.preview.content')],['channels','share','Channels',route('marketing.preview.channels')]];
+$studioNavigation=[['overview','grid-fill','Overview',route('marketing.home')],['campaigns','flag','Campaigns',route('marketing.preview.campaigns')],['automation','diagram-3','Automation',route('marketing.automation.index')],['calendar','calendar3','Calendar',route('marketing.preview.calendar')],['analytics','bar-chart-line','Analytics',route('marketing.preview.analytics')],['content','collection-play','Content Library',route('marketing.preview.content')],['channels','share','Channels',route('marketing.preview.channels')]];
 $studioChildren=[['videos','Video projects',route('marketing.index')],['assets','Media assets',route('marketing.assets')],['templates','Video templates',route('marketing.preview.templates')]];
 @endphp
 @foreach($studioNavigation as [$navId,$navIcon,$navLabel,$navUrl])
