@@ -187,4 +187,18 @@ class MarketingAutomationManualTest extends TestCase
         Http::fake(['api.openai.com/v1/responses'=>function($request)use($page,$plan){return Http::response(['status'=>'completed','output'=>[['content'=>[['type'=>'output_text','text'=>json_encode(str_contains(json_encode($request->data()),'AUTOMATION_SOURCE_SELECTION')?['product_ids'=>[],'page_ids'=>[$page->id],'promotion_ids'=>[],'reason'=>'Documented company story']:$plan)]]]]]);},'api.openai.com/v1/images/generations'=>Http::response(['data'=>[['b64_json'=>$png]]])]);
         $id=(string)Str::uuid();$this->postJson('/admin/marketing/automation/ai-posts/'.$v['id'].'/generate',['id'=>$id,'version'=>1])->assertOk();for($i=0;$i<5;$i++)$r=$this->postJson('/admin/marketing/automation/runs/'.$id.'/step')->assertOk();$r->assertJsonPath('status','completed');$this->assertSame([] ,MarketingPost::first()->document['ai_context']['product_ids']);Http::assertSentCount(3);
     }
+    public function test_manual_generate_remains_draft_only_with_automatic_publishing_enabled():void
+    {
+        $p=$this->setupSource();config(['marketing.post_queue_enabled'=>true,'marketing.social_publishing_enabled'=>true,'services.facebook.client_id'=>'auto-manual']);
+        $c=\App\Models\MarketingChannelConnection::create(['merchant_key'=>app(\App\Services\Marketing\MarketingPosts::class)->merchant(),'platform'=>'facebook','provider_account_id'=>'123','app_id'=>'auto-manual','name'=>'Manual test page','access_token'=>'TEST','permissions'=>['pages_show_list','pages_read_engagement','pages_manage_posts'],'tasks'=>['CREATE_CONTENT'],'authorized_by'=>auth()->id(),'state'=>'connected']);
+        $v=$this->settings($p);$v['auto_publish']=true;$v['publish_targets']=[$c->id];$a=app(\App\Services\Marketing\MarketingPostAutomations::class)->save(auth()->user(),$v);
+        $plan=['angle'=>'Workspace ideas','headline'=>'A useful desk','cta'=>'Explore','variants'=>['facebook'=>'Desk Lamp. No stand included.'],'slides'=>[['headline'=>'Useful desk','prompt'=>'Lamp artwork.']]];
+        $im=imagecreatetruecolor(1024,1280);ob_start();imagepng($im);$png=base64_encode(ob_get_clean());imagedestroy($im);
+        Http::fake(['api.openai.com/v1/responses'=>function($request)use($p,$plan){return Http::response(['status'=>'completed','output'=>[['content'=>[['type'=>'output_text','text'=>json_encode(str_contains(json_encode($request->data()),'AUTOMATION_SOURCE_SELECTION')?['product_ids'=>[$p->id],'page_ids'=>[],'promotion_ids'=>[],'reason'=>'Useful workspace']:$plan)]]]]]);},'api.openai.com/v1/images/edits'=>Http::response(['data'=>[['b64_json'=>$png]]])]);
+        $id=(string)Str::uuid();$this->postJson('/admin/marketing/automation/ai-posts/'.$a->id.'/generate',['id'=>$id,'version'=>$a->version])->assertOk();
+        for($i=0;$i<5;$i++)$result=$this->postJson('/admin/marketing/automation/runs/'.$id.'/step')->assertOk();
+        $result->assertJsonPath('status','completed')->assertJsonPath('publication',null);$this->assertDatabaseCount('marketing_posts',1);$this->assertDatabaseCount('marketing_post_dispatches',0);$this->assertDatabaseCount('marketing_automation_occurrences',0);
+        $post=MarketingPost::firstOrFail();$this->assertSame('Draft',$post->status);$this->assertSame([],$post->document['targets']);Http::assertSentCount(3);
+    }
+
 }

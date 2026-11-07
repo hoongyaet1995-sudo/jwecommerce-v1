@@ -5,10 +5,11 @@ use App\Services\Marketing\{MarketingFreePosts,MarketingPosts};
 use App\Models\Product;
 class MarketingFreePostController {
  public function page(Request $request,MarketingFreePosts $s){
-  $s->authorize($request->user());$products=[];
-  $brand=app(\App\Services\Search\BusinessIdentity::class)->read();
-  $boot=['products'=>$products,'productSearch'=>url('/admin/marketing/free-post-products'),'company'=>$brand['name'],'logo'=>$brand['logo'],'csrf'=>csrf_token(),'create'=>url('/admin/marketing/free-posts'),'statusBase'=>url('/admin/marketing/free-posts')];
-  return response()->view('marketing.posts.free-create',['boot'=>$boot,'studioNavActive'=>'posts'])->header('Cache-Control','private, no-store');
+  $s->authorize($request->user());$brand=app(\App\Services\Search\BusinessIdentity::class)->read();
+  $form=['id'=>'instant-'.substr(hash('sha256',app(MarketingPosts::class)->merchant().':'.$request->user()->id),0,20),'version'=>0,'preset'=>'blank','name'=>'','source_scope'=>'all','market'=>'Malaysia','occasions'=>true,'live_trends'=>false,'sources'=>array_fill_keys(\App\Services\Marketing\MarketingAutomationSources::KINDS,[]),'prompt'=>'','type'=>'poster','image_mode'=>'single','cta_url'=>'','platforms'=>['Facebook','Instagram','TikTok'],'language'=>'English','tone'=>'Professional and approachable','theme'=>'#123e5a'];
+  $form['source_modes']=app(\App\Services\Marketing\MarketingAutomationSources::class)->modes($form,false);
+  $recent=\App\Models\MarketingInstantPostRun::where('user_id',$request->user()->id)->where('merchant_key',app(MarketingPosts::class)->merchant())->latest()->limit(10)->get();
+  return response()->view('marketing.automation.index',['settings'=>true,'screen'=>'editor','instant'=>true,'brand'=>$brand,'form'=>$form,'labels'=>array_fill_keys(\App\Services\Marketing\MarketingAutomationSources::KINDS,[]),'recent'=>$recent,'recentViews'=>$recent->mapWithKeys(fn($run)=>[$run->id=>app(\App\Services\Marketing\MarketingInstantPosts::class)->view($run)])->all(),'studioNavActive'=>'posts'])->header('Cache-Control','private, no-store');
  }
  public function products(Request $r,MarketingFreePosts $s){
   $s->authorize($r->user());$v=$r->validate(['q'=>'nullable|string|max:100','ids'=>'nullable|array','ids.*'=>'integer|distinct']);$q=trim($v['q']??'');$ids=$v['ids']??[];

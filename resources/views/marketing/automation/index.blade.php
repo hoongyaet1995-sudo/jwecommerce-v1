@@ -1,7 +1,8 @@
+@php($instant=$instant??false)
 <!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow">
-<title>{{ $settings?'AI Post Generation':'Automation' }} | Marketing Studio</title>
+<title>{{ $instant?'Create post with AI':($settings?'AI Post Generation':'Automation') }} | Marketing Studio</title>
 @foreach(['bootstrap.min','bootstrap-icons','main','xenibox','studio','navigation','controls'] as $style)
 <link rel="stylesheet" href="{{ asset('marketing-studio/'.$style.'.css') }}?v={{ filemtime(public_path('marketing-studio/'.$style.'.css')) }}">
 @endforeach
@@ -23,10 +24,15 @@
 <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap"><a class="btn-crm-secondary" href="{{ route('marketing.automation.ai-posts') }}">Configure <i class="bi bi-arrow-right ms-2" aria-hidden="true"></i></a><span class="badge rounded-pill text-bg-light px-3 py-2">Not configured</span></div>
 </article></div></div>
 @else
+@if($instant)
+<div class="d-flex justify-content-between align-items-center gap-3 flex-wrap mb-4 automation-page-heading"><div><div class="eyebrow">POSTS / CREATE WITH AI</div><h1 class="page-title">Create post with AI</h1><p class="page-subtitle mb-0">Choose your sources, set a creative direction and generate drafts for review.</p></div><a class="btn-crm-secondary" href="{{ url('/admin/marketing/posts') }}">Back to Posts</a></div>
+@include('marketing.automation.editor')
+@else
 @include('marketing.automation.workspace')
 @endif
+@endif
 </main>
-<footer class="footer-custom"><span>JW Marketing Studio &copy; {{ date('Y') }}</span><span class="text-muted small">Only Active schedules generate automatically. Nothing is published automatically.</span></footer></div>
+<footer class="footer-custom"><span>JW Marketing Studio &copy; {{ date('Y') }}</span><span class="text-muted small">{{ $instant?'Drafts for review. Nothing is published automatically.':'Active schedules follow their generation and publishing settings.' }}</span></footer></div>
 <script src="{{ asset('marketing-studio/bootstrap.bundle.min.js') }}" defer></script><script src="{{ asset('marketing-studio/studio.js') }}" defer></script>
 <script src="{{ asset('marketing-studio/campaign-navigation.js') }}" defer></script><script src="{{ asset('marketing-studio/audience-navigation.js') }}" data-audience-visible="{{ \App\Domain\Marketing\MarketingPermission::allows(auth()->user(),\App\Domain\Marketing\MarketingPermission::VIEW_AUDIENCE)?'1':'0' }}" defer></script>
 </body></html>

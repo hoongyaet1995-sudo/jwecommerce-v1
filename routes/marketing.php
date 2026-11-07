@@ -20,6 +20,9 @@ Route::middleware(['auth', 'admin', \App\Http\Middleware\MarketingExecutionAvail
     });
     Route::get('/ai-posts', [\App\Http\Controllers\Admin\MarketingFreePostController::class,'page'])->name('free-posts.page');
     Route::get('/free-post-products', [\App\Http\Controllers\Admin\MarketingFreePostController::class,'products'])->middleware('throttle:120,1');
+    Route::post('/instant-posts', [\App\Http\Controllers\Admin\MarketingInstantPostController::class,'create'])->middleware('throttle:10,1');
+    Route::get('/instant-posts/{run}', [\App\Http\Controllers\Admin\MarketingInstantPostController::class,'status'])->whereUuid('run');
+    Route::post('/instant-posts/{run}/step', [\App\Http\Controllers\Admin\MarketingInstantPostController::class,'step'])->whereUuid('run')->middleware('throttle:20,1');
     Route::post('/free-posts', [\App\Http\Controllers\Admin\MarketingFreePostController::class,'create'])->name('free-posts.create')->middleware('throttle:10,1');
     Route::get('/free-posts/{run}', [\App\Http\Controllers\Admin\MarketingFreePostController::class,'status'])->whereUuid('run');
     Route::post('/free-posts/{run}/step', [\App\Http\Controllers\Admin\MarketingFreePostController::class,'step'])->whereUuid('run')->name('free-posts.step')->middleware('throttle:20,1');

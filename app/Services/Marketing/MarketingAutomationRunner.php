@@ -37,7 +37,7 @@ final class MarketingAutomationRunner
      app(MarketingFreePosts::class)->authorize($user->fresh());
      $state=$service->step($user,$o->generation_id);
     }
-    if($state['status']==='completed')return $this->finish($o,'completed',null);
+    if($state['status']==='completed'){app(MarketingAutomationPublisher::class)->publishCompletedOccurrence($o->id);return $this->finish($o,'completed',null);}
     if(!($state['can_step']??false)&&!($state['can_save']??false))return $this->finish($o,'needs_attention','generation_result_unconfirmed');
     return ['status'=>'running','occurrence_id'=>$o->id,'generation_id'=>$o->generation_id,'counts'=>$this->counts()];
    }catch(\Throwable $e){report($e);return $this->finish($o,'needs_attention','generation_requires_review');}
