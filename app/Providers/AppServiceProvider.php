@@ -38,6 +38,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        foreach (\App\Services\Marketing\MarketingMediaSources::MODELS as $mediaSource) {
+            $mediaSource::saved(fn ($source) => app(\App\Services\Marketing\MarketingMediaSources::class)->safeCapture($source));
+        }
+        foreach ([\App\Models\MarketingProject::class,\App\Models\MarketingScene::class,\App\Models\MarketingVideoFilm::class] as $selectionSource) {
+            $selectionSource::saved(function($model) { if(\Illuminate\Support\Facades\Schema::hasTable('marketing_library_assets')) app(\App\Services\Marketing\MarketingMediaSelection::class)->project($model instanceof \App\Models\MarketingProject?$model->id:$model->project_id); });
+        }
+        \App\Models\MarketingPost::saved(function($post) { if(\Illuminate\Support\Facades\Schema::hasTable('marketing_library_assets')) app(\App\Services\Marketing\MarketingMediaSelection::class)->post($post); });
         \App\Models\Page::saved(function (): void { \Illuminate\Support\Facades\Cache::forget('search:sitemap'); });
         \App\Models\Page::deleted(function (): void { \Illuminate\Support\Facades\Cache::forget('search:sitemap'); });
         \App\Models\StoreSetting::saved(function (): void { \Illuminate\Support\Facades\Cache::forget('search:sitemap'); });

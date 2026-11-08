@@ -12,6 +12,8 @@ use App\Services\Marketing\MarketingMaterialReferences;
 class MarketingMaterialReferencesTest extends TestCase
 {
  use RefreshDatabase,MarketingResearchFixtures;
+ protected function setUp():void {parent::setUp();$this->travelTo(\Illuminate\Support\Carbon::parse('2026-10-26 12:00:00'));} // Historical verified pricing window; production expiry guard remains active.
+
  private function source(bool $adopt=false):array{
   Storage::fake('local');$p=$this->researchProject();\App\Models\AiConnection::where('provider','openai')->update(['image_model'=>'gpt-image-2','models'=>[['id'=>'gpt-image-2','image'=>true]]]);$p->update(['concepts'=>[['title'=>'用途介绍','video_type'=>'product_showcase']],'selected_concept'=>0,'planning_state'=>['status'=>'confirmed']]);
   $doc=['summary'=>'用途','duration'=>15,'cta'=>'询价','scenes'=>MarketingMaterialPackageTest::facts()['scenes'],'director_plan'=>MarketingDirectorContractTest::directorOutput(),'gaps'=>[]];

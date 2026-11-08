@@ -13,6 +13,8 @@ use App\Services\Marketing\{MarketingMaterialPackage,MarketingMaterialReferences
 class MarketingWorkspaceVideoTest extends TestCase
 {
  use RefreshDatabase,MarketingResearchFixtures;
+ protected function setUp():void {parent::setUp();$this->travelTo(\Illuminate\Support\Carbon::parse('2026-10-26 12:00:00'));} // Historical verified pricing window; production expiry guard remains active.
+
  private function ready():array{
   Storage::fake('local');Storage::fake('public');$p=$this->researchProject();config(['marketing.workspace_video.enabled'=>true,'marketing.native.api_key'=>'fixture-key']);
   \App\Models\AiConnection::where('provider','openai')->update(['image_model'=>'gpt-image-2','models'=>[['id'=>'gpt-image-2','image'=>true]]]);$p->update(['concepts'=>[['title'=>'用途介绍','video_type'=>'presenter','ratio'=>'9:16']],'selected_concept'=>0,'planning_state'=>['status'=>'confirmed'],'preferences'=>['complete'=>true,'subtitles'=>true,'narration'=>true,'language'=>'English']]);
@@ -78,7 +80,7 @@ class MarketingWorkspaceVideoTest extends TestCase
  }
  public function test_queue_delay_expiry_or_connection_change_never_submits():void{
   [$p,$service]=$this->ready();$c=$service->quote($p->id,$p->owner_id,$p->version,1,(string)Str::uuid());$service->authorize($p->id,$p->owner_id,$p->version,$c->id);$this->travel(31)->minutes();$service->advance($c->id);$this->assertSame('failed',$c->fresh()->status);Http::assertNothingSent();
-  $this->travelBack();$other=$service->quote($p->id,$p->owner_id,$p->version,1,(string)Str::uuid());$service->authorize($p->id,$p->owner_id,$p->version,$other->id);config(['marketing.native.api_key'=>'a-different-connection']);$service->advance($other->id);$this->assertSame('failed',$other->fresh()->status);Http::assertNothingSent();
+  $this->travelTo(\Illuminate\Support\Carbon::parse('2026-10-26 12:00:00'));$other=$service->quote($p->id,$p->owner_id,$p->version,1,(string)Str::uuid());$service->authorize($p->id,$p->owner_id,$p->version,$other->id);config(['marketing.native.api_key'=>'a-different-connection']);$service->advance($other->id);$this->assertSame('failed',$other->fresh()->status);Http::assertNothingSent();
  }
  public function test_missing_reordered_or_tampered_clips_cannot_assemble():void{
   [$p,$service]=$this->ready();$c=$service->quote($p->id,$p->owner_id,$p->version,1,(string)Str::uuid());$out=$this->fakeRenderedOutput($c);$c->update(['status'=>'completed','raw_path'=>$out['path'],'raw_sha256'=>$out['sha256'],'output_path'=>$out['path'],'output_sha256'=>$out['sha256']]);

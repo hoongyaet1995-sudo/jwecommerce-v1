@@ -79,9 +79,11 @@ Route::middleware(['auth', 'admin', \App\Http\Middleware\MarketingExecutionAvail
     Route::get('/templates/projects/{project}/media/{run}/{format}',[\App\Http\Controllers\Admin\MarketingTemplateController::class,'media'])->whereUuid(['project','run'])->whereIn('format',['landscape','portrait'])->name('templates.media');
     Route::get('/assets', [\App\Http\Controllers\Admin\MarketingAvatarController::class, 'assets'])->name('assets');
     Route::get('/assets/media', [\App\Http\Controllers\Admin\MarketingAvatarController::class, 'media'])->name('assets.media');
-    Route::get('/assets/avatar', [\App\Http\Controllers\Admin\MarketingAvatarController::class, 'index'])->name('avatars');
+    Route::redirect('/assets/avatar','/admin/marketing/settings/avatar');
+    Route::get('/settings/avatar', [\App\Http\Controllers\Admin\MarketingAvatarController::class, 'index'])->name('avatars');
     Route::post('/assets/avatar/drafts', [\App\Http\Controllers\Admin\MarketingAvatarController::class, 'draft'])->middleware('throttle:20,1')->name('avatars.draft');
-    Route::get('/assets/avatar/{avatar}', [\App\Http\Controllers\Admin\MarketingAvatarController::class, 'detail'])->whereUuid('avatar')->name('avatars.detail');
+    Route::get('/assets/avatar/{avatar}', fn(string $avatar)=>redirect()->route('marketing.avatars.detail',$avatar))->whereUuid('avatar');
+    Route::get('/settings/avatar/{avatar}', [\App\Http\Controllers\Admin\MarketingAvatarController::class, 'detail'])->whereUuid('avatar')->name('avatars.detail');
     Route::post('/assets/avatar/{avatar}/{action}', [\App\Http\Controllers\Admin\MarketingAvatarController::class, 'write'])->whereUuid('avatar')->whereIn('action',['reference','publish','archive','restore','revoke'])->middleware('throttle:20,1')->name('avatars.write');
     Route::get('/assets/avatar/{avatar}/versions/{version}/images/{role}', [\App\Http\Controllers\Admin\MarketingAvatarController::class, 'image'])->whereUuid('avatar')->whereNumber('version')->whereIn('role',['identity','look'])->name('avatars.image');
 
@@ -171,7 +173,14 @@ Route::middleware(['auth', 'admin', \App\Http\Middleware\MarketingExecutionAvail
     Route::get('/analytics/data',[\App\Http\Controllers\Admin\MarketingAnalyticsController::class,'data']);
     Route::post('/campaigns/links',[\App\Http\Controllers\Admin\MarketingCampaignController::class,'link'])->name('campaigns.link');
     Route::get('/analytics', [\App\Http\Controllers\Admin\MarketingAnalyticsController::class, 'index'])->name('preview.analytics');
-    Route::get('/content', [\App\Http\Controllers\Admin\MarketingNavigationController::class, 'show'])->defaults('page','content')->name('preview.content');
+    Route::get('/content', [\App\Http\Controllers\Admin\MarketingContentLibraryController::class,'index'])->name('preview.content');
+    Route::get('/content/images', [\App\Http\Controllers\Admin\MarketingContentLibraryController::class,'index'])->defaults('kind','image')->name('library.images');
+    Route::get('/content/videos', [\App\Http\Controllers\Admin\MarketingContentLibraryController::class,'index'])->defaults('kind','video')->name('library.videos');
+    Route::get('/content/data', [\App\Http\Controllers\Admin\MarketingContentLibraryController::class,'data'])->name('library.data');
+    Route::get('/content/files/{asset}', [\App\Http\Controllers\Admin\MarketingContentLibraryController::class,'file'])->whereUuid('asset')->name('library.file');
+    Route::post('/content/upload', [\App\Http\Controllers\Admin\MarketingContentLibraryController::class,'upload'])->middleware('throttle:10,1')->name('library.upload');
+    Route::get('/settings', [\App\Http\Controllers\Admin\MarketingContentLibraryController::class,'settings'])->name('settings.index');
+    Route::get('/video-studio', [\App\Http\Controllers\Admin\MarketingContentLibraryController::class,'studio'])->name('video-studio');
     Route::get('/campaigns/templates', [\App\Http\Controllers\Admin\MarketingContentTemplatesController::class,'index'])->name('campaign.templates');
     Route::get('/templates/data', [\App\Http\Controllers\Admin\MarketingContentTemplatesController::class,'data']);
     Route::post('/templates/data', [\App\Http\Controllers\Admin\MarketingContentTemplatesController::class,'save'])->name('content-templates.create')->middleware('throttle:30,1');
@@ -188,7 +197,7 @@ Route::middleware(['auth', 'admin', \App\Http\Middleware\MarketingExecutionAvail
     Route::post('/channels/{platform}/cancel', [\App\Http\Controllers\Admin\MarketingChannelsController::class, 'cancel'])->whereIn('platform',['facebook','instagram','tiktok','youtube'])->middleware('throttle:10,1')->name('channels.cancel');
     Route::post('/channels/{platform}/{connection}/check', [\App\Http\Controllers\Admin\MarketingChannelsController::class, 'check'])->whereIn('platform',['facebook','instagram','tiktok','youtube'])->whereUuid('connection')->middleware('throttle:10,1')->name('channels.check');
     Route::post('/channels/{platform}/{connection}/disconnect', [\App\Http\Controllers\Admin\MarketingChannelsController::class, 'disconnect'])->whereIn('platform',['facebook','instagram','tiktok','youtube'])->whereUuid('connection')->middleware('throttle:10,1')->name('channels.disconnect');
-    Route::get('/content/templates', [\App\Http\Controllers\Admin\MarketingNavigationController::class, 'show'])->defaults('page','templates')->name('preview.templates');
+    Route::get('/content/templates', fn()=>redirect()->route('marketing.templates.entry'))->name('preview.templates');
     Route::get('/projects', [Studio::class, 'index'])->name('index');
     Route::get('/projects/create', [Studio::class, 'create'])->name('create');
     Route::post('/projects', [Studio::class, 'store'])->middleware('throttle:30,1')->name('store');

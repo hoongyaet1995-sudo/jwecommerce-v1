@@ -11,6 +11,8 @@ use App\Services\Marketing\{MarketingMaterialPackage,MarketingMaterialReferences
 class MarketingMaterialAutoReviewTest extends TestCase
 {
  use RefreshDatabase,MarketingResearchFixtures;
+ protected function setUp():void {parent::setUp();$this->travelTo(\Illuminate\Support\Carbon::parse('2026-10-26 12:00:00'));} // Historical verified pricing window; production expiry guard remains active.
+
  private function source(bool $adopt=false):array{
   Storage::fake('local');$p=$this->researchProject();\App\Models\AiConnection::where('provider','openai')->update(['image_model'=>'gpt-image-2','models'=>[['id'=>'gpt-image-2','image'=>true]]]);$p->update(['concepts'=>[['title'=>'用途介绍','video_type'=>'product_showcase']],'selected_concept'=>0,'planning_state'=>['status'=>'confirmed']]);
   $doc=['summary'=>'用途','duration'=>15,'cta'=>'询价','scenes'=>MarketingMaterialPackageTest::facts()['scenes'],'director_plan'=>MarketingDirectorContractTest::directorOutput(),'gaps'=>[]];
@@ -56,4 +58,9 @@ class MarketingMaterialAutoReviewTest extends TestCase
  public function test_uncertain_facts_stop_without_creative_repair():void{
   [$p,$r,$s]=$this->batch();$this->partialMock(MarketingMaterialImageClient::class)->shouldReceive('generate')->once()->andReturn($this->imageResult());$this->partialMock(MarketingMaterialVisionClient::class)->shouldReceive('inspect')->once()->andReturn($this->report('needs_input'));for($i=0;$i<3;$i++)$s->advance($p->id,$p->owner_id,$r->id);$this->assertSame('input',$r->fresh()->usage['pause_reason']);$s->abandon($p->id,$p->owner_id,$r->id);$this->assertSame('completed',$r->fresh()->status);$new=$s->quote($p->id,$p->owner_id,$p->version,(string)Str::uuid(),'',true,2);$this->assertNotSame($r->id,$new->id);
  }
+ public function test_expired_legacy_pricing_still_blocks_new_authorization():void {
+  [$p,$r]=$this->source(true);$need=$r->document['material_package']['requirements'][0]['id'];app(MarketingMaterialReferences::class)->save($p->id,$p->owner_id,$p->version,$need,(string)Str::uuid(),['permission'=>true],UploadedFile::fake()->image('front.jpg'));$p->refresh();$service=app(MarketingMaterialImages::class);$run=$service->quote($p->id,$p->owner_id,$p->version,(string)Str::uuid());
+  $this->travelTo(\Illuminate\Support\Carbon::parse('2026-11-08 12:00:00'));$this->expectException(\Symfony\Component\HttpKernel\Exception\HttpException::class);$service->authorize($p->id,$p->owner_id,$run->id);
+ }
+
 }

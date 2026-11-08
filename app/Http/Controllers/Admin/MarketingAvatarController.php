@@ -14,12 +14,12 @@ class MarketingAvatarController extends Controller
 {
     public function assets()
     {
-        return view('marketing.assets.index');
+        return redirect()->route('marketing.preview.content');
     }
 
     public function media()
     {
-        return view('marketing.assets.media-planned');
+        return redirect()->route('marketing.preview.content');
     }
 
     public function index(Request $r)

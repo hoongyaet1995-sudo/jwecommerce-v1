@@ -10,7 +10,7 @@ class MarketingNavigationController extends Controller {
   return response()->view('marketing.navigation.preview',['studioNavActive'=>$page==='templates'?'content':$page,'navigationBoot'=>self::boot($page)])->header('Cache-Control','private, no-store');
  }
  public static function boot(string $page):array{
-  $urls=['automation'=>route('marketing.automation.index'),'overview'=>route('marketing.home'),'videos'=>route('marketing.index'),'assets'=>route('marketing.assets'),'video-new'=>route('marketing.workspace.show'),'template-entry'=>route('marketing.templates.entry')];
+  $urls=['video-studio'=>route('marketing.video-studio'),'settings'=>route('marketing.settings.index'),'images'=>route('marketing.library.images'),'video-assets'=>route('marketing.library.videos'),'automation'=>route('marketing.automation.index'),'overview'=>route('marketing.home'),'videos'=>route('marketing.index'),'assets'=>route('marketing.assets'),'video-new'=>route('marketing.workspace.show'),'template-entry'=>route('marketing.templates.entry')];
   foreach(['campaigns','posts','calendar','analytics','content','channels','templates'] as $name)$urls[$name]=route('marketing.preview.'.$name);
   return ['page'=>$page,'preview'=>true,'urls'=>$urls];
  }

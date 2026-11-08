@@ -19,8 +19,8 @@ class MarketingAvatarHttpTest extends TestCase
         Http::preventStrayRequests();
         $u = User::factory()->create(['is_admin' => true, 'is_super_admin' => true]);
         $this->actingAs($u);
-        $this->get(route('marketing.assets'))->assertOk()->assertSee('Media')->assertSee('Avatar');
-        $this->get(route('marketing.assets.media'))->assertOk()->assertSee('Coming soon');
+        $this->get(route('marketing.assets'))->assertRedirect(route('marketing.preview.content'));
+        $this->get(route('marketing.assets.media'))->assertRedirect(route('marketing.preview.content'));
         $this->get(route('marketing.avatars'))->assertOk()->assertSee('Add avatar template');
         $this->post(route('marketing.avatars.draft'), ['request_id' => (string) Str::uuid(), 'name' => 'My host', 'kind' => 'synthetic', 'description' => 'No photo yet'])->assertSessionHasNoErrors()->assertRedirect();
         $a = MarketingAvatar::firstOrFail();

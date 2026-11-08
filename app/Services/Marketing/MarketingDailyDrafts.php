@@ -51,7 +51,7 @@ class MarketingDailyDrafts {
     abort_unless($p->version===1&&$p->status==='Draft'&&empty($p->document['deleted_at'])&&empty($p->document['delivery_lock'])&&empty($p->document['outcomes'])&&!DB::table('marketing_post_attempts')->where('post_id',$id)->exists()&&($p->document['ai_context']['daily_draft_run']??null)===$r->id,409,'Only original unedited delivery-free drafts can be recomposed; review later edits explicitly.');$posts[$platform]=$p;
    }
    $previous=[];foreach(['facebook'=>[1080,1080],'instagram'=>[1080,1350],'tiktok'=>[1080,1920]] as $platform=>$size){$p=$posts[$platform];$doc=$p->document;$previous[$platform]=$doc['asset'];
-    $file=$this->compose($r,$r->snapshot['image_path'],$platform,$size[0],$size[1]);$asset=app(MarketingPostMedia::class)->store($r->user_id,new UploadedFile($file,ucfirst($platform).' - '.$r->snapshot['title'].'.jpg','image/jpeg',null,true));
+    $file=$this->compose($r,$r->snapshot['image_path'],$platform,$size[0],$size[1]);$asset=app(MarketingPostMedia::class)->store($r->user_id,new UploadedFile($file,ucfirst($platform).' - '.$r->snapshot['title'].'.jpg','image/jpeg',null,true),'ai');
     // Preserve every existing caption, target and editing field; replace only the single generated image.
     abort_unless(($doc['format']??'image')==='image'&&count($doc['assets']??[])===1,409,'The draft media was edited; review it before recomposition.');
     $doc['asset']=$asset;$doc['assets']=[$asset];$p->update(['document'=>$doc,'version'=>$p->version+1]);
@@ -99,7 +99,7 @@ class MarketingDailyDrafts {
    $this->verifySources($r);$source=$r->snapshot['image_path'];
    DB::transaction(function()use($r,$source){$locked=MarketingDailyDraftRun::whereKey($r->id)->lockForUpdate()->firstOrFail();if($locked->status==='completed')return;abort_unless(in_array($locked->status,['image_completed','render_needs_attention'],true),409);
     $ids=[];foreach(['facebook'=>[1080,1080],'instagram'=>[1080,1350],'tiktok'=>[1080,1920]] as $platform=>$size){
-     $file=$this->compose($r,$source,$platform,$size[0],$size[1]);$asset=app(MarketingPostMedia::class)->store($r->user_id,new UploadedFile($file,ucfirst($platform).' - '.$r->snapshot['title'].'.jpg','image/jpeg',null,true));
+     $file=$this->compose($r,$source,$platform,$size[0],$size[1]);$asset=app(MarketingPostMedia::class)->store($r->user_id,new UploadedFile($file,ucfirst($platform).' - '.$r->snapshot['title'].'.jpg','image/jpeg',null,true),'ai');
      $post=app(MarketingPosts::class)->write($r->user_id,'draft',['id'=>(string)Str::uuid(),'version'=>0,'title'=>ucfirst($platform).' - '.$r->creative['angle'],'copy'=>$r->creative['variants'][$platform],'targets'=>[],'copies'=>[],'asset'=>$asset,'assets'=>[$asset],'format'=>'image','type'=>'Post','tz'=>'Asia/Kuala_Lumpur','ai_context'=>['source'=>'product','product_id'=>$r->snapshot['product_id'],'subject'=>$r->snapshot['title'],'facts'=>$r->snapshot['description'],'daily_draft_run'=>$r->id,'platform'=>$platform,'headline'=>$r->creative['headline'],'cta'=>$r->creative['cta']]]);$ids[$platform]=$post['id'];
     }$locked->update(['post_ids'=>$ids,'status'=>'completed','error_code'=>null]);
    });

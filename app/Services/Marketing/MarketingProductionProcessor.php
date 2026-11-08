@@ -53,6 +53,7 @@ class MarketingProductionProcessor
             }
             $result = app(MarketingVideoRenderer::class)->render($task, $plan, $directory);
             MarketingProduction::whereKey($id)->where('status', 'rendering')->update(['status' => 'completed', 'output_path' => 'marketing-productions/'.$id.'/output.mp4', 'output_sha256' => $result['sha256'], 'result' => array_replace($task->result??[],$result,['voice_source' => $voice?->source, 'voice_reused' => $voice !== null && $task->new_reserved_microusd === 0 && !($task->result['voice_request_claimed']??false), 'voice_usage' => $voice?->usage, 'publication_authorized' => false]), 'finished_at' => now()]);
+            app(MarketingMediaSources::class)->safeCapture(MarketingProduction::findOrFail($id));
         } catch (MarketingProductionFailure $error) {
             MarketingProduction::whereKey($id)->whereNotIn('status', ['completed', 'unknown'])->update(['status' => $error->state, 'error_code' => $error->reason, 'finished_at' => now()]);
         } catch (\Throwable) {
