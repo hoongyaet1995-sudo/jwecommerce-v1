@@ -3,3 +3,11 @@
 input[role=switch]{appearance:none!important;width:36px!important;height:21px!important;min-width:36px;border:0!important;border-radius:12px!important;background:#a6b5aa!important;position:relative;cursor:pointer;vertical-align:middle;box-shadow:none!important;margin:0 6px 0 0!important;flex-shrink:0}input[role=switch]:before{content:'';position:absolute;left:3px;top:3px;width:15px;height:15px;border-radius:50%;background:white;transition:transform .15s}input[role=switch]:checked{background:#14513a!important}input[role=switch]:checked:before{transform:translateX(15px)}input[role=switch]:focus-visible{outline:3px solid #b5cf89;outline-offset:3px}
 /* Composer text is outside .field so it needs the same input treatment explicitly. */
 .post-copy{display:block;width:100%;max-width:100%;box-sizing:border-box;border:1px solid #dce4de;border-radius:8px;padding:14px 16px;font-family:inherit;font-size:13px;font-weight:400;line-height:1.8;background:#fff;color:#294432;resize:vertical;min-height:175px;overflow-wrap:anywhere;transition:border-color .15s,box-shadow .15s}.post-copy:focus{border-color:#87a648;box-shadow:0 0 0 3px rgba(135,166,72,.12);outline:none}.post-copy:read-only{background:#f7f9f5;color:#607565}.post-copy:focus-visible{outline:2px solid #87a648;outline-offset:2px}
+
+/* Keep media selection actions visible while the asset list scrolls. */
+#dialog.media-picker[open]{display:flex;flex-direction:column;height:min(760px,calc(100dvh - 32px));max-height:calc(100dvh - 32px);overflow:hidden}
+#dialog.media-picker .dialog-head{flex:0 0 auto}
+#dialog.media-picker #dialog-body{display:flex;flex-direction:column;flex:1 1 auto;min-height:0;overflow:hidden}
+#dialog.media-picker .media-picker-content{flex:1 1 auto;min-height:0;overflow:auto;overscroll-behavior:contain;padding-right:4px}
+#dialog.media-picker .dialog-actions{flex:0 0 auto;display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;background:#fff;border-top:1px solid #e8ede7;margin-top:12px;padding-top:16px;padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(max-width:680px){#dialog.media-picker[open]{height:calc(100dvh - 24px);max-height:calc(100dvh - 24px);width:calc(100% - 24px)}#dialog.media-picker .dialog-actions{padding-top:10px;margin-top:8px}#dialog.media-picker .dialog-actions button{padding:9px 10px}}

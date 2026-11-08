@@ -117,6 +117,7 @@ class MarketingMediaAccess
         $a = $this->asset($actor, $id);
         abort_unless(app(MarketingMediaRegister::class)->ownsPath($a->getAttributes(), $a->path, $a->disk), 404);
         $this->upstream($a);
+        if($a->source_type==='marketing_assets')app(MarketingMediaReuse::class)->assertLinked(MarketingAsset::findOrFail($a->source_id));
         $file = app(MarketingMediaRegister::class)->localPath($a->path, $a->disk);
         abort_unless($file,404,'The original file is unavailable.');
         abort_unless(hash_equals($a->sha256,hash_file('sha256',$file)),409,'The file changed. Its original registered version cannot be served.');

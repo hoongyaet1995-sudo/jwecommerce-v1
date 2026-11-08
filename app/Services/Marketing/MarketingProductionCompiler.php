@@ -2,6 +2,7 @@
 
 namespace App\Services\Marketing;
 
+use App\Models\MarketingAsset;
 use App\Models\MarketingProject;
 use App\Models\MarketingRevision;
 use Illuminate\Support\Facades\Storage;
@@ -15,6 +16,7 @@ class MarketingProductionCompiler
         $media=[];$blockers=[];
         foreach(array_unique($scene['asset_ids']) as $id){
             $a=$p->assets()->whereKey($id)->first();
+            if($a)app(MarketingMediaReuse::class)->assertLinked($a);
             $info=$a && $a->authorized ? ($a->mime==='video/mp4'?$this->video(Storage::disk('local')->path(''),$a->path):(str_starts_with($a->mime,'image/')?$this->image(Storage::disk('local')->path(''),$a->path):null)):null;
             if($info&&$a->mime==='video/mp4'){
                 try{$probe=app(MarketingMediaTools::class)->probe(Storage::disk('local')->path($a->path));$info['has_audio']=collect($probe['streams']??[])->contains(fn($s)=>($s['codec_type']??null)==='audio');}catch(\Throwable){$info=null;}
@@ -77,6 +79,7 @@ class MarketingProductionCompiler
             }
             foreach (array_unique($scene['asset_ids']) as $id) {
                 $a = $assets->get($id);
+                if($a)app(MarketingMediaReuse::class)->assertLinked($a);
                 if ($hybrid && $a && $a->authorized && $a->mime === 'video/mp4') {
                     $media = $this->video(Storage::disk('local')->path(''), $a->path);
                     if ($media) { $videos[] = ['source' => 'private', 'asset_id' => $a->id, 'name' => $a->name, 'path' => $a->path] + $media; }
@@ -206,6 +209,9 @@ class MarketingProductionCompiler
     {
         $relative = $image['path'];
         if ($image['source'] === 'private') {
+            $asset=MarketingAsset::whereKey($image['asset_id']??'')->where('path',$relative)->where('authorized',true)->first();
+            if(!$asset)throw new MarketingProductionFailure('material_changed','blocked');
+            try{app(MarketingMediaReuse::class)->assertLinked($asset);}catch(\Throwable){throw new MarketingProductionFailure('material_changed','blocked');}
             $root = Storage::disk('local')->path('');
         } elseif ($image['source'] === 'catalog_snapshot') {
             $relative = ltrim($relative, '/');

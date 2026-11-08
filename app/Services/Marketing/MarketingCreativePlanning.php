@@ -42,11 +42,11 @@ class MarketingCreativePlanning
     public function reuseClip(MarketingProject $p): void
     {
         if(!$p->product_id||$p->assets()->where('authorized',true)->where('mime','video/mp4')->exists())return;
-        $candidate=MarketingAsset::where('authorized',true)->where('mime','video/mp4')->whereIn('project_id',MarketingProject::where('owner_id',$p->owner_id)->where('product_id',$p->product_id)->where('id','!=',$p->id)->select('id'))->latest()->first();
+        $candidate=MarketingAsset::where('authorized',true)->where('mime','video/mp4')->whereNotIn('id',DB::table('marketing_media_reuses')->select('project_asset_id'))->whereIn('project_id',MarketingProject::where('owner_id',$p->owner_id)->where('product_id',$p->product_id)->where('id','!=',$p->id)->select('id'))->latest()->first();
         if(!$candidate)return;
         $disk=Storage::disk('local');if(!$disk->exists($candidate->path))return;
         $sha=hash_file('sha256',$disk->path($candidate->path));
-        $source=app(MarketingProductionCompiler::class)->sourcePath(['source'=>'private','path'=>$candidate->path,'mime'=>'video/mp4','sha256'=>$sha]);
+        $source=app(MarketingProductionCompiler::class)->sourcePath(['source'=>'private','asset_id'=>$candidate->id,'path'=>$candidate->path,'mime'=>'video/mp4','sha256'=>$sha]);
         DB::transaction(function()use($p,$candidate,$sha,$source,$disk){
             MarketingProject::whereKey($p->id)->lockForUpdate()->firstOrFail();
             $current=MarketingAsset::whereKey($candidate->id)->lockForUpdate()->firstOrFail();

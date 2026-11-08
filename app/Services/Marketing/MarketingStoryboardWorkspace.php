@@ -322,10 +322,14 @@ class MarketingStoryboardWorkspace
             $roles=$saveScope['frames']??array_keys(array_filter($content['frames'],fn($f)=>$f['required']));
             foreach($content['frames'] as $role=>&$frame){
                 $selected=$saveScope['images']&&in_array($role,$roles,true);
-                if($selected){
+                if(!$saveScope['images'] && $manual && $role==='start_frame'){
+                    // Replacing with an employee-selected file is a local save, not new image generation.
+                    $frame['asset']=$manual;$frame['readiness']='employee_declared_local_validated';$frame['qa']=null;
+                    unset($frame['employee_acceptance']);
+                }elseif($selected){
                     $frame['asset']=null;$frame['readiness']=$frame['required']?'pending':'not_required';$frame['qa']=null;
                 }else{
-                    $frameSame=(!$saveScope['director']||!in_array($role,$content['change_impact']['images'],true))&&!($saveScope['images']&&((in_array('start_frame',$roles,true)&&$role!=='start_frame')||(in_array('end_frame',$roles,true)&&$role==='extra_image')));
+                    $frameSame=!($manual&&$startChanged&&$role!=='start_frame')&&(!$saveScope['director']||!in_array($role,$content['change_impact']['images'],true))&&!($saveScope['images']&&((in_array('start_frame',$roles,true)&&$role!=='start_frame')||(in_array('end_frame',$roles,true)&&$role==='extra_image')));
                     $frame['asset']=$basis['frames'][$role]['asset']??$basis['frames'][$role]['candidate_asset']??null;
                     $frame['readiness']=$frameSame?($basis['frames'][$role]['readiness']??'pending'):($frame['required']?'pending_sync':'not_required');
                     $frame['qa']=$frameSame?($basis['frames'][$role]['qa']??null):null;

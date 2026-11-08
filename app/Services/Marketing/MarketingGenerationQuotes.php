@@ -2,6 +2,7 @@
 namespace App\Services\Marketing;
 use App\Models\{MarketingGenerationQuote as Quote,MarketingPreparationAuthorization,MarketingProductionPlan,MarketingStoryboardProviderCall as Call};
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 /** One user-approved operation; a quote is not execution authority until atomically claimed. */
 class MarketingGenerationQuotes
@@ -9,6 +10,14 @@ class MarketingGenerationQuotes
     private static bool $activating=false;
     public const ACTIONS=['changes','missing-images-prepare','material-plan-preview','timing-shorten-preview','start-production','retry-production'];
     public function enabled():bool {return app(MarketingGenerationPricing::class)->enabled();}
+    /** Free saves never grant generation authority or extend the rate card. */
+    public function freeManual(string $action,array $payload):bool {
+        $c=$payload['command']??[];
+        if($action!=='changes'||($c['mode']??'manual')!=='manual'||!empty($c['refine_manual'])||!empty($c['rewrite']))return false;
+        if(in_array($c['type']??'', ['move','remove','restore'],true))return true;
+        if(($c['type']??'')==='edit')return in_array($c['update_scope']['images']??null,[false,0,'0'],true)&&!empty($c['update_scope']['director']);
+        return ($c['type']??'')==='insert'&&!isset($c['update_scope'])&&Str::isUuid($c['asset_id']??'');
+    }
     private function digest(array $snapshot):string {return hash('sha256',json_encode([$snapshot['story_id'],$snapshot['story_version'],$snapshot['source_revision_id'],$snapshot['profile'],$snapshot['scenes']],JSON_THROW_ON_ERROR));}
     public function quote(string $project,int $owner,int $version,string $action,array $payload):Quote {
         abort_unless(in_array($action,self::ACTIONS,true),422,'这个操作不属于制作报价范围。');

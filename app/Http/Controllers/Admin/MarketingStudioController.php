@@ -200,6 +200,7 @@ class MarketingStudioController extends Controller
         $p = $this->project($r, $project);
         $a = $p->assets()->findOrFail($asset);
 
+        app(\App\Services\Marketing\MarketingMediaReuse::class)->assertLinked($a);
         return Storage::disk('local')->response($a->path, $a->name, ['Content-Type' => $a->mime, 'Cache-Control' => 'private, no-store', 'X-Content-Type-Options' => 'nosniff']);
     }
 }

@@ -35,7 +35,9 @@ class MarketingStoryboardDirector
         $scope=app(MarketingStoryboardSaveScope::class)->validate($command,$scene);
         if($scope && !$scope['director'])$command['mode']='image_only';
         if (($command['mode'] ?? 'manual') !== 'ai') {
-            return $this->prepare($project, $owner, app(MarketingStoryboardChanges::class)->change($project, $owner, $request, $version, $command));
+            $out=app(MarketingStoryboardChanges::class)->change($project, $owner, $request, $version, $command);
+            if(!config('marketing.execution_enabled',false)&&app(MarketingGenerationQuotes::class)->freeManual('changes',['command'=>$command]))return $out+['preparation'=>['tasks'=>[],'blockers'=>[]]];
+            return $this->prepare($project, $owner, $out);
         }
         $provider = app(MarketingStoryboardProvider::class);
         foreach (($scope && !$scope['images'])?['semantic']:['semantic', 'image', 'qa'] as $role) {

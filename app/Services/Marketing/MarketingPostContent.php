@@ -6,11 +6,12 @@ use Illuminate\Validation\ValidationException;
 class MarketingPostContent {
  public function keys(array $d,?string $target=null):array {return array_values($target!==null&&array_key_exists($target,$d['media_copies']??[])?$d['media_copies'][$target]:($d['assets']??(!empty($d['asset'])?[$d['asset']]:[])));}
  private function invalid(string $m):never{throw ValidationException::withMessages(['media'=>$m]);}
- public function path(int $user,string $key):string {$s=app(MarketingPosts::class);$a=$s->asset($user,$key);if(!$a)$this->invalid('Selected media is unavailable. Choose an existing file again.');if($a['kind']==='video'||str_starts_with($key,'upload:'))return $s->videoFile($user,$key);$path=$s->imagePath(ProductImage::findOrFail(substr($key,6))->path);if(!$path)$this->invalid('The selected image is unavailable.');return $path;}
+ public function path(int $user,string $key):string {$s=app(MarketingPosts::class);$a=$s->asset($user,$key);if(!$a)$this->invalid('Selected media is unavailable. Choose an existing file again.');if($a['kind']==='video'||str_starts_with($key,'upload:')||str_starts_with($key,'library:'))return $s->videoFile($user,$key);$path=$s->imagePath(ProductImage::findOrFail(substr($key,6))->path);if(!$path)$this->invalid('The selected image is unavailable.');return $path;}
  public function normalize(int $user,array $d,array $old=[]):array {
   $keys=$this->keys($d);$sets=array_intersect_key($d['media_copies']??[],array_flip($d['targets']??[]));
   foreach($old['outcomes']??[] as $t=>$o)if(($o['status']??'')==='Published')$sets[$t]=$this->keys($old,$t);
-  foreach([$keys,...array_values($sets)] as $set){if(!is_array($set)||count($set)>10||count(array_unique($set))!==count($set))$this->invalid('Choose up to 10 different media files.');foreach($set as $key)if(!is_string($key)||!app(MarketingPosts::class)->asset($user,$key))$this->invalid('Selected media is unavailable.');}
+  $bound=$this->keys($old);foreach($old['media_copies']??[] as $oldSet)$bound=array_merge($bound,$oldSet);
+  foreach([$keys,...array_values($sets)] as $set){if(!is_array($set)||count($set)>10||count(array_unique($set))!==count($set))$this->invalid('Choose up to 10 different media files.');foreach($set as $key){if(!is_string($key)||!app(MarketingPosts::class)->asset($user,$key))$this->invalid('Selected media is unavailable.');if(str_starts_with($key,'library:')){try{app(MarketingMediaReuse::class)->resolve(\App\Models\User::findOrFail($user),substr($key,8),in_array($key,$bound,true));}catch(\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface){$this->invalid('This library asset requires current source approval and usage rights.');}}}}
   return ['asset'=>$keys[0]??null,'assets'=>$keys,'media_copies'=>$sets,'format'=>$d['format']??($d['type']==='Reel'?'video':(count($keys)>1?'carousel':'image'))];
  }
  public function validate(int $user,array $d,array $known):void {

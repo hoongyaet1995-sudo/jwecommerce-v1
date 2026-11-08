@@ -30,6 +30,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->scoped(StorefrontCurrencyContext::class);
         $this->app->scoped(ShopBrand::class);
         $this->app->scoped(\App\Services\Marketing\MarketingClipSource::class);
+        $this->app->scoped(\App\Services\Marketing\MarketingMediaReuse::class);
         $this->app->scoped(\App\Services\Marketing\MarketingMaterialRepair::class);
     }
 

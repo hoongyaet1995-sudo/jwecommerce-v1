@@ -72,6 +72,7 @@ class MarketingStoryboardImages
                 if ($name === 'scene_start') abort_unless($ref && $ready, 422, '先准备通过检查的首帧，再准备尾帧或补充帧。');
                 if (!$ref || !$ready) continue;
                 $asset = MarketingAsset::where('project_id', $task->project_id)->where('authorized', true)->findOrFail($ref['asset_id']);
+                app(MarketingMediaReuse::class)->assertLinked($asset);
                 $path = Storage::disk('local')->path($asset->path);
                 abort_unless(is_file($path) && hash_equals($ref['sha256'], hash_file('sha256', $path)), 409, '分镜参考图片已改变。');
                 $refs[$name] = ['path' => $path, 'sha256' => $ref['sha256'], 'asset_id' => $asset->id];

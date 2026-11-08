@@ -59,13 +59,14 @@ class MarketingPosts {
    $p->fill(['status'=>$status,'scheduled_at'=>$due,'timezone'=>$tz,'document'=>$doc,'version'=>$p->version+1])->save();return $this->view($p);
   });
  }
- public function library(int $user,string $search='',int $page=1):array {
+ public function library(int $user,string $search='',int $page=1,string $source='legacy',string $kind='all'):array {
+  if($source==='library')return app(MarketingMediaReuse::class)->listing(\App\Models\User::findOrFail($user),$search,$page,$kind);
   $q=ProductImage::query()->join('products','products.id','=','product_images.product_id')->select('product_images.*','products.title as product_title');if($search!=='')$q->where('products.title','like','%'.$search.'%');
   $items=$q->orderBy('product_images.id')->offset(($page-1)*24)->limit(25)->get();$more=$items->count()>24;
   $rows=$items->take(24)->map(fn($i)=>$this->imageAsset($i))->filter()->values()->all();
   if($page===1){$runs=MarketingTemplateRun::whereIn('project_id',MarketingProject::where('owner_id',$user)->select('id'))->where('status','completed')->latest()->limit(15)->get();foreach($runs as $r)foreach(($r->result['formats']??[]) as $format=>$row){$a=$this->videoAsset($user,$r,$format);if($a&&($search===''||str_contains(strtolower($a['title']),strtolower($search))))$rows[]=$a;}}
   if($page===1){$uploaded=DB::table('marketing_post_media')->where('user_id',$user)->when($search!=='',fn($q)=>$q->where('title','like','%'.$search.'%'))->latest()->limit(24)->get();foreach($uploaded as $r){$a=$this->asset($user,'upload:'.$r->id);if($a)$rows[]=$a;}}
-  return ['assets'=>$rows,'more'=>$more,'page'=>$page];
+  if($kind!=='all')$rows=array_values(array_filter($rows,fn($a)=>$a['kind']===$kind));return ['assets'=>$rows,'more'=>$more,'page'=>$page];
  }
  private function imageAsset($i):?array {
   $path=$this->imagePath($i->path);if(!$path)return null;
@@ -85,10 +86,12 @@ class MarketingPosts {
   return ['id'=>'video:'.$run->id.':'.$format,'title'=>(MarketingProject::whereKey($run->project_id)->value('name')??'Completed video').' · '.$format.' · '.$run->created_at->format('d M H:i'),'kind'=>'video','src'=>route('marketing.posts.media',['asset'=>'video:'.$run->id.':'.$format]),'poster'=>null,'seconds'=>(float)($row['seconds']??15),'note'=>'Existing completed version'];
  }
  public function videoFile(int $user,string $key):string {
+  if(preg_match('/^library:([a-f0-9-]{36})$/D',$key,$m))return app(MarketingMediaReuse::class)->resolve(\App\Models\User::findOrFail($user),$m[1],true)[1];
   if(str_starts_with($key,'upload:')){$r=DB::table('marketing_post_media')->where('user_id',$user)->where('id',substr($key,7))->first();abort_unless($r,404);return app(MarketingVideoFiles::class)->file($r->path,$r->sha256);}
   abort_unless($this->asset($user,$key),404);[$kind,$id,$format]=explode(':',$key);$r=MarketingTemplateRun::findOrFail($id)->result['formats'][$format];return app(MarketingVideoFiles::class)->file($r['path'],$r['sha256']);
  }
  public function asset(int $user,string $key):?array {
+  if(preg_match('/^library:([a-f0-9-]{36})$/D',$key,$m)){try{return app(MarketingMediaReuse::class)->descriptor(\App\Models\User::findOrFail($user),$m[1]);}catch(\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface){return null;}}
   if(preg_match('/^upload:([a-f0-9-]{36})$/D',$key,$m)){$r=DB::table('marketing_post_media')->where('user_id',$user)->where('id',$m[1])->first();if(!$r)return null;try{app(MarketingVideoFiles::class)->file($r->path,$r->sha256);}catch(\Throwable){return null;}return ['id'=>$key,'title'=>$r->title,'kind'=>str_ends_with($r->path,'.jpg')?'image':'video','src'=>route('marketing.posts.media',['asset'=>$key]),'seconds'=>(float)$r->seconds,'note'=>'Existing uploaded MP4 · Original retained'];}
   if(preg_match('/^image:(\d+)$/D',$key,$m)){$i=ProductImage::find($m[1]);return $i?$this->imageAsset($i):null;}
   if(preg_match('/^video:([a-f0-9-]{36}):(portrait|landscape)$/D',$key,$m)){$r=MarketingTemplateRun::where('status','completed')->find($m[1]);return $r?$this->videoAsset($user,$r,$m[2]):null;}

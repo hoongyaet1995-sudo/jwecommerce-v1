@@ -25,7 +25,7 @@ class MarketingClipSource {
   return MarketingProject::where('owner_id',$owner)->findOrFail($id);
  }
  public function path(MarketingProject $p,string $asset,string $hash):string{
-  $a=$p->assets()->where('authorized',true)->find($asset);$base=realpath(Storage::disk('local')->path(''));$path=$a?realpath(Storage::disk('local')->path($a->path)):false;
+  $a=$p->assets()->where('authorized',true)->find($asset);if($a)app(MarketingMediaReuse::class)->assertLinked($a);$base=realpath(Storage::disk('local')->path(''));$path=$a?realpath(Storage::disk('local')->path($a->path)):false;
   abort_unless($a&&$base&&$path&&str_starts_with(strtolower($path),strtolower($base.DIRECTORY_SEPARATOR))&&is_file($path)&&hash_file('sha256',$path)===$hash,409,'生产首帧已变化或授权失效，请返回素材准备。');return $path;
  }
  private function package(MarketingProject $p):array{

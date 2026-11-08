@@ -31,7 +31,6 @@ class MarketingStoryboardController extends Controller
     {
         $owner = $this->owner($r, $project);
 
-        if(app(\App\Services\Marketing\MarketingGenerationQuotes::class)->enabled())app(\App\Services\Marketing\MarketingGenerationPricing::class)->preview($project);
         return response()->json(['billing_receipt'=>app(\App\Services\Marketing\MarketingGenerationQuotes::class)->receipt($project,$owner),'billing_enabled'=>app(\App\Services\Marketing\MarketingGenerationQuotes::class)->enabled(),'snapshot' => app(\App\Services\Marketing\MarketingStoryboardDirectorReadout::class)->snapshot(app(MarketingStoryboardWorkspace::class)->snapshot($project, $owner)), 'options' => app(MarketingCreativeProfiles::class)->options($project, $owner), 'generation_enabled' => app(\App\Services\Marketing\MarketingGenerationQuotes::class)->enabled()||app(MarketingStoryboardProvider::class)->allowed('semantic', $project)])->header('Cache-Control', 'private, no-store');
     }
 
@@ -44,8 +43,9 @@ class MarketingStoryboardController extends Controller
         $id = $d['request_id'];
         $billing=app(\App\Services\Marketing\MarketingGenerationQuotes::class);
         $billingQuote=null;
+        $freeManual=$billing->freeManual($action,$d);
         if($billing->enabled()){
-            app(\App\Services\Marketing\MarketingGenerationPricing::class)->preview($project);
+            if(!$freeManual)app(\App\Services\Marketing\MarketingGenerationPricing::class)->preview($project);
             if($action==='billing-quote')return response()->json(['quote'=>$billing->view($billing->quote($project,$owner,$v,$d['operation']??'', $d['payload']??[]))]);
             if($action==='billing-confirm'){
                 $claim=$billing->claim($project,$owner,$d['quote_id']??'',(bool)($d['consent']??false));
@@ -54,8 +54,6 @@ class MarketingStoryboardController extends Controller
                 config(['marketing.billing.execution_quote_id'=>$billingQuote->id]);
                 $action=$billingQuote->action;$d=$billingQuote->payload;$v=$billingQuote->story_version;$id=$billingQuote->id;
             }elseif(in_array($action,$billing::ACTIONS,true)){
-                $freeManual=$action==='changes'&&($d['command']['mode']??'manual')==='manual'&&empty($d['command']['refine_manual'])&&isset($d['command']['update_scope']['images'])&&!$d['command']['update_scope']['images'];
-                $freeManual=$freeManual||($action==='changes'&&($d['command']['mode']??'manual')==='manual'&&in_array($d['command']['type']??'', ['move','remove','restore'],true));
                 abort_unless($freeManual,409,'请先查看本次内容与费用，再确认生成。');
             }
         }
@@ -131,4 +129,10 @@ class MarketingStoryboardController extends Controller
 
         return response()->json(['asset' => app(MarketingStoryboardUpload::class)->store($project,$owner,$r->file('file'),true)]);
     }
+    public function library(Request $r,string $project)
+    {
+        $this->owner($r,$project);$d=$r->validate(['library_asset_id'=>'required|uuid','authorized'=>'required|accepted']);
+        return response()->json(['asset'=>app(\App\Services\Marketing\MarketingMediaReuse::class)->import($r->user(),$project,$d['library_asset_id'],true)])->header('Cache-Control','private, no-store');
+    }
+
 }
