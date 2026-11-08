@@ -21,7 +21,7 @@ class MarketingAvatarLibrary
     {
         app(MarketingAvatarAccess::class)->libraries($actor);
 
-        return Library::firstOrCreate(['owner_id' => $actor->id], ['name' => '我的人物模板']);
+        return Library::firstOrCreate(['owner_id' => $actor->id], ['name' => 'My avatar templates']);
     }
 
     public function member(User $actor, string $library, int $user, string $role): void
@@ -76,10 +76,10 @@ class MarketingAvatarLibrary
     public function reference(User $actor, string $id, UploadedFile $file, bool $consent, string $role = 'identity'): MarketingAvatar
     {
         $a = $this->avatar($actor, $id, true);
-        abort_unless($a->status !== 'revoked' && $consent && in_array($role, ['identity', 'look'], true), 422, '请确认人物参考的使用权。');
+        abort_unless($a->status !== 'revoked' && $consent && in_array($role, ['identity', 'look'], true), 422, 'Please confirm your rights to use the character reference.');
         Validator::make(['file' => $file], ['file' => 'required|image|mimes:png,jpg,jpeg,webp|max:10240'])->validate();
         $info = @getimagesize($file->getRealPath());
-        abort_unless($info && min($info[0], $info[1]) >= 256 && $info[0] * $info[1] <= 40000000, 422, '人物参考需要清晰、单人的有效图片。');
+        abort_unless($info && min($info[0], $info[1]) >= 256 && $info[0] * $info[1] <= 40000000, 422, 'The character reference must be a clear, valid image of one person.');
         $hash = hash_file('sha256', $file->getRealPath());
         $path = 'marketing-avatar/'.$a->library_id.'/'.$hash.'.'.$file->guessExtension();
         $file->storeAs(dirname($path), basename($path), 'local');
@@ -99,7 +99,7 @@ class MarketingAvatarLibrary
     {
         $root = realpath(Storage::disk('local')->path('marketing-avatar'));
         $file = realpath(Storage::disk('local')->path($reference['path'] ?? ''));
-        abort_unless($root && $file && str_starts_with(strtolower($file), strtolower($root.DIRECTORY_SEPARATOR)) && hash_equals($reference['sha256'] ?? '', hash_file('sha256', $file)), 409, '人物参考文件已改变或不可用。');
+        abort_unless($root && $file && str_starts_with(strtolower($file), strtolower($root.DIRECTORY_SEPARATOR)) && hash_equals($reference['sha256'] ?? '', hash_file('sha256', $file)), 409, 'The character reference file has changed or is unavailable.');
 
         return $file;
     }
@@ -112,11 +112,11 @@ class MarketingAvatarLibrary
             $a = $this->avatar($actor, $id, true);
             $a = MarketingAvatar::lockForUpdate()->findOrFail($a->id);
             $d = $a->draft;
-            abort_unless($a->status !== 'revoked' && $checked && ! empty($d['references']['identity']) && ! empty($d['rights']['consent']), 422, '请准备人物参考，并确认单人外观、参考一致性与使用范围。');
+            abort_unless($a->status !== 'revoked' && $checked && ! empty($d['references']['identity']) && ! empty($d['rights']['consent']), 422, 'Please prepare a character reference and confirm the single-person appearance, reference consistency and usage scope.');
             foreach ($d['references'] as $ref) {
                 $this->path($ref);
             }
-            $snapshot = ['name' => $d['name'], 'kind' => $d['kind'], 'look' => $d['look'] ?? '沿用参考造型', 'references' => $d['references'], 'rights' => $d['rights']];
+            $snapshot = ['name' => $d['name'], 'kind' => $d['kind'], 'look' => $d['look'] ?? 'Keep the reference look', 'references' => $d['references'], 'rights' => $d['rights']];
             $digest = hash('sha256', json_encode($snapshot, JSON_THROW_ON_ERROR));
             $old = MarketingAvatarVersion::where('avatar_id', $id)->where('request_id', $request)->first();
             if ($old) {
@@ -135,7 +135,7 @@ class MarketingAvatarLibrary
     public function resolveVersion(User $actor, string $id, int $version, bool $bound = false): MarketingAvatarVersion
     {
         $a = $this->avatar($actor, $id);
-        abort_unless($a->status === 'ready' || ($bound && $a->status === 'archived'), 409, '人物模板已归档、撤权或尚未准备。');
+        abort_unless($a->status === 'ready' || ($bound && $a->status === 'archived'), 409, 'The avatar template is archived, revoked or not ready.');
         $v = MarketingAvatarVersion::where('avatar_id', $id)->where('version', $version)->firstOrFail();
         foreach ($v->references as $r) {
             $this->path($r);

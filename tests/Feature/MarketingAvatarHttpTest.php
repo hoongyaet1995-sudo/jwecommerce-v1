@@ -20,8 +20,8 @@ class MarketingAvatarHttpTest extends TestCase
         $u = User::factory()->create(['is_admin' => true, 'is_super_admin' => true]);
         $this->actingAs($u);
         $this->get(route('marketing.assets'))->assertOk()->assertSee('Media')->assertSee('Avatar');
-        $this->get(route('marketing.assets.media'))->assertOk()->assertSee('后续接入');
-        $this->get(route('marketing.avatars'))->assertOk()->assertSee('人物模板');
+        $this->get(route('marketing.assets.media'))->assertOk()->assertSee('Coming soon');
+        $this->get(route('marketing.avatars'))->assertOk()->assertSee('Add avatar template');
         $this->post(route('marketing.avatars.draft'), ['request_id' => (string) Str::uuid(), 'name' => 'My host', 'kind' => 'synthetic', 'description' => 'No photo yet'])->assertSessionHasNoErrors()->assertRedirect();
         $a = MarketingAvatar::firstOrFail();
         $this->assertSame('draft', $a->status);
@@ -30,7 +30,7 @@ class MarketingAvatarHttpTest extends TestCase
         $this->get(route('marketing.avatars.image', [$a->id, 1, 'identity']))->assertOk()->assertHeader('Cache-Control', 'no-store, private');
         $version = \App\Models\MarketingAvatarVersion::where('avatar_id', $a->id)->firstOrFail();
         file_put_contents(\Illuminate\Support\Facades\Storage::disk('local')->path($version->references['identity']['path']), 'broken');
-        $this->get(route('marketing.avatars'))->assertOk()->assertSee('参考失效');
+        $this->get(route('marketing.avatars'))->assertOk()->assertSee('Reference unavailable');
         $this->actingAs(User::factory()->create(['is_admin' => true, 'is_super_admin' => true]));
         $this->get(route('marketing.avatars.detail', $a->id))->assertNotFound();
         $this->get(route('marketing.avatars.image', [$a->id, 1, 'identity']))->assertNotFound();

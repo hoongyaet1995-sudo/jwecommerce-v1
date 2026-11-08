@@ -72,7 +72,7 @@ class MarketingAvatarController extends Controller
             $lib->reference($r->user(), $a->id, $r->file('file'), $r->boolean('consent'));
         }
 
-        return redirect()->route('marketing.avatars.detail', $a->id)->with('status', '草稿已保存。尚未生成或发布人物。');
+        return redirect()->route('marketing.avatars.detail', $a->id)->with('status', 'Draft saved. No character has been generated or published.');
     }
 
     public function write(Request $r, string $avatar, string $action)
@@ -91,7 +91,7 @@ class MarketingAvatarController extends Controller
             });
         }
 
-        return redirect()->route('marketing.avatars.detail', $avatar)->with('status', '人物模板已更新；已选项目不会自动升级版本。');
+        return redirect()->route('marketing.avatars.detail', $avatar)->with('status', 'Avatar template updated. Existing projects retain their selected version.');
     }
 
     public function image(Request $r, string $avatar, int $version, string $role)
