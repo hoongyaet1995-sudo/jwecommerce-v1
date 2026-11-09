@@ -66,7 +66,8 @@ final class ManagedMediaIngest
         return $asset;
     }
 
-    private function inspect(UploadedFile $file): array
+    /** Read-only inspection; does not store files or create media records. */
+    public function inspect(UploadedFile $file): array
     {
         $path = $file->getRealPath();
         $size = $file->getSize();

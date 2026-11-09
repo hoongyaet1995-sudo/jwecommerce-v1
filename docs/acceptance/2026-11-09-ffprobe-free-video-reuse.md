@@ -1,0 +1,20 @@
+# Local ffprobe-free library MP4 reuse
+
+User scope: fix manual existing-video reuse locally; preserve rights/hash/approval, no AI/publication/deployment. Baseline63d31011. Prior live failure1 retained in live acceptance ledger, user now authorizes local repair. Root cause shared uploaded-file validator always probes video with missing ffprobe. Approach reuse tracked ManagedMediaIngest pure inspection + MarketingPostMedia duration only for existing MP4; preserve original upload/production paths and non-MP4 tool validation, with clear unavailable-format error. No UI, schema, flags or queue changes.
+
+## Ledger
+- Intentional initial TDD red: new5-case video suite, valid MP4 import should currently fail by entering mock-blocked MediaTools. Negative rights/approval/bytes checks also exercised. Intentional red excluded from unexpected count. Historical runtime failure1 retained. Duration/token total unavailable.
+
+- Initial5-case run4red1green10.33s. Negative malformed/audio samples confirm probe entry; positive imports fail before completing current path. Exposed existing read-only ManagedMediaIngest inspection (visibility only) and reuse MP4 inspection+video-handler/duration check, keep source revalidation/copy hashes/idempotence. Non-MP4 missing tools returns422; original upload/production paths unchanged. 2026-11-09T10:35:43.3855255+08:00 first green attempt same5cases.
+
+- First green5passed38assertions13.99s, no unexpected failures. Added missing-mdat,30MiB limit, no CMS/public ingestion, non-MP4 runtime-unavailable clear422 coverage. 2026-11-09T10:37:20.2887167+08:00 expanded reuse/hosting/storyboard/approval/CMS regression after exposing read-only inspection and changing only library MP4 validation.
+
+- Expanded regression185passed1048assertions110.48s; no new unexpected failures. Local browser acceptance paused at known8500 authentication redirect; requested user login. No auth bypass, deployment, paid AI or publication. Historical runtime issue count1 retained.
+
+- Independent scoped read-only review completed: no concrete correctness/security regression found; rights/ownership/source approval/hash preserved. Reviewer did not edit or run tests. Scoped git diff --check passed (line-ending warnings only). Browser save/reload remains pending user login; completion is not claimed.
+
+- User confirmed local login.8500 actual browser acceptance passed: selected canonical AI-generated Jasmine Green Tea Scene5 output from Videos library, consent checked, manual mode, added QA ffprobe-free video reuse as scene6; saved and full reload retained existing private asset01a1bc14-5eed-7186-be4b-64b3c5134c55. Video duration9.1s,readyState4,error null. Screenshot output/video-reuse-local/refreshed.png. Read-only MySQL audit:6scenes, source/copy SHA256 equal, generation quotes/preparation authorizations/provider calls/productions/clips all0 while billing enabled and pricing expired2026-10-30. Evidence database-proof.json and no-generation-proof.json. No deployment/publication or paid AI. Browser acceptance canonical8500; null-ffprobe behavior covered by mocked regression. Local phase accepted technically; awaiting user synchronization approval.
+
+- User approved GitHub/ecom/www synchronization of this fix only. Release scope5files:2services,new8case test,neutralMP4fixture,this record. Preparing isolated exact-tree regression; no frontend build/migration/env or queue changes. Historical issue counts retained. Before isolated test run: command php artisan test --compact with same16-suite filter as prior185case regression; purpose verify approved source without unrelated working-tree dependencies. Timestamp 2026-11-09T11:04:21.7343433+08:00.
+
+- Isolated approved Git tree regression passed185tests1048assertions80.25s, evidence tmp/ffprobe-isolated-tests.txt. No unexpected new failures. Scoped review already clean; no code changed since local browser acceptance. Release excludes86unrelated tracked dirty paths and all unrelated untracked work. Deployment approval covers GitHub/ecom/www; no migrations/frontend builds/env changes required.

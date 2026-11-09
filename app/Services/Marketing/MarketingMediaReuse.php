@@ -100,7 +100,17 @@ class MarketingMediaReuse
                 'image/jpeg' => 'jpg','image/png' => 'png','image/webp' => 'webp','video/mp4' => 'mp4','video/quicktime' => 'mov','video/webm' => 'webm',default => abort(422, 'This format cannot be used in a storyboard.')
             };
             $upload = new UploadedFile($file, 'Library-'.Str::slug($source->title).'.'.$ext, $source->mime, null, true);
-            app(MarketingStoryboardUpload::class)->validateFile($upload);
+            if ($source->mime === 'video/mp4') {
+                // Existing MP4 reuse is a private file copy, not a render or supplier operation.
+                $metadata = app(\App\Services\ManagedMediaIngest::class)->inspect($upload);
+                abort_unless($metadata['mime'] === 'video/mp4' && hash_equals($source->sha256, $metadata['checksum']), 409, 'The selected video changed.');
+                app(MarketingPostMedia::class)->duration(file_get_contents($file));
+            } else {
+                if ($source->kind === 'video') {
+                    abort_unless(config('marketing.production.ffprobe_binary'), 422, 'This video format requires configured media tools. Select an MP4 for manual reuse on this host.');
+                }
+                app(MarketingStoryboardUpload::class)->validateFile($upload);
+            }
             $path = 'marketing/'.$project.'/storyboard/library-'.$id.'-'.$source->sha256.'.'.$ext;
             $disk = Storage::disk('local');
             if (! $disk->exists($path)) {
