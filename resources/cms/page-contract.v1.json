@@ -72,6 +72,13 @@
         "type": "object",
         "allowUnknownFields": false,
         "fields": {
+          "brandName": {
+            "type": "string"
+          },
+          "brandLogo": {
+            "type": "string",
+            "format": "safeLink"
+          },
           "business": {
             "type": "string",
             "enum": [
@@ -644,6 +651,9 @@
     "galleryPreset": {
       "type": "string",
       "enum": [
+        "corporate-connections",
+        "corporate-illustrated-steps",
+        "corporate-scenarios",
         "default",
         "editorial-montage",
         "editorial-cards",
@@ -652,7 +662,8 @@
         "portfolio-cards",
         "photo-marquee",
         "industrial-mosaic",
-        "album-browser"
+        "album-browser",
+        "product-preview-tabs"
       ]
     },
     "showSectionHeading": {
@@ -721,7 +732,8 @@
         "editorial-band",
         "help-panel",
         "industrial-outline",
-        "saas-closing"
+        "saas-closing",
+        "gradient-panel"
       ]
     },
     "ctaBannerHeight": {
@@ -772,7 +784,15 @@
         "editorial-journal-rows",
         "saas-hero",
         "saas-showcase",
-        "saas-analytics"
+        "saas-analytics",
+        "corporate-section-story",
+        "corporate-builder-overview",
+        "corporate-feature",
+        "corporate-support",
+        "corporate-image-story",
+        "corporate-payments",
+        "corporate-courier",
+        "corporate-marketplace"
       ]
     },
     "mediaAlt": {
@@ -1317,7 +1337,8 @@
         "default",
         "minimal",
         "industrial-split",
-        "saas-split"
+        "saas-split",
+        "corporate-starter-faq"
       ]
     },
     "faqInitiallyOpen": {
@@ -1613,7 +1634,9 @@
       "enum": [
         "default",
         "editorial-gradient",
-        "industrial-overlay"
+        "industrial-overlay",
+        "corporate-centered",
+        "corporate-split-composite"
       ]
     },
     "testimonialPreset": {
@@ -1679,6 +1702,52 @@
       ]
     },
     "pricingCurrency": {
+      "type": "string"
+    },
+    "pricingSourcePageId": {
+      "type": "string"
+    },
+    "pricingSourceSectionId": {
+      "type": "string"
+    },
+    "pricingSourceItemId": {
+      "type": "string"
+    },
+    "pricingSourceTermsSectionId": {
+      "type": "string"
+    },
+    "planContentSource": {
+      "type": "string",
+      "enum": [
+        "manual",
+        "reference"
+      ]
+    },
+    "planName": {
+      "type": "string"
+    },
+    "planAmount": {
+      "type": "number",
+      "minimum": 0
+    },
+    "planCurrency": {
+      "type": "string",
+      "pattern": "^[A-Z]{3}$"
+    },
+    "planPeriod": {
+      "type": "string"
+    },
+    "planTerms": {
+      "type": "string"
+    },
+    "planPricingMode": {
+      "type": "string",
+      "enum": [
+        "amount",
+        "contact"
+      ]
+    },
+    "planPriceLabel": {
       "type": "string"
     }
   },
@@ -2461,7 +2530,21 @@
           "faqPreset",
           "faqInitiallyOpen",
           "surface",
-          "brandPalette"
+          "brandPalette",
+          "pricingSourcePageId",
+          "pricingSourceSectionId",
+          "pricingSourceItemId",
+          "pricingSourceTermsSectionId",
+          "buttonText",
+          "buttonLink",
+          "planContentSource",
+          "planName",
+          "planAmount",
+          "planCurrency",
+          "planPeriod",
+          "planTerms",
+          "planPricingMode",
+          "planPriceLabel"
         ],
         "publishRequired": [
           "title"

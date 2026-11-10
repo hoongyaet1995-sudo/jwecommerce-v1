@@ -65,6 +65,8 @@ class StorefrontShellSettingsService
         ]);
 
         $validator->after(function ($validator) use ($input): void {
+            $brandLogo=Arr::get($input,'shellDesign.brandLogo');
+            if(filled($brandLogo)&&!MediaUrlPolicy::isSafe($brandLogo))$validator->errors()->add('shellDesign.brandLogo','Use a managed image or public HTTPS image URL.');
             if (! \App\Domain\Cms\ShellDesign::safeAction((string) Arr::get($input, 'shellDesign.ctaUrl', ''))) $validator->errors()->add('shellDesign.ctaUrl', 'Use a same-site, anchor or public HTTPS destination.');
             foreach (['light','dark'] as $tone) {
                 $logo=Arr::get($input,'overlayLogos.'.$tone);

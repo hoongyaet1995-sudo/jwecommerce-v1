@@ -1,4 +1,6 @@
 import {MediaWidthRegion} from './MediaWidthRegion';
+import {SectionIcon} from './IconPicker';
+import './CorporateSections.css';
 import {typographyStyle} from '../../cms/inspectorCapabilities';
 import React from 'react';
 import {ArrowRight} from 'lucide-react';
@@ -18,6 +20,23 @@ function Heading({section,hero=false}:{section:PageSection;hero?:boolean}) {
  </div>;
 }
 export function EditorialGallery({section,editing=false}:{section:PageSection;editing?:boolean}) {
+ if(section.galleryPreset==='corporate-connections')return <div data-editorial-gallery="corporate-connections" className="corp corp-connections" style={{'--corp-space':section.paddingY==='compact'?'32px':section.paddingY==='spacious'?'96px':'64px'} as React.CSSProperties}>
+  <Heading section={{...section,subtitle:undefined}}/>
+  <div className="corp-connections-grid">{(section.items??[]).map(item=><article key={item.id} data-cms-item={item.id} className="corp-connection-card">
+   <MotionMedia className="corp-connection-art">{item.imageUrl?<ScopedImage section={section} targetId={`item:${item.id}:imageUrl`} src={item.imageUrl} alt={item.title} className="w-full h-full object-contain"/>:editing?<p>Add feature illustration</p>:null}</MotionMedia>
+   <div className="corp-connection-copy"><h3 data-cms-text="itemTitle" data-cms-item={item.id} style={{color:section.customColors?.titleColor,...typographyStyle(section,'itemTitle')}}>{item.title}</h3>
+    {item.description&&<p data-cms-text="itemContent" data-cms-item={item.id} style={{color:section.customColors?.contentColor,...typographyStyle(section,'itemContent')}}>{item.description}</p>}
+    {item.buttonText&&shopNavigationHref(item.linkUrl??'')&&<a data-cms-action="button" data-cms-item={item.id} className="corp-primary corp-connection-button" href={shopNavigationHref(item.linkUrl??'')} onClick={e=>editing&&e.preventDefault()}>{item.buttonText}<ArrowRight size={17} aria-hidden="true"/></a>}
+   </div>
+  </article>)}</div>
+ </div>;
+ if(section.galleryPreset==='corporate-scenarios')return <div data-editorial-gallery="corporate-scenarios" className="corp corp-scenarios" style={{'--corp-space':section.paddingY==='compact'?'32px':section.paddingY==='spacious'?'96px':'64px'} as React.CSSProperties}>
+  <Heading section={{...section,subtitle:undefined}}/>
+  <div className="corp-scenario-grid">{section.items?.map(item=><article key={item.id} data-cms-item={item.id} className="corp-scenario-card">
+   <MotionMedia className="corp-scenario-image">{item.imageUrl?<ScopedImage section={section} targetId={`item:${item.id}:imageUrl`} src={item.imageUrl} alt={item.title} className="w-full h-full object-contain"/>:editing?<p>Add scenario image</p>:null}</MotionMedia>
+   <MotionItem><div className="corp-scenario-label"><SectionIcon name={item.icon}/><h3 data-cms-text="itemTitle" data-cms-item={item.id} style={{color:section.customColors?.titleColor,...typographyStyle(section,'itemTitle')}}>{item.title}</h3></div></MotionItem>
+  </article>)}</div>
+ </div>;
  const triptych=section.galleryPreset==='editorial-triptych';
  const portfolio=section.galleryPreset==='portfolio-cards';
  const montage=section.galleryPreset==='editorial-montage';

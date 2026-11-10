@@ -1,0 +1,126 @@
+[
+  {
+    "backgroundColor": "custom",
+    "containerMode": "page",
+    "content": "Choose the plan that fits your business today, with the freedom to grow tomorrow.",
+    "customColors": {
+      "contentColor": "#c6c5c0",
+      "customBgColor": "#08111c",
+      "eyebrowColor": "#a68a5c",
+      "primaryBtnBg": "#c7ab7b",
+      "primaryBtnText": "#0b1823",
+      "secondaryBtnBg": "#08111c",
+      "secondaryBtnText": "#f7f4ee",
+      "titleColor": "#f7f4ee"
+    },
+    "id": "sec-a25d72bd-6236-44af-84b8-b15e4ff5965e-plans",
+    "isVisible": true,
+    "items": [
+      {
+        "billingLabel": "/ month",
+        "buttonText": "Explore Starter",
+        "description": "Website & ecommerce + customer support",
+        "features": [
+          "Editable website",
+          "Product catalogue",
+          "Support workspace"
+        ],
+        "id": "sec-a25d72bd-6236-44af-84b8-b15e4ff5965e-starter",
+        "linkUrl": "/pages/contact-jw-studio",
+        "price": 299,
+        "title": "Starter"
+      },
+      {
+        "billingLabel": "/ month",
+        "buttonText": "Explore Growth",
+        "description": "Everything in Starter, plus AI assistance.",
+        "features": [
+          "Everything in Starter",
+          "AI Auto Reply",
+          "Supported messaging channels"
+        ],
+        "highlightLabel": "AI ENABLED",
+        "id": "sec-a25d72bd-6236-44af-84b8-b15e4ff5965e-growth",
+        "isHighlighted": true,
+        "linkUrl": "/pages/contact-jw-studio",
+        "price": 399,
+        "title": "Growth"
+      },
+      {
+        "buttonText": "Contact sales",
+        "description": "More stores, teams and modules.",
+        "features": [
+          "Expanded deployment",
+          "Module planning",
+          "Agreed usage allowances"
+        ],
+        "id": "sec-a25d72bd-6236-44af-84b8-b15e4ff5965e-enterprise",
+        "linkUrl": "/pages/contact-jw-studio",
+        "pricingLabel": "Let’s talk",
+        "pricingMode": "contact",
+        "title": "Enterprise"
+      },
+      {
+        "buttonText": "Discuss your project",
+        "description": "A tailored setup for your workflow.",
+        "features": [
+          "Workflow consultation",
+          "Integration planning",
+          "Tailored rollout"
+        ],
+        "id": "sec-a25d72bd-6236-44af-84b8-b15e4ff5965e-custom",
+        "linkUrl": "/pages/contact-jw-studio",
+        "pricingLabel": "Built around you",
+        "pricingMode": "contact",
+        "title": "Custom"
+      }
+    ],
+    "motionPreset": "subtle-lift",
+    "paddingY": "spacious",
+    "pricingCurrency": "MYR",
+    "pricingPreset": "saas-packages",
+    "sectionBorder": "none",
+    "subtitle": "FLEXIBLE PLANS FOR YOUR NEXT STAGE",
+    "textColor": "light",
+    "title": "Room to start.\nFreedom to grow.",
+    "type": "pricing_table"
+  },
+  {
+    "backgroundColor": "custom",
+    "containerMode": "page",
+    "content": "Usage allowances and provider limits are confirmed before activation.",
+    "customColors": {
+      "contentColor": "#c6c5c0",
+      "customBgColor": "#08111c",
+      "eyebrowColor": "#a68a5c",
+      "primaryBtnBg": "#c7ab7b",
+      "primaryBtnText": "#0b1823",
+      "secondaryBtnBg": "#08111c",
+      "secondaryBtnText": "#f7f4ee",
+      "titleColor": "#f7f4ee"
+    },
+    "featureCardsPreset": "saas-addons",
+    "id": "sec-a25d72bd-6236-44af-84b8-b15e4ff5965e-addons",
+    "isVisible": true,
+    "items": [
+      {
+        "description": "+RM100 / store / month\nAdd supported marketplace stores.",
+        "icon": "ShoppingCart",
+        "id": "sec-a25d72bd-6236-44af-84b8-b15e4ff5965e-marketplace",
+        "title": "Marketplace"
+      },
+      {
+        "description": "+RM200 / month\nCampaign tools and conversion reporting.",
+        "icon": "BarChart3",
+        "id": "sec-a25d72bd-6236-44af-84b8-b15e4ff5965e-studio",
+        "title": "Marketing Studio"
+      }
+    ],
+    "motionPreset": "subtle-lift",
+    "paddingY": "spacious",
+    "sectionBorder": "none",
+    "textColor": "light",
+    "title": "Optional add-ons",
+    "type": "feature_cards"
+  }
+]

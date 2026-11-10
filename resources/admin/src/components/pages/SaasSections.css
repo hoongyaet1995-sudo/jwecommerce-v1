@@ -63,3 +63,20 @@
 .jw-saas-addons>p{font-family:Arial,Helvetica,sans-serif;font-size:10px;line-height:1.5;letter-spacing:.01em;opacity:.6;text-align:center;margin:27px auto 0}
 @container(max-width:1000px){.jw-saas-plans .jw-saas-heading{gap:24px}.jw-saas-plans h2{font-size:clamp(34px,5.5cqi,52px)}.jw-saas-plans .jw-saas-plan{padding:24px}.jw-saas-addons .jw-saas-module{padding-inline:26px}}
 @container(max-width:640px){.jw-saas-plans .jw-saas-heading{grid-template-columns:1fr;gap:22px;margin-bottom:30px}.jw-saas-plans .jw-saas-heading>p{justify-self:start;max-width:32em}.jw-saas-plans h2{font-size:38px}.jw-saas-plans .jw-saas-plan-grid{gap:18px}.jw-saas-plans .jw-saas-plan{grid-template-rows:auto auto auto 1fr auto;padding:26px}.jw-saas-plans .jw-saas-price{font-size:32px}.jw-saas-plans .jw-saas-ribbon{top:17px;right:18px}.jw-saas-addons .jw-saas-module-grid{grid-template-columns:1fr;gap:26px}.jw-saas-addons .jw-saas-module{padding:0 4px;gap:20px}.jw-saas-addons .jw-saas-module+.jw-saas-module{border-left:0;border-top:1px solid #c7b28b30;padding-top:25px}.jw-saas-addon-label{font-size:8px;gap:10px}.jw-saas-addons>p{max-width:30em}}
+
+/* Existing pricing/add-on content, with light corporate appearance from current color controls. */
+.jw-saas-plans[data-saas-tone=light]::before,.jw-saas-addons[data-saas-tone=light]::before{background:radial-gradient(ellipse at 80% 0,#f1edff,transparent 65%)}
+.jw-saas-plans[data-saas-tone=light] h2{font-family:Arial,Helvetica,sans-serif;font-weight:750;font-size:clamp(34px,4cqi,56px);line-height:1.08;letter-spacing:-.045em}
+.jw-saas-plans[data-saas-tone=light] small[data-cms-text=eyebrow]{color:var(--saas-violet);font-size:12px}
+.jw-saas-plans[data-saas-tone=light] .jw-saas-plan{border-color:#dce1f2;border-radius:18px;background:#fff;box-shadow:0 8px 30px #2a215a05;padding:30px 24px;grid-template-rows:auto minmax(52px,auto) minmax(66px,auto) 1fr auto}
+.jw-saas-plans[data-saas-tone=light] .jw-saas-plan.is-highlighted{border-color:var(--saas-violet);background:linear-gradient(145deg,#f6f3ff,#fbfcff)}
+.jw-saas-plans[data-saas-tone=light] .jw-saas-plan h3{font-weight:700}
+.jw-saas-plans[data-saas-tone=light] .jw-saas-plan li svg{color:var(--saas-violet)}
+.jw-saas-plans[data-saas-tone=light] .jw-saas-plan>a{border-color:#d3d5ef;border-radius:10px;font-size:12px;min-height:46px}
+.jw-saas-plans[data-saas-tone=light] .jw-saas-ribbon{background:linear-gradient(110deg,var(--saas-accent),var(--saas-violet));color:white;border-radius:6px;top:14px;right:12px}
+.jw-saas-addons[data-saas-tone=light] .jw-saas-module>svg{color:var(--saas-violet)}
+.jw-saas-addons[data-saas-tone=light] .jw-saas-addon-label::before,.jw-saas-addons[data-saas-tone=light] .jw-saas-addon-label::after{background:#dcd7f4}
+.jw-saas-addons[data-saas-tone=light] .jw-saas-module+.jw-saas-module{border-color:#dcd7f4}
+@container(max-width:640px){.jw-saas-plans[data-saas-tone=light] .jw-saas-plan{grid-template-rows:auto auto auto 1fr auto}.jw-saas-plans[data-saas-tone=light] h2{font-size:34px}}
+
+.jw-saas-plans[data-saas-tone=light] .jw-saas-heading>p,.jw-saas-plans[data-saas-tone=light] .jw-saas-plan p,.jw-saas-addons[data-saas-tone=light] .jw-saas-module p{color:var(--saas-content)}

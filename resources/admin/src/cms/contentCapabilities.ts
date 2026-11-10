@@ -22,6 +22,12 @@ const fields:Record<PageSection['type'],readonly string[]>={
 export const contentFieldKeys=new Set(Object.values(fields).flat().concat(['leadText','mapEmbedUrl','contactAddressIcon','buttonText','buttonLink']));
 export function sectionContentFields(section:PageSection):readonly string[]{
  let result=[...fields[section.type]];
+ if(section.type==='faq_accordion'&&section.faqPreset==='corporate-starter-faq')return ['title','subtitle','content','buttonText','buttonLink'];
+ if(section.type==='media_gallery'&&['corporate-connections','corporate-scenarios','corporate-illustrated-steps'].includes(section.galleryPreset??''))return ['title','content'];
+ if(section.type==='media_text_split'&&['corporate-builder-overview','corporate-section-story'].includes(section.layoutPreset??''))return ['title','content','mediaUrl','mediaAlt'];
+ if(section.type==='media_text_split'&&['corporate-payments','corporate-courier','corporate-marketplace'].includes(section.layoutPreset??''))return [...copy,...media,...primary];
+ if(section.type==='hero_banner'&&section.heroBannerPreset==='corporate-centered')return [...copy,...actions];
+ if(section.type==='media_text_split'&&['corporate-feature','corporate-support','corporate-image-story','corporate-payments'].includes(section.layoutPreset??''))return [...copy,...media,...actions];
  if(section.type==='media_gallery'&&['portfolio-cards','industrial-mosaic','album-browser'].includes(section.galleryPreset??''))result.push(...primary);
  if(section.type==='comparison_matrix'&&section.comparisonPreset==='device-table')return [...copy,'comparisonDimensionName','buttonText','buttonLink'];
  if(section.type==='media_text_split'){
@@ -41,6 +47,7 @@ export function sectionContentFields(section:PageSection):readonly string[]{
  if(section.type==='cta_strip'){
   if(section.ctaPreset==='industrial-outline')result=['title','content',...actions];
   if(section.ctaPreset==='image-banner')result.push(...media);
+  if(section.ctaPreset==='gradient-panel')result=['title','content',...primary];
   if(section.ctaPreset==='editorial-band')result=['title','content',...primary];
   if(section.ctaPreset==='help-panel')result=[...copy,...primary];
  }

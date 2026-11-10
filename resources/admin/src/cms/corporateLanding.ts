@@ -1,0 +1,43 @@
+import type {PageSection} from '../types';
+export function corporateLandingSections(prefix:string,photo=''):PageSection[]{
+ const base={isVisible:true,containerMode:'page' as const,motionPreset:'subtle-lift' as const,sectionBorder:'none' as const,paddingY:'spacious' as const,backgroundColor:'custom' as const,textColor:'dark' as const,customColors:{customBgColor:'#ffffff',titleColor:'#0d1234',contentColor:'#626981',eyebrowColor:'#6334ed',primaryBtnBg:'#2860ff',primaryBtnText:'#ffffff',secondaryBtnBg:'#8524ff'}};
+ return [
+ {...base,id:prefix+'-hero',type:'hero_banner',heroBannerPreset:'corporate-centered',title:'Your business. Connected.',subtitle:'CONNECTED COMMERCE & AI OPERATIONS',content:'Build your website, manage commerce and support customers from one connected platform.',buttonText:'Request a demo',buttonLink:'#storefront-support-widget',secondaryButtonText:'Explore the platform',secondaryButtonLink:'#section-'+prefix+'-tabs'},
+ {...base,id:prefix+'-tabs',type:'media_gallery',galleryPreset:'product-preview-tabs',title:'Explore your connected workspace.',subtitle:'THE PLATFORM',content:'Discover the tools that bring your business together.',items:[
+ ['Website Builder','Shape your website around your business.','Combine editable content and reusable sections.','LayoutTemplate','website-builder'],['Ecommerce','Bring your catalogue and customer journey together.','Present products and services with purchase and enquiry paths.','ShoppingCart','ecommerce'],['AI Support','Every conversation. A clearer next step.','Shared conversations, AI assistance and human control.','Headphones','multichannel-ai-chat'],['Marketplace','Different storefronts. One operational view.','Order visibility, SKU mapping and stock workflows.','Layers','marketplace-orders'],['Marketing','Your brand. Ready for what’s next.','Business sources, AI drafts, review and schedules.','Megaphone','marketing-studio'],['Reports','Operational facts for informed decisions.','Explore reporting areas and data coverage.','BarChart3','reports']
+ ].map(([title,subtitle,description,icon,slug],i)=>({id:prefix+'-tab-'+i,title,subtitle,description,icon,imageUrl:photo,buttonText:'Explore '+title,linkUrl:'/pages/'+slug}))},
+ {...base,id:prefix+'-website',type:'media_text_split',layoutPreset:'corporate-feature',title:'A stronger presence.\nA clearer path to purchase.',subtitle:'WEBSITE & COMMERCE',content:'Present your business, showcase products and services, and guide customers towards a purchase or enquiry.',mediaUrl:photo,mediaAlt:'Illustrative business team reviewing product and website content',mediaPosition:'left',buttonText:'Explore Website Builder',buttonLink:'/pages/website-builder',secondaryButtonText:'View Ecommerce',secondaryButtonLink:'/pages/ecommerce',items:[{id:prefix+'-benefit-1',title:'Editable website sections',description:'',icon:'LayoutTemplate'},{id:prefix+'-benefit-2',title:'Connected product catalogue',description:'',icon:'Layers'},{id:prefix+'-benefit-3',title:'Purchase and quotation journeys',description:'',icon:'ShoppingCart'},{id:prefix+'-step-1',title:'Website',description:'',category:'workflow',icon:'Globe'},{id:prefix+'-step-2',title:'Enquiry',description:'',category:'workflow',icon:'FileText'},{id:prefix+'-step-3',title:'Order',description:'',category:'workflow',icon:'ShoppingCart'}]},
+ ];
+}
+
+/** Approved growth sections reuse the existing narrative semantic type. */
+export function corporateGrowthSections(prefix:string,photos:{support?:string;marketing?:string}={}):PageSection[]{
+ const base=corporateLandingSections(prefix)[2];
+ const item=(key:string,title:string,icon:string,category='benefit')=>({id:prefix+'-'+key,title,description:'',icon,category});
+ return [
+ {...structuredClone(base),id:prefix+'-support',layoutPreset:'corporate-support',mediaPosition:'right',mediaUrl:photos.support??'',mediaAlt:'Illustrative support specialist assisting customers in a bright office',subtitle:'AI CUSTOMER SUPPORT',title:'Every conversation.\nA clearer next step.',content:'Bring customer conversations together, with AI assistance and your team in control.',buttonText:'Explore Multichannel AI Chat',buttonLink:'/pages/multichannel-ai-chat',secondaryButtonText:'Explore Website AI Chat',secondaryButtonLink:'/pages/website-ai-chat',items:[
+  item('support-benefit-1','Shared conversations','MessageCircle'),item('support-benefit-2','Business-aware AI assistance','Sparkles'),item('support-benefit-3','Human takeover when needed','Users'),
+  item('channel-website','Website','Globe','channel'),item('channel-facebook','Facebook','MessageCircle','channel'),item('channel-instagram','Instagram','Camera','channel'),item('channel-whatsapp','WhatsApp','Phone','channel'),item('channel-tiktok','TikTok','AudioLines','channel'),
+  item('support-ai','AI assistance','Sparkles','workflow'),item('support-team','Your team','Users','workflow'),item('support-caption','AI-assisted. Human-led.','None','caption')
+ ]},
+ {...structuredClone(base),id:prefix+'-marketing',layoutPreset:'corporate-feature',mediaPosition:'left',mediaUrl:photos.marketing??'',mediaAlt:'Illustrative marketing team reviewing campaign ideas and product creative',subtitle:'MARKETING STUDIO',title:'Your brand.\nReady for what’s next.',content:'Turn business and product information into channel-specific content. Review your drafts and plan your publishing schedule.',buttonText:'Explore Marketing Studio',buttonLink:'/pages/marketing-studio',secondaryButtonText:'',secondaryButtonLink:'',items:[
+  item('marketing-benefit-1','AI-assisted copy and creative','Sparkles'),item('marketing-benefit-2','Channel-specific content drafts','Layers'),item('marketing-benefit-3','Separate generation and publishing controls','ArrowLeftRight'),
+  item('marketing-step-1','Business sources','FileText','workflow'),item('marketing-step-2','AI drafts','Sparkles','workflow'),item('marketing-step-3','Team review','Users','workflow'),item('marketing-step-4','Schedule','Calendar','workflow'),item('marketing-caption','Create with AI. Publish with control.','None','caption')
+ ]}
+ ].map(section=>({...section,layoutPreset:'corporate-image-story' as const,items:section.items.filter(item=>item.category==='benefit')}));
+}
+
+export function corporatePaymentSection(prefix:string,photo='',logoUrls:string[]=[]):PageSection{
+ const base=corporateLandingSections(prefix)[2];
+ return {...base,id:prefix+'-payments',layoutPreset:'corporate-payments',title:'A clearer path from\ncheckout to payment.',subtitle:'PAYMENTS',content:'Connect customer payment journeys with the records your team needs to manage each order.',mediaUrl:photo,mediaAlt:'Illustrative boutique owner with Checkout, Payment method, Payment record and Order follow-up workflow',imageFit:'contain',buttonText:'Explore Payments',buttonLink:'/pages/payments',secondaryButtonText:'',secondaryButtonLink:'',items:['PayPal','Curlec','Hoolah','SenangPay','KipplePay'].map((title,i)=>({id:prefix+'-payment-logo-'+i,title,imageUrl:logoUrls[i]??'',linkUrl:''}))};
+}
+
+export function corporateCourierSection(prefix:string,photo='',logoUrls:string[]=[]):PageSection{
+ const base=corporatePaymentSection(prefix);
+ return {...base,id:prefix+'-courier',layoutPreset:'corporate-courier',title:'From your business to their doorstep.',subtitle:'COURIER & SHIPPING',content:'Prepare shipments, manage delivery workflows and follow tracking updates from one operations workspace.',mediaUrl:photo,mediaAlt:'Illustrative parcel handoff and packing inset, with Prepare shipment, Arrange delivery and Track progress journey',buttonText:'Explore Shipping',buttonLink:'/pages/shipping',items:['Ninja Van','J&T Express','Pos Laju','Flash Express'].map((title,i)=>({id:prefix+'-courier-logo-'+i,title,imageUrl:logoUrls[i]??'',linkUrl:''}))};
+}
+
+export function corporateMarketplaceSection(prefix:string,photo=''):PageSection{
+ const base=corporateLandingSections(prefix)[2];
+ return {...base,id:prefix+'-marketplace',layoutPreset:'corporate-marketplace',title:'Different storefronts.\nOne operational view.',subtitle:'MARKETPLACE OPERATIONS',content:'Bring marketplace orders, catalogue mapping and stock workflows into a central workspace.',mediaUrl:photo,mediaAlt:'Illustrative Shopee, Lazada and TikTok Shop network connected to JW Workspace for Orders, SKU mapping and Stock workflows, beside a boutique operations team',imageFit:'contain',buttonText:'Explore Marketplace',buttonLink:'/pages/marketplace-orders',secondaryButtonText:'',secondaryButtonLink:'',items:[['Central order visibility','Package'],['Product & SKU mapping','Tag'],['Stock workflow management','Layers']].map(([title,icon],i)=>({id:prefix+'-marketplace-benefit-'+i,title,description:'',icon}))};
+}

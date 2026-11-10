@@ -1,4 +1,4 @@
-<header data-shell-header data-shell-style="{{ $design['style'] }}" data-shell-business="{{ $design['business'] }}" data-header-mode="{{ $presentation['mode'] }}" data-header-tone="{{ $presentation['tone'] }}" data-mega-nav  class="jw-shell-header">
+<header data-shell-header data-shell-appearance="{{ $design['appearance'] }}" data-shell-style="{{ $design['style'] }}" data-shell-business="{{ $design['business'] }}" data-header-mode="{{ $presentation['mode'] }}" data-header-tone="{{ $presentation['tone'] }}" data-mega-nav  class="jw-shell-header">
     @if($design['showAnnouncement'] && $announcementVisible)
     <div class="jw-shell-announcement" style="{{ $announcementStyle }}">
         @if($centerVisible)<span>{{ data_get($announcementCenter,'text') }} @if(filled(data_get($announcementCenter,'couponCode'))) · {{ data_get($announcementCenter,'couponCode') }} @endif</span>

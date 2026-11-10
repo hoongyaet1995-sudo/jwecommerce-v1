@@ -12,6 +12,15 @@ import {collectionBannerDefaults} from '../../cms/collectionBanners';
 import {policyLayouts} from './PolicySettings';
 import {shippingChaptersSections} from '../../cms/shippingChaptersTemplate';
 import {shippingEditorialSections} from '../../cms/shippingEditorialTemplate';
+import {corporateGrowthSections,corporateLandingSections,corporatePaymentSection,corporateCourierSection,corporateMarketplaceSection} from '../../cms/corporateLanding';
+import {gradientClosing} from '../../cms/gradientClosing';
+import {pricingFaqSection} from '../../cms/websiteBuilderStarterFaq';
+import {websiteBuilderConnections} from '../../cms/websiteBuilderConnections';
+import {websiteBuilderWorkflow} from '../../cms/websiteBuilderWorkflow';
+import {websiteBuilderScenarios} from '../../cms/websiteBuilderScenarios';
+import {websiteBuilderStory} from '../../cms/websiteBuilderStory';
+import {websiteBuilderOverview} from '../../cms/websiteBuilderOverview';
+import {splitCompositeHero} from '../../cms/websiteBuilderHero';
 import {saasSections} from '../../cms/saasTemplates';
 import React, { useState } from 'react';
 import { Category, Collection, PageSection, PageSectionType } from '../../types';
@@ -70,6 +79,19 @@ export interface SectionTemplateOption {
 }
 
 const SOURCE_SECTION_TEMPLATES: SectionTemplateOption[] = [
+ {type:'cta_strip',title:'Gradient CTA Panel',category:'Conversion & Leads',description:'A gradient panel with editable heading, description and one button. Add your own destination.',icon:LayoutTemplate,defaultData:gradientClosing('gradient-cta')},
+ {type:'faq_accordion',title:'Pricing Card & FAQ',category:'Support & Contact',description:'An editable pricing card beside FAQs. Enter your own pricing or reference an existing plan.',icon:LayoutTemplate,defaultData:pricingFaqSection('pricing-faq')},
+ {type:'media_gallery',title:'Website Connected Features',category:'Benefits & Trust',description:'Independent illustrations, copy and feature-page buttons. Only buttons navigate.',icon:LayoutTemplate,defaultData:websiteBuilderConnections('website-connections-starter')},
+ {type:'media_gallery',title:'Website Illustrated Steps',category:'Storytelling & Narrative',description:'Independent illustrations and editable step copy with automatic numbering and connecting arrows.',icon:LayoutTemplate,defaultData:websiteBuilderWorkflow('website-workflow-starter')},
+ {type:'media_gallery',title:'Business Website Scenarios',category:'Media & Visuals',description:'Independent website preview images with editable icons and names, without links.',icon:LayoutTemplate,defaultData:websiteBuilderScenarios('website-scenarios-starter')},
+ {type:'media_text_split',title:'Website Section Story',category:'Storytelling & Narrative',description:'Editable narrative and icon labels beside one transparent layered-section illustration.',icon:LayoutTemplate,defaultData:websiteBuilderStory('website-story-starter')},
+ {type:'media_text_split',title:'Website Builder Overview',category:'Storytelling & Narrative',description:'One editable builder illustration with independent icon labels. No tabs or actions.',icon:LayoutTemplate,defaultData:websiteBuilderOverview('website-builder-starter')},
+ {type:'hero_banner',title:'Split Image Hero',category:'Header & Intro',description:'Editable split Hero with replaceable artwork and two optional buttons. Add your own destinations.',icon:LayoutTemplate,defaultData:splitCompositeHero('split-image-hero')},
+ {type:'media_text_split',title:'Corporate Marketplace',category:'Storytelling & Narrative',description:'Connected marketplace artwork, split introduction, editable benefit icons and feature-page action.',icon:LayoutTemplate,defaultData:corporateMarketplaceSection('marketplace-starter')},
+ {type:'media_text_split',title:'Corporate Courier',category:'Storytelling & Narrative',description:'Parcel handoff artwork, delivery journey, editable courier logo marquee and Shipping action.',icon:LayoutTemplate,defaultData:corporateCourierSection('courier-starter')},
+ {type:'media_text_split',title:'Corporate Payments',category:'Storytelling & Narrative',description:'Centered payment story with embedded workflow artwork, editable logo marquee and feature-page action.',icon:LayoutTemplate,defaultData:corporatePaymentSection('payments-starter')},
+ ...corporateGrowthSections('growth-starter').map((s,i)=>({type:s.type,title:i===0?'Corporate AI Support':'Corporate Marketing Studio',category:'Storytelling & Narrative' as SectionTemplateOption['category'],description:'Editable corporate story with independent photograph, benefits, workflow and feature-page actions.',icon:LayoutTemplate,defaultData:s})),
+ ...corporateLandingSections('corporate-starter').map((s,i)=>({type:s.type,title:['Corporate Centered Hero','Product Preview Tabs','Corporate Feature Story'][i],category:(i===0?'Header & Intro':i===1?'Media & Visuals':'Storytelling & Narrative') as SectionTemplateOption['category'],description:'Editable corporate layout with site-aligned content and reusable media.',icon:LayoutTemplate,defaultData:s})),
  ...saasSections('saas-starter').map(s=>({type:s.type,title:s.pricingPreset==='saas-packages'?'SaaS Packages':s.layoutPreset==='saas-hero'?'SaaS Product Hero':s.layoutPreset==='saas-analytics'?'SaaS Analytics Showcase':s.type==='faq_accordion'?'SaaS Split FAQ':s.type==='cta_strip'?'SaaS Closing CTA':s.featureCardsPreset==='saas-modules'?'SaaS Module Strip':s.featureCardsPreset==='saas-addons'?'SaaS Add-ons':s.mediaPosition==='left'?'SaaS Showcase — Media Left':'SaaS Showcase — Media Right',category:(s.type==='pricing_table'||s.type==='cta_strip'?'Conversion & Leads':s.type==='faq_accordion'?'Support & Contact':'Storytelling & Narrative') as SectionTemplateOption['category'],description:'Spacious SaaS layout with shared editable content, media and actions.',icon:LayoutTemplate,defaultData:s})),
  ...([0,1,5,6] as const).map((index):SectionTemplateOption=>{const section=logisticsSections({},'industrial-starter')[index];const {id,...defaultData}=section;return {type:section.type,title:index===0?'Industrial Container Hero':index===1?'Industrial Service Cards':index===5?'Industrial Workflow':'Industrial FAQ',category:index===0?'Header & Intro':index===6?'Support & Contact':'Benefits & Trust',description:'Editable industrial layout with shared content, typography, links and motion controls.',icon:Layers,badge:'Industrial',defaultData};}),
   {type:'promotion_highlights',title:'Promotion Highlights',category:'Commerce & Shop',description:'Live promotion offers in photographic cards. Automatic or selected active vouchers with shared content, image and design controls.',icon:Tag,badge:'Editorial',defaultData:promotionHighlightDefaults()},
@@ -1211,6 +1233,7 @@ export const AddSectionModal: React.FC<AddSectionModalProps> = ({
       newSection.items=newSection.items?.map((item,index)=>({...item,id:`${newSection.id}-item-${index}`}));
     }
     newSection.productTabs=newSection.productTabs?.map((tab,index)=>({...tab,id:`${newSection.id}-tab-${index}`}));
+    if(newSection.heroBannerPreset==='corporate-centered')newSection.secondaryButtonLink='';
     if(newSection.layoutPreset?.startsWith('saas-')){if(newSection.buttonLink?.startsWith('#section-saas-starter-'))newSection.buttonLink='';if(newSection.secondaryButtonLink?.startsWith('#section-saas-starter-'))newSection.secondaryButtonLink='';}
     onAdd(newSection);
     onClose();

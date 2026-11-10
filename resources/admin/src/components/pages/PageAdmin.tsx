@@ -212,9 +212,9 @@ export const PageAdmin: React.FC = () => {
   },[currentPage?.id,Boolean(currentPage?.sections.some(s=>s.type==='promotion_highlights'))]);
   const activeSection = currentPage?.sections.find(s => s.id === activeSectionId) || null;
   const adminRuntimePayload = useMemo(() => currentPage
-    ? createAdminPageRuntimePayload(currentPage, { products, categories, collections }, currencyCode,deliveryRates??templateContext.shippingRates,promotionOffers)
+    ? createAdminPageRuntimePayload(currentPage, { products, categories, collections }, currencyCode,deliveryRates??templateContext.shippingRates,promotionOffers,pages)
     : null,
-  [currentPage, products, categories, collections, currencyCode,templateContext.shippingRates,deliveryRates,promotionOffers]);
+  [currentPage, products, categories, collections, currencyCode,templateContext.shippingRates,deliveryRates,promotionOffers,pages]);
 
   const toPageDocument = (page: CmsPage): PageDocument => ({
     title: page.title,

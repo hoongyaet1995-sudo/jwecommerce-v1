@@ -47,6 +47,9 @@ final class PageRuntimePayloadFactory
     {
         $document = $this->contract->validate($pageDocument->document);
         $facts = $this->adapters->factsFor($document);
+        foreach (app(StarterPricingReference::class)->forDocument($document, $mode === 'preview') as $index => $pricing) {
+            $facts['sections'][$index] = [...($facts['sections'][$index] ?? []), ...$pricing];
+        }
 
         return [
             'page' => [

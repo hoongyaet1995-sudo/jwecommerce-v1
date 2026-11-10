@@ -1,3 +1,4 @@
+import {resolveStarterPricing,isStarterPricing,type StarterPricing} from './websiteBuilderStarterFaq';
 import {validSaasPricingSection} from './saasPackages';
 import {useCmsBrand} from './useCmsBrand';
 import {isShellDesign} from './shellDesign';
@@ -36,6 +37,7 @@ export interface PageRuntimeSource {
 }
 
 export interface PageRuntimeSectionFacts {
+  starterPricing?: StarterPricing;
   promotions?: {offers:PromotionOffer[]};
   payments?: PaymentFacts;
   delivery?: {rows: import('./deliveryInformation').DeliveryRow[]; status?: 'ready'|'unavailable'};
@@ -289,11 +291,11 @@ export const PAGE_SECTION_BOOTSTRAP_FIELD_RULES = {
   shopNavigationPreset: {kind: 'optional-enum', values: ['cards','collection-banners','kids-banners','fashion-banners','market-hero','market-offers','image-overlay','image-caption','catalog-captions','recipe-cards','age-cards']},
   bannerProportions: {kind: 'optional-enum', values: ['50:50','60:40','40:60']},
   bannerHeight: {kind: 'optional-enum', values: ['compact','comfortable','tall']},
-  layoutPreset: {kind: 'optional-enum', values: ['saas-hero','saas-showcase','saas-analytics','default', 'editorial-hero', 'editorial-story', 'editorial-cover', 'editorial-story-cards','editorial-journal-rows', 'story-with-steps','flush-split','producer-story','tech-feature','kids-discovery', 'artisan-story']},
+  layoutPreset: {kind: 'optional-enum', values: ['corporate-image-story','corporate-payments','corporate-courier','corporate-marketplace','corporate-section-story','corporate-builder-overview','corporate-support','corporate-feature','saas-hero','saas-showcase','saas-analytics','default', 'editorial-hero', 'editorial-story', 'editorial-cover', 'editorial-story-cards','editorial-journal-rows', 'story-with-steps','flush-split','producer-story','tech-feature','kids-discovery', 'artisan-story']},
   containerMode: {kind: 'optional-enum', values: ['page','full-bleed']},
   sectionBorder: {kind: 'optional-enum', values: ['default','none','top','bottom','both']},
   sectionBorderColor: {kind: 'optional-string'},
-  ctaPreset: {kind: 'optional-enum', values: ['saas-closing','default','image-banner','editorial-band','help-panel','industrial-outline']},
+  ctaPreset: {kind: 'optional-enum', values: ['gradient-panel','saas-closing','default','image-banner','editorial-band','help-panel','industrial-outline']},
   leadText: {kind:'optional-string'},
   policyPreset:{kind:'optional-enum',values:['guidelines','choices','steps','document','directory','process-flow','timeline','tabs','columns']},
   policyNote:{kind:'optional-string'},
@@ -308,14 +310,16 @@ export const PAGE_SECTION_BOOTSTRAP_FIELD_RULES = {
   deliveryDestinationLabel:{kind:'optional-string'},
   deliveryEstimateLabel:{kind:'optional-string'},
   deliveryFeeLabel:{kind:'optional-string'},
-  faqPreset:{kind:'optional-enum',values:['saas-split','default','minimal','industrial-split']},
+  planContentSource:{kind:'optional-enum',values:['manual','reference']},planName:{kind:'optional-string'},planAmount:{kind:'optional-number'},planCurrency:{kind:'optional-string'},planPeriod:{kind:'optional-string'},planTerms:{kind:'optional-string'},planPricingMode:{kind:'optional-enum',values:['amount','contact']},planPriceLabel:{kind:'optional-string'},
+  pricingSourcePageId:{kind:'optional-string'},pricingSourceSectionId:{kind:'optional-string'},pricingSourceItemId:{kind:'optional-string'},pricingSourceTermsSectionId:{kind:'optional-string'},
+  faqPreset:{kind:'optional-enum',values:['corporate-starter-faq','saas-split','default','minimal','industrial-split']},
   faqInitiallyOpen:{kind:'optional-boolean'},
   chapterPreset: {kind:'optional-enum',values:['story','perspective','principles','process','delivery','actions','policy']},
   mediaContainerMode: {kind:'optional-enum',values:['page','full-bleed']},
   ctaBannerHeight: {kind: 'optional-enum', values: ['compact','normal','spacious']},
   richTextPreset: {kind: 'optional-enum', values: ['default', 'manifesto','industrial-split']},
   featureCardsPreset: {kind: 'optional-enum', values: ['saas-modules','saas-addons','default', 'values-list', 'editorial-columns','numbered-process','service-highlights','industrial-cards','industrial-process','industrial-process-split']},
-  heroBannerPreset:{kind:'optional-enum',values:['default','editorial-gradient','industrial-overlay']},
+  heroBannerPreset:{kind:'optional-enum',values:['default','editorial-gradient','industrial-overlay','corporate-centered','corporate-split-composite']},
   testimonialPreset:{kind:'optional-enum',values:['default','editorial-quote']},
   logoPreset:{kind:'optional-enum',values:['classic','partners']},
   logoHeight:{kind:'optional-number'},
@@ -323,7 +327,7 @@ export const PAGE_SECTION_BOOTSTRAP_FIELD_RULES = {
   marqueeSpeed:{kind:'optional-number'},
   marqueeDirection:{kind:'optional-enum',values:['left','right']},
   marqueePauseOnHover:{kind:'optional-boolean'},
-  galleryPreset: {kind: 'optional-enum', values: ['photo-marquee','default', 'editorial-montage', 'editorial-cards','editorial-triptych','portfolio-cards','routine-steps','industrial-mosaic','album-browser']},
+  galleryPreset: {kind: 'optional-enum', values: ['corporate-connections','corporate-illustrated-steps','corporate-scenarios','product-preview-tabs','photo-marquee','default', 'editorial-montage', 'editorial-cards','editorial-triptych','portfolio-cards','routine-steps','industrial-mosaic','album-browser']},
   galleryFilters:{kind:'optional-boolean'}, galleryLightbox:{kind:'optional-boolean'}, galleryInitialCount:{kind:'optional-number'},galleryLoadCount:{kind:'optional-number'},
   showSectionHeading: {kind: 'optional-boolean'},
   valuesShowHeading: {kind: 'optional-boolean'},
@@ -464,6 +468,7 @@ const isPageSection = (value: unknown): value is PageSection => {
   if (isRecord(value) && 'galleryPreset' in value && value.type !== 'media_gallery') return false;
   if (isRecord(value) && 'showSectionHeading' in value && !['media_gallery','feature_cards','policy_content','chapter_block','shop_navigation'].includes(String(value.type))) return false;
   if (isRecord(value) && ['ctaPreset','ctaBannerHeight'].some(field=>field in value) && value.type !== 'cta_strip') return false;
+  if(isRecord(value)&&['planContentSource', 'planName', 'planAmount', 'planCurrency', 'planPeriod', 'planTerms', 'planPricingMode', 'planPriceLabel', 'pricingSourcePageId', 'pricingSourceSectionId', 'pricingSourceItemId', 'pricingSourceTermsSectionId'].some(k=>k in value)&&value.type!=='faq_accordion')return false;
   if(isRecord(value)&&'mediaContainerMode' in value&&!['media_text_split','media_gallery','chapter_block','policy_content'].includes(String(value.type)))return false;
   if(isRecord(value)&&(['deliverySource','deliveryNote','deliveryDestinationLabel','deliveryEstimateLabel','deliveryFeeLabel'].some(key=>key in value)&&value.type!=='delivery_table'&&value.type!=='chapter_block'||['faqPreset','faqInitiallyOpen'].some(key=>key in value)&&value.type!=='faq_accordion'))return false;
   if(isRecord(value)&&('contactPreset' in value)&&!['contact_form','store_locator'].includes(String(value.type)))return false;
@@ -582,7 +587,8 @@ const isRuntimeTabFacts = (value: unknown): boolean => (
 );
 
 const isRuntimeSectionFacts = (value: unknown): value is PageRuntimeSectionFacts => {
-  if (!isRecord(value) || !hasOnlyKeys(value, ['productIds', 'tabs', 'newsletterCouponId', 'listing', 'delivery', 'payments','promotions'])) return false;
+  if (!isRecord(value) || !hasOnlyKeys(value, ['starterPricing','productIds', 'tabs', 'newsletterCouponId', 'listing', 'delivery', 'payments','promotions'])) return false;
+  if('starterPricing' in value&&!isStarterPricing(value.starterPricing))return false;
   if('promotions' in value&&(!isRecord(value.promotions)||!hasOnlyKeys(value.promotions,['offers'])||!isPromotionOffers(value.promotions.offers)))return false;
   if('payments' in value&&!isPaymentFacts(value.payments))return false;
   if('delivery' in value && (!isRecord(value.delivery)||!hasOnlyKeys(value.delivery,['rows','status'])||('status' in value.delivery&&!['ready','unavailable'].includes(String(value.delivery.status)))||!Array.isArray(value.delivery.rows)||!value.delivery.rows.every(row=>isRecord(row)&&hasOnlyKeys(row,['id','title','deliveryEstimate','deliveryFee'])&&['id','title','deliveryEstimate','deliveryFee'].every(key=>typeof row[key]==='string'))))return false;
@@ -696,6 +702,7 @@ export const createAdminPageRuntimePayload = (
   currency = 'USD',
   shippingRates?: import('./deliveryInformation').DeliveryRate[],
   promotionOffers:PromotionOffer[]=[],
+  sourcePages:CmsPage[]=[],
 ): PageRuntimePayload => {
   const productsById = new Map(
     catalog.products.filter(product => product.status === 'active').map(product => [product.id, product]),
@@ -713,6 +720,7 @@ export const createAdminPageRuntimePayload = (
 
   page.sections.forEach((section, sectionIndex) => {
     if (!section.isVisible) return;
+    if(section.type==='faq_accordion'&&section.faqPreset==='corporate-starter-faq')runtimeSections[sectionIndex]={starterPricing:resolveStarterPricing(section,sourcePages.find(p=>p.id===section.pricingSourcePageId))};
     if(section.type==='promotion_highlights')runtimeSections[sectionIndex]={promotions:{offers:promotionOffers}};
     if(section.type==='delivery_table'||section.type==='chapter_block'&&section.chapterPreset==='delivery')runtimeSections[sectionIndex]={delivery:{rows:deliveryRows(shippingRates??[]),status:shippingRates===undefined?'unavailable':'ready'}};
 

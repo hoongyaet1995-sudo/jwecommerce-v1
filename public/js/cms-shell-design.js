@@ -17,3 +17,5 @@
  header.addEventListener('focusout',event=>{const next=event.relatedTarget;menus.forEach(d=>{if(!(next instanceof Node)||!d.contains(next))d.open=false})});
  window.addEventListener('scroll',scrollState,{passive:true});window.addEventListener('resize',place,{passive:true});scrollState();
 })();
+
+(()=>{const h=document.querySelector('[data-shell-header]');if(!h)return;const p=h.querySelector('[data-shell-menu-panel]'),b=h.querySelector('[data-shell-menu-toggle]');p?.addEventListener('click',e=>{if(e.target.closest('a[href]')){p.hidden=true;b?.setAttribute('aria-expanded','false');p.querySelectorAll('details[open]').forEach(d=>d.open=false)}})})();

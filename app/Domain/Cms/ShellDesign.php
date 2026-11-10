@@ -14,7 +14,7 @@ final class ShellDesign
     {
         return ['business' => $business, 'style' => 'editorial', 'appearance' => 'light',
             'showAnnouncement' => false, 'showAccount' => false, 'showCurrency' => false,
-            'showThemeSwitch' => false, 'ctaLabel' => '', 'ctaUrl' => '', 'tagline' => '', 'contactEmail' => ''];
+            'showThemeSwitch' => false, 'brandName' => '', 'brandLogo' => '', 'ctaLabel' => '', 'ctaUrl' => '', 'tagline' => '', 'contactEmail' => ''];
     }
 
     public static function resolve(array $global, ?array $page = null): ?array
@@ -22,13 +22,15 @@ final class ShellDesign
         $value = $global['shellDesign'] ?? $page;
         if (! is_array($value)) return null;
         $resolved=array_replace(self::defaults($value['business'] ?? 'commerce'),$value);
-        foreach (['ctaLabel','ctaUrl','tagline','contactEmail'] as $field) $resolved[$field]=(string)($resolved[$field]??'');
+        foreach (['brandName','brandLogo','ctaLabel','ctaUrl','tagline','contactEmail'] as $field) $resolved[$field]=(string)($resolved[$field]??'');
         return $resolved;
     }
 
     public static function rules(string $prefix = 'shellDesign'): array
     {
-        return [$prefix => ['sometimes', 'array:business,style,appearance,showAnnouncement,showAccount,showCurrency,showThemeSwitch,ctaLabel,ctaUrl,tagline,contactEmail'],
+        return [$prefix => ['sometimes', 'array:brandName,brandLogo,business,style,appearance,showAnnouncement,showAccount,showCurrency,showThemeSwitch,ctaLabel,ctaUrl,tagline,contactEmail'],
+            "$prefix.brandName" => ['nullable','string','max:100'],
+            "$prefix.brandLogo" => ['nullable','string','max:2048'],
             "$prefix.business" => ['required_with:'.$prefix, 'in:commerce,service'],
             "$prefix.style" => ['required_with:'.$prefix, 'in:editorial,soft,modern'],
             "$prefix.appearance" => ['required_with:'.$prefix, 'in:light,dark'],

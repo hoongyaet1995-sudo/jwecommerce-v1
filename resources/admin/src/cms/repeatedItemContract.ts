@@ -16,6 +16,14 @@ const fields:Partial<Record<PageSection['type'],readonly string[]>>={
  delivery_table:['title','deliveryEstimate','deliveryFee'],chapter_navigation:['title','linkUrl'],
 };
 export function repeatedItemFields(section:PageSection):readonly string[]{
+ if(section.type==='media_gallery'&&section.galleryPreset==='corporate-connections')return ['title','description','imageUrl','buttonText','linkUrl'];
+ if(section.type==='media_gallery'&&section.galleryPreset==='corporate-illustrated-steps')return ['title','description','imageUrl'];
+ if(section.type==='media_gallery'&&section.galleryPreset==='corporate-scenarios')return ['title','icon','imageUrl'];
+ if(section.type==='media_text_split'&&['corporate-builder-overview','corporate-section-story'].includes(section.layoutPreset??''))return ['title','icon'];
+ if(section.type==='media_text_split'&&['corporate-payments','corporate-courier'].includes(section.layoutPreset??''))return ['title','imageUrl','linkUrl'];
+ if(section.type==='media_text_split'&&['corporate-image-story','corporate-marketplace'].includes(section.layoutPreset??''))return ['title','description','icon'];
+ if(section.type==='media_gallery'&&section.galleryPreset==='product-preview-tabs')return ['title','subtitle','description','icon','imageUrl','buttonText','linkUrl'];
+ if(section.type==='media_text_split'&&['corporate-feature','corporate-support'].includes(section.layoutPreset??''))return ['title','description','icon','category'];
  if(section.type==='pricing_table'&&section.pricingPreset==='saas-packages')return ['title','description','price','features','badge','linkUrl','isHighlighted','pricingMode','pricingLabel','billingLabel','highlightLabel','buttonText'];
  if(section.type==='feature_cards'&&section.featureCardsPreset?.startsWith('saas-'))return ['title','description','icon','buttonText','linkUrl'];
  if(section.type==='media_gallery'&&section.galleryPreset==='album-browser')return ['title','description','imageUrl','category'];

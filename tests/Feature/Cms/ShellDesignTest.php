@@ -9,6 +9,18 @@ use Tests\TestCase;
 final class ShellDesignTest extends TestCase
 {
  use RefreshDatabase;
+ public function test_display_brand_round_trips_without_replacing_company_profile():void {
+  \App\Models\StoreSetting::create(['key'=>'shop_profile','value'=>['data'=>['shopName'=>'Original Merchant','shopLogo'=>'/storage/company-logo.png']]]);
+  $profile=\App\Models\StoreSetting::where('key','shop_profile')->first()->value;
+  $settings=app(StorefrontShellSettingsService::class)->live();$settings['shellDesign']=array_replace(ShellDesign::defaults('service'),['style'=>'modern','brandName'=>'JW Studio','brandLogo'=>'','ctaLabel'=>'Request a demo','ctaUrl'=>'#storefront-support-widget']);
+  app(StorefrontShellSettingsService::class)->save($settings);
+  $this->get('/')->assertOk()->assertSee('JW Studio')->assertDontSee('src="/storage/company-logo.png"',false)->assertSee('data-shell-appearance="light"',false);
+  $this->assertSame($profile,\App\Models\StoreSetting::where('key','shop_profile')->first()->value);
+  $settings['shellDesign']['brandName']='';$settings['shellDesign']['brandLogo']='/storage/cms/media/11111111-1111-4111-8111-111111111111.png';app(StorefrontShellSettingsService::class)->save($settings);$this->get('/')->assertOk()->assertSee('src="/storage/cms/media/11111111-1111-4111-8111-111111111111.png"',false);
+  $settings['shellDesign']['brandLogo']='javascript:alert(1)';
+  $this->actingAs(User::factory()->create(['is_admin'=>true]))->putJson('/admin/api/storefront-shell-settings',$settings)->assertUnprocessable()->assertJsonValidationErrors('shellDesign.brandLogo');
+ }
+
  public function test_menu_depth_uses_grouped_panels_and_mobile_leaf_links():void {
   $settings=app(StorefrontShellSettingsService::class)->live();
   $settings['shellDesign']=ShellDesign::defaults('service');

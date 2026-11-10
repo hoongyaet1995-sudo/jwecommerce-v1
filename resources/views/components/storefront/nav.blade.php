@@ -1,4 +1,4 @@
-@props(['active' => 'landing', 'presentation' => ['mode'=>'normal','tone'=>'dark'], 'design' => null])
+@props(['active' => 'landing', 'presentation' => ['mode'=>'normal','tone'=>'dark'], 'design' => null, 'navigationContext' => null])
 
 @php
     $hasSession = request()->hasSession();
@@ -16,6 +16,12 @@
         'rootItems.children.children' => fn ($query) => $query->where('is_active', true),
     ])->first();
     $items = $header?->rootItems?->where('is_active', true) ?? collect();
+    $headerUrls=[];
+    $collectHeaderUrls=function($rows)use(&$collectHeaderUrls,&$headerUrls){foreach($rows as $row){$headerUrls[]=$row->url;$headerUrls[]=$row->featured_cta_url;if($row->relationLoaded('children'))$collectHeaderUrls($row->children);}};
+    $collectHeaderUrls($items);
+    $navigationUrls=app(\App\Domain\Cms\CmsNavigationLinks::class)->forPayload($navigationContext,$headerUrls);
+    $resolveHeaderItems=function($rows)use(&$resolveHeaderItems,$navigationUrls){return $rows->map(function($row)use(&$resolveHeaderItems,$navigationUrls){$item=clone $row;$item->url=$navigationUrls[$row->url]??$row->url;$item->featured_cta_url=$navigationUrls[$row->featured_cta_url]??$row->featured_cta_url;if($row->relationLoaded('children'))$item->setRelation('children',$resolveHeaderItems($row->children));return $item;});};
+    $items=$resolveHeaderItems($items);
     $menuItems = $items->values()->map(fn ($item) => [
         'id' => 'menu-'.$item->id,
         'label' => $item->label,

@@ -1,3 +1,4 @@
+import {CorporateBuilderOverview,CorporateHero,CorporateTabs,CorporateFeature,CorporatePayments,CorporateCourier,CorporateMarketplace} from './CorporateSections';
 import {PartnerLogos} from './PartnerLogos';
 import {IndustrialRelatedProducts} from './IndustrialRelatedProducts';
 import {IndustrialGallery,IndustrialSplit,IndustrialProcessSplit,IndustrialOutlineCta} from './IndustrialDetailSections';
@@ -2750,12 +2751,12 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
 
   const renderSectionContent = () => {
     switch (section.type) {
-      case 'hero_banner': return renderHeroBanner();
+      case 'hero_banner': if(['corporate-centered','corporate-split-composite'].includes(section.heroBannerPreset??''))return <CorporateHero section={section} editing={isEditingMode}/>; return renderHeroBanner();
       case 'split_hero': return renderSplitHero();
       case 'hero_slider': return renderHeroSlider();
       case 'announcement_bar': return renderAnnouncementBar();
       case 'rich_text': return section.richTextPreset==='industrial-split'?<IndustrialSplit section={section}/>:section.richTextPreset==='manifesto'?<Manifesto section={section}/>:renderRichText();
-      case 'media_text_split': return renderMediaTextSplit();
+      case 'media_text_split': if(section.layoutPreset==='corporate-builder-overview')return <CorporateBuilderOverview section={section} editing={isEditingMode}/>; if(section.layoutPreset==='corporate-marketplace')return <CorporateMarketplace section={section} editing={isEditingMode}/>; if(section.layoutPreset==='corporate-courier')return <CorporateCourier section={section} editing={isEditingMode}/>; if(section.layoutPreset==='corporate-payments')return <CorporatePayments section={section} editing={isEditingMode}/>; if(['corporate-section-story','corporate-feature','corporate-support','corporate-image-story'].includes(section.layoutPreset??''))return <CorporateFeature section={section} editing={isEditingMode}/>; return renderMediaTextSplit();
       case 'chapter_navigation': return <ChapterNavigation section={section} isEditingMode={isEditingMode}/>;
       case 'chapter_block': return <ChapterBlock section={section} isEditingMode={isEditingMode}/>;
       case 'timeline_story': return renderTimelineStory();
@@ -2767,7 +2768,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
       case 'pricing_table': return section.pricingPreset==='saas-packages'?<SaasPackages section={section} currency={runtime.context.currency} editing={isEditingMode}/>:renderPricingTable();
       case 'promotion_highlights': return <PromotionHighlights section={section} offers={runtimeSection.promotions?.offers??[]} editing={isEditingMode}/>;
       case 'shop_navigation': return <ShopNavigation section={section} catalog={runtime.catalog} editing={isEditingMode}/>;
-      case 'media_gallery': return ['industrial-mosaic','album-browser'].includes(section.galleryPreset??'')?<IndustrialGallery section={section} editing={isEditingMode}/>:section.galleryPreset==='photo-marquee'?<PhotoMarquee section={section} editing={isEditingMode}/>:section.galleryPreset==='routine-steps'?<RoutineSteps section={section}/>:['editorial-montage','editorial-cards','editorial-triptych','portfolio-cards'].includes(section.galleryPreset??'')?<EditorialGallery section={section} editing={isEditingMode}/>:renderMediaGallery();
+      case 'media_gallery': if(section.galleryPreset==='product-preview-tabs')return <CorporateTabs section={section} editing={isEditingMode}/>; return ['industrial-mosaic','album-browser'].includes(section.galleryPreset??'')?<IndustrialGallery section={section} editing={isEditingMode}/>:section.galleryPreset==='photo-marquee'?<PhotoMarquee section={section} editing={isEditingMode}/>:['routine-steps','corporate-illustrated-steps'].includes(section.galleryPreset??'')?<RoutineSteps section={section} editing={isEditingMode}/>:['corporate-connections','corporate-scenarios','editorial-montage','editorial-cards','editorial-triptych','portfolio-cards'].includes(section.galleryPreset??'')?<EditorialGallery section={section} editing={isEditingMode}/>:renderMediaGallery();
       case 'video_embed': return renderVideoEmbed();
       case 'before_after': return renderBeforeAfter();
       case 'instagram_feed': return renderInstagramFeed();
@@ -2778,12 +2779,12 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
       case 'values_list': return <ValuesList section={section}/>;
       case 'icon_list': return renderIconList();
       case 'comparison_matrix': return section.comparisonPreset==='device-table'?<DeviceComparison section={section} editing={isEditingMode}/>:renderComparisonMatrix();
-      case 'faq_accordion': return section.faqPreset==='saas-split'?<SaasFaq section={section}/>: section.faqPreset==='industrial-split'?<IndustrialFaq key={`${section.id}-${section.faqInitiallyOpen}`} section={section}/>: section.faqPreset==='minimal'?<MinimalFaq key={`${section.id}-${section.faqInitiallyOpen}`} section={section}/>:renderFaqAccordion();
+      case 'faq_accordion': return ['corporate-starter-faq','saas-split'].includes(section.faqPreset??'')?<SaasFaq section={section} pricing={runtimeSection.starterPricing} editing={isEditingMode}/>: section.faqPreset==='industrial-split'?<IndustrialFaq key={`${section.id}-${section.faqInitiallyOpen}`} section={section}/>: section.faqPreset==='minimal'?<MinimalFaq key={`${section.id}-${section.faqInitiallyOpen}`} section={section}/>:renderFaqAccordion();
       case 'contact_form': return section.contactPreset==='enquiry'?<EnquiryForm section={section} isEditingMode={isEditingMode}/>:renderContactForm();
       case 'store_locator': return section.contactPreset==='location'?<ContactLocation section={section}/>:renderStoreLocator();
       case 'testimonials_slider': return renderTestimonials();
       case 'logo_cloud': return section.logoPreset === 'partners' ? <PartnerLogos section={section} editing={isEditingMode}/> : renderLogoCloud();
-      case 'cta_strip': return section.ctaPreset==='saas-closing'?<SaasClosing section={section} editing={isEditingMode}/>: section.ctaPreset==='industrial-outline'?<IndustrialOutlineCta section={section} editing={isEditingMode}/>:section.ctaPreset==='help-panel'?<HelpPanel section={section} isEditingMode={isEditingMode}/>:section.ctaPreset==='editorial-band'?<EditorialCtaBand section={section} isEditingMode={isEditingMode}/>:section.ctaPreset==='image-banner'?<ImageBanner section={section} isEditingMode={isEditingMode}/>:renderCtaStrip();
+      case 'cta_strip': return ['gradient-panel','saas-closing'].includes(section.ctaPreset??'')?<SaasClosing section={section} editing={isEditingMode}/>: section.ctaPreset==='industrial-outline'?<IndustrialOutlineCta section={section} editing={isEditingMode}/>:section.ctaPreset==='help-panel'?<HelpPanel section={section} isEditingMode={isEditingMode}/>:section.ctaPreset==='editorial-band'?<EditorialCtaBand section={section} isEditingMode={isEditingMode}/>:section.ctaPreset==='image-banner'?<ImageBanner section={section} isEditingMode={isEditingMode}/>:renderCtaStrip();
       case 'newsletter_signup': return renderNewsletterSignup();
       default: return renderRichText();
     }
@@ -2793,7 +2794,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
   return (
     <section data-cms-shared-style={runtime.page.document.style?'':undefined} data-cms-surface={rawSection.surface} data-cms-editor={isEditingMode?'':undefined}
       id={`section-${section.id}`}
-      style={{...sectionRootStyle,...(section.type==='chapter_block'?{scrollMarginTop:144}:{}),...sectionBorderStyle(section),'--cms-page-width':runtime.page.document.containerWidth==='site'?'var(--storefront-content-width, 1280px)':runtime.page.document.containerWidth==='full'?'100%':runtime.page.document.containerWidth==='wide'?'1440px':'1280px',...(runtime.page.document.containerWidth==='site'?{'--cms-page-gutter':'var(--storefront-content-gutter, 24px)'}:{}),...(runtime.page.document.style?{'--cms-button-radius':`${runtime.page.document.style.buttonRadius??0}px`,'--cms-button-height':`${{compact:36,normal:44,large:52}[runtime.page.document.style.buttonSize??'normal']}px`}: {})} as React.CSSProperties}
+      style={{...sectionRootStyle,...(section.type==='chapter_block'?{scrollMarginTop:144}:(section.ctaPreset==='gradient-panel'||section.faqPreset==='corporate-starter-faq'||['corporate-builder-overview','corporate-section-story'].includes(section.layoutPreset??'')||['corporate-connections','corporate-scenarios','corporate-illustrated-steps'].includes(section.galleryPreset??''))?{scrollMarginTop:104}:{}),...sectionBorderStyle(section),'--cms-page-width':runtime.page.document.containerWidth==='site'?'var(--storefront-content-width, 1280px)':runtime.page.document.containerWidth==='full'?'100%':runtime.page.document.containerWidth==='wide'?'1440px':'1280px',...(runtime.page.document.containerWidth==='site'?{'--cms-page-gutter':'var(--storefront-content-gutter, 24px)'}:{}),...(runtime.page.document.style?{'--cms-button-radius':`${runtime.page.document.style.buttonRadius??0}px`,'--cms-button-height':`${{compact:36,normal:44,large:52}[runtime.page.document.style.buttonSize??'normal']}px`}: {})} as React.CSSProperties}
       onClickCapture={isEditingMode?event=>{
         const element=event.target as HTMLElement;
         const target=element.closest<HTMLElement>('[data-image-slot]')?.dataset.imageSlot;
