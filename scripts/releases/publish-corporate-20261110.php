@@ -8,6 +8,10 @@ require __DIR__.'/../../vendor/autoload.php';$app=require __DIR__.'/../../bootst
 $check=in_array('--check',$argv,true);
 $rehearse=in_array('--rehearse',$argv,true)&&app()->environment('testing')&&DB::connection()->getDriverName()==='sqlite';
 if(!$rehearse&&(parse_url(config('app.url'),PHP_URL_HOST)!=='www.jwaistudio.online'||basename(base_path())!=='jw-corporate'))throw new RuntimeException('This content operation is restricted to the www corporate application.');
+$gitDir=base_path('.git');if(is_file($gitDir))$gitDir=trim(substr(file_get_contents($gitDir),8));
+$gitHead=trim(file_get_contents($gitDir.'/HEAD'));$releaseSha=$gitHead;
+if(str_starts_with($gitHead,'ref: ')){$ref=substr($gitHead,5);$releaseSha=is_file($gitDir.'/'.$ref)?trim(file_get_contents($gitDir.'/'.$ref)):'';if(!$releaseSha&&is_file($gitDir.'/commondir')){$gitDir=realpath($gitDir.'/'.trim(file_get_contents($gitDir.'/commondir')));$releaseSha=is_file($gitDir.'/'.$ref)?trim(file_get_contents($gitDir.'/'.$ref)):'';}if(!$releaseSha&&is_file($gitDir.'/packed-refs'))foreach(file($gitDir.'/packed-refs',FILE_IGNORE_NEW_LINES) as $line)if(str_ends_with($line,' '.$ref))$releaseSha=substr($line,0,40);}
+if(!preg_match('/^[a-f0-9]{40}$/',$releaseSha))throw new RuntimeException('Cannot resolve release commit before publication.');
 $bundle=json_decode(file_get_contents(base_path('resources/cms/releases/20261110-corporate-pages.json')),true,512,JSON_THROW_ON_ERROR);
 $dir=storage_path('app/releases/corporate-20261110');if(!is_dir($dir))mkdir($dir,0700,true);
 $home=app(HomepageSelection::class)->id();
@@ -37,4 +41,4 @@ $receipt=DB::transaction(function()use($bundle,$landing,$existingFeature,$home,$
  if(($pricing['status']??'')!=='ready'||$pricing['price']!=299)throw new RuntimeException('Published source pricing failed');
  return ['release'=>$bundle['release'],'status'=>'published','homepage'=>(string)$landing->id,'featurePage'=>(string)$feature->id,'landingHash'=>$landing->publishedDocument->content_hash,'featureHash'=>$feature->publishedDocument->content_hash,'feesUnchanged'=>true,'starterPricing'=>$pricing,'assets'=>count($bundle['assets']),'landingSections'=>count($landing->publishedDocument->document['sections']),'featureSections'=>count($feature->publishedDocument->document['sections'])];
 });
-$receipt['backup']=$backupFile;$receipt['gitSha']=trim(shell_exec('git rev-parse HEAD'));file_put_contents($dir.'/receipt.json',json_encode($receipt,JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES));echo json_encode($receipt,JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES);
+$receipt['backup']=$backupFile;$receipt['gitSha']=$releaseSha;file_put_contents($dir.'/receipt.json',json_encode($receipt,JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES));echo json_encode($receipt,JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES);
