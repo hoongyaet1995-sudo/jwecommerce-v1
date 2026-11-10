@@ -1,3 +1,7 @@
+import {isIllustratedCta,illustratedCtaPassport} from './illustratedCta';
+import {isConnectedRows,connectedRowsPassport} from './connectedFeatureRows';
+import {isImageHighlights,imageHighlightsPassport} from './imageHighlights';
+import {isFixedImageCards,imageCardsThreePassport} from './imageCardsThree';
 import type {PageSection} from '../types';
 
 // Consumer-backed Content capabilities. Optional saved keys are values, not permissions.
@@ -21,8 +25,12 @@ const fields:Record<PageSection['type'],readonly string[]>={
 };
 export const contentFieldKeys=new Set(Object.values(fields).flat().concat(['leadText','mapEmbedUrl','contactAddressIcon','buttonText','buttonLink']));
 export function sectionContentFields(section:PageSection):readonly string[]{
+ if(isIllustratedCta(section))return illustratedCtaPassport.contentFields;
+ if(isConnectedRows(section))return connectedRowsPassport.contentFields;
+ if(isImageHighlights(section))return imageHighlightsPassport.contentFields;
+ if(isFixedImageCards(section))return imageCardsThreePassport.contentFields;
  let result=[...fields[section.type]];
- if(section.type==='faq_accordion'&&section.faqPreset==='corporate-starter-faq')return ['title','subtitle','content','buttonText','buttonLink'];
+ if(section.type==='faq_accordion'&&['corporate-starter-faq','pricing-band-faq'].includes(section.faqPreset??''))return ['title','subtitle','content','buttonText','buttonLink'];
  if(section.type==='media_gallery'&&['corporate-connections','corporate-scenarios','corporate-illustrated-steps'].includes(section.galleryPreset??''))return ['title','content'];
  if(section.type==='media_text_split'&&['corporate-builder-overview','corporate-section-story'].includes(section.layoutPreset??''))return ['title','content','mediaUrl','mediaAlt'];
  if(section.type==='media_text_split'&&['corporate-payments','corporate-courier','corporate-marketplace'].includes(section.layoutPreset??''))return [...copy,...media,...primary];

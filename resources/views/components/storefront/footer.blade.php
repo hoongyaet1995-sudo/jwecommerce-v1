@@ -1,4 +1,4 @@
-@props(['design' => null])
+@props(['design' => null, 'navigationContext' => null])
 @php
     $design = $design ?? \App\Domain\Cms\ShellDesign::resolve(app(\App\Services\StorefrontShellSettingsService::class)->live());
     $footerCategories = \App\Models\Category::query()->where('is_active', true)->orderBy('name')->limit(5)->get();
@@ -8,6 +8,9 @@
         'rootItems.children' => fn ($query) => $query->where('is_active', true),
     ])->first();
     $footerSections = $footerMenu?->rootItems?->where('is_active', true)->values() ?? collect();
+    $footerUrls=[];foreach($footerSections as $row){$footerUrls[]=$row->url;foreach($row->children as $child)$footerUrls[]=$child->url;}
+    $footerNavigation=app(\App\Domain\Cms\CmsNavigationLinks::class)->forPayload($navigationContext,$footerUrls);
+    $footerSections=$footerSections->map(function($row)use($footerNavigation){$item=clone $row;$item->url=$footerNavigation[$row->url]??$row->url;$item->setRelation('children',$row->children->map(function($child)use($footerNavigation){$copy=clone $child;$copy->url=$footerNavigation[$child->url]??$child->url;return $copy;}));return $item;});
     $footerGroups = $footerSections->isNotEmpty() ? $footerSections->chunk((int) ceil($footerSections->count() / 2)) : collect();
     $badgeStyle = fn (?string $color) => \App\Support\MenuBadgePalette::inlineStyle($color);
     if(request()->attributes->has('websiteThemeDemoVariants')) {

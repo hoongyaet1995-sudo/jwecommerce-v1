@@ -1,0 +1,4 @@
+import type {PageSection} from '../types';
+export const illustratedCtaPassport={contentFields:['title','content','mediaUrl','buttonText','buttonLink'],colors:['customBgColor','titleColor','contentColor']} as const;
+export const isIllustratedCta=(s:PageSection)=>s.type==='cta_strip'&&s.ctaPreset==='illustrated-panel';
+export function illustratedCta(prefix:string):PageSection {return {id:prefix+'-illustrated-cta',type:'cta_strip',ctaPreset:'illustrated-panel',isVisible:true,containerMode:'page',motionPreset:'subtle-lift',sectionBorder:'none',paddingY:'normal',backgroundColor:'custom',textColor:'dark',customColors:{customBgColor:'#ffffff',titleColor:'#0d1234',contentColor:'#626981'},title:'Take your next step.',content:'Tell us what you need. We will help you find a setup that fits.',mediaUrl:'',buttonText:'Get in touch',buttonLink:''};}

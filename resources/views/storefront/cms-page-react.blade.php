@@ -23,7 +23,7 @@
                 <p data-cms-page-assets-unavailable role="alert">Storefront page assets are unavailable.</p>
             @endif
         </main>
-        <x-storefront.footer :design="$pageShellDesign" />
+        <x-storefront.footer :design="$pageShellDesign" :navigation-context="$payload" />
         @foreach($quickAddProducts ?? [] as $quickAddProduct)
             <x-storefront.quick-add-variant-modal :product="$quickAddProduct" :variants="$quickAddProduct->variants" :images="$quickAddProduct->images" />
         @endforeach

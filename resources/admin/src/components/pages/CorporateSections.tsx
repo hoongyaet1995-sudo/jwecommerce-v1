@@ -1,3 +1,4 @@
+import {isImageHighlights,highlightItems} from '../../cms/imageHighlights';
 import React,{useState} from 'react';
 import type {PageSection} from '../../types';
 import {ScopedImage} from './ScopedImage';
@@ -41,10 +42,10 @@ export function CorporateFeature({section:s,editing=false}:{section:PageSection;
 }
 /** One composite owns the illustrative UI; real labels remain independently editable. */
 export function CorporateBuilderOverview({section:s,editing=false}:{section:PageSection;editing?:boolean}){
- return <div className="corp corp-builder-overview" style={brand(s)} data-corporate="builder-overview">
+ return <div className={`corp corp-builder-overview ${isImageHighlights(s)?'corp-image-highlights':''}`} style={brand(s)} data-corporate="builder-overview">
   <header className="corp-builder-heading"><h2 data-cms-text="title" style={{color:s.customColors?.titleColor,...typographyStyle(s,'title')}}>{s.title}</h2>{s.content&&<p className="corp-body" data-cms-text="content" style={{color:s.customColors?.contentColor,...typographyStyle(s,'content')}}>{s.content}</p>}</header>
   <div className="corp-builder-visual">{s.mediaUrl?<ScopedImage section={s} targetId="mediaUrl" src={s.mediaUrl} alt={s.mediaAlt||s.title}/>:editing?<p>Add builder artwork in Content → Images.</p>:null}</div>
-  <ul className="corp-builder-labels">{s.items?.map(item=><li key={item.id} data-cms-item={item.id}><SectionIcon name={item.icon}/><span data-cms-text="itemTitle" data-cms-item={item.id} style={{color:s.customColors?.titleColor,...typographyStyle(s,'itemTitle')}}>{item.title}</span></li>)}</ul>
+  <ul className="corp-builder-labels">{(isImageHighlights(s)?highlightItems(s):s.items)?.map(item=><li key={item.id} data-cms-item={item.id}><SectionIcon name={item.icon}/><span data-cms-text="itemTitle" data-cms-item={item.id} style={{color:s.customColors?.titleColor,...typographyStyle(s,'itemTitle')}}>{item.title}</span>{isImageHighlights(s)&&item.description&&<p data-cms-text="itemContent" data-cms-item={item.id} style={{color:s.customColors?.contentColor,...typographyStyle(s,'itemContent')}}>{item.description}</p>}</li>)}</ul>
  </div>;
 }
 export function CorporateTabs({section:s,editing=false}:{section:PageSection;editing?:boolean}){

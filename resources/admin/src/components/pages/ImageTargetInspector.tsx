@@ -12,6 +12,6 @@ export function ImageTargetInspector({section,selected,onSelect,onChange,assetCo
       </button>)}</div><p className="text-xs text-neutral-500 dark:text-neutral-400">Select a canvas image or thumbnail. Settings apply only to the selected image.</p>
     </div>}
     <p className="py-3 text-sm font-semibold text-neutral-600 dark:text-neutral-300">Editing: {target.label}</p>
-    <SectionImageSettings mode={mode} key={target.id} section={imageTargetSection(section,target)} geometryLocked={target.geometryLocked} onChange={patch=>onChange(updateImageTarget(section,target.id,patch))} assetControl={assetControl(target)}/>
+    <SectionImageSettings fixedAppearance={section.type==='cta_strip'&&section.ctaPreset==='illustrated-panel'} mode={mode} key={target.id} section={imageTargetSection(section,target)} geometryLocked={target.geometryLocked} onChange={patch=>onChange(updateImageTarget(section,target.id,patch))} assetControl={assetControl(target)}/>
   </div>;
 }

@@ -65,3 +65,57 @@
 /* S08 reusable centered gradient call-to-action, aligned to the page container. */
 .corp-gradient-panel{padding:48px 48px;text-align:center;border-radius:26px;background:linear-gradient(110deg,#338bff 0%,#433cff 49%,#8625ff 100%);color:#fff;box-shadow:0 14px 28px -20px #4d2ba666,inset 0 1px 0 #ffffff38}.corp-gradient-panel h2{font-size:clamp(30px,3.6cqi,48px);line-height:1.15;margin:0 auto 14px;max-width:1100px;overflow-wrap:anywhere}.corp-gradient-panel>p{font-size:clamp(16px,1.6cqi,20px);line-height:1.6;white-space:pre-line;margin:0 auto 24px;max-width:900px;overflow-wrap:anywhere}.corp-closing-cta{display:inline-flex;justify-content:center;align-items:center;gap:12px;background:#fff;color:#171335;padding:13px 25px;min-height:46px;max-width:100%;border-radius:999px;font-size:15px;font-weight:700;text-decoration:none;box-shadow:0 5px 14px #2518621a;white-space:normal;overflow-wrap:anywhere}.corp-closing-cta svg{flex-shrink:0}
 @container(max-width:800px){.corp-gradient-panel{padding:36px 24px;border-radius:22px}.corp-gradient-panel h2{font-size:clamp(28px,7.8cqi,38px)}.corp-gradient-panel>p{font-size:16px}.corp-closing-cta{padding:13px 22px}}
+
+/* Bounded Image Cards Three: one complete composite per card, no action or nested UI controls. */
+.corp-image-cards-three .corp-connection-art{height:auto;aspect-ratio:4/5;padding:0}.corp-image-cards-three .corp-connection-copy{padding:24px}.corp-image-cards-three .corp-connection-copy>p{margin-bottom:0}
+.corp-image-cards-three .text-center h2{max-width:760px;margin-inline:auto}
+/* Four-card mosaic: page container owns width; wide/narrow order is fixed presentation. */
+.corp-connected-feature-rows .corp-connections-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:76px;position:relative;isolation:isolate}
+.corp-connected-feature-rows .corp-connections-grid:before{content:'';position:absolute;z-index:-1;top:8%;bottom:8%;left:50%;border-left:2px dashed #c9b3ff}
+.corp-connected-feature-rows .corp-connection-card{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(40px,6cqi,96px);align-items:center;overflow:visible;border:0;border-radius:0;background:none;box-shadow:none}
+.corp-connected-feature-rows .corp-connection-art{height:auto;aspect-ratio:4/3;padding:0;min-width:0;position:relative}
+.corp-connected-feature-rows .corp-connection-card:nth-child(2) .corp-connection-art{order:2}
+.corp-connected-feature-rows .corp-connection-copy{padding:16px 0;display:block;min-width:0}
+.corp-connected-feature-rows .corp-connection-copy h3{font-size:clamp(28px,3cqi,40px);line-height:1.15;margin:0 0 18px;text-wrap:balance}
+.corp-connected-feature-rows .corp-connection-copy>p{font-size:clamp(16px,1.5cqi,20px);line-height:1.65;margin:0 0 28px;max-width:40ch}
+.corp-connected-feature-rows .corp-connection-button{width:fit-content;max-width:100%;padding:14px 24px;min-height:48px;font-size:16px}
+.corp-connected-feature-rows .text-center h2{max-width:800px;margin-inline:auto;text-wrap:balance}
+@container(max-width:800px){.corp-connected-feature-rows .corp-connections-grid{gap:56px}.corp-connected-feature-rows .corp-connections-grid:before{display:none}.corp-connected-feature-rows .corp-connection-card{grid-template-columns:minmax(0,1fr);gap:20px}.corp-connected-feature-rows .corp-connection-card:nth-child(2) .corp-connection-art{order:0}.corp-connected-feature-rows .corp-connection-copy{padding:0}.corp-connected-feature-rows .corp-connection-copy h3{font-size:28px;margin-bottom:14px}.corp-connected-feature-rows .corp-connection-copy>p{font-size:17px;margin-bottom:22px;max-width:none}}
+.corp-image-highlights .corp-builder-heading h2{text-wrap:balance}
+.corp-image-highlights .corp-builder-labels{grid-template-columns:repeat(4,minmax(0,1fr));gap:28px;margin-top:36px}
+.corp-image-highlights .corp-builder-labels li{display:grid;grid-template-columns:32px minmax(0,1fr);align-content:start;justify-content:start;gap:10px 12px;padding:0;text-align:left;border:0}
+.corp-image-highlights .corp-builder-labels li>span{font-size:19px;line-height:1.35;letter-spacing:-.02em;font-weight:750;align-self:center}
+.corp-image-highlights .corp-builder-labels li>p{grid-column:2;margin:0;font-size:16px;line-height:1.6;font-weight:400;white-space:pre-line;overflow-wrap:anywhere}
+@container(max-width:900px){.corp-image-highlights .corp-builder-labels{grid-template-columns:repeat(2,minmax(0,1fr));gap:28px}}
+@container(max-width:560px){.corp-image-highlights .corp-builder-labels{grid-template-columns:minmax(0,1fr);gap:26px;margin-top:28px}}
+.corp-image-cards-four-mosaic .corp-connections-grid{grid-template-columns:repeat(12,minmax(0,1fr));gap:28px;align-items:stretch}
+.corp-image-cards-four-mosaic .corp-connection-card:nth-child(1),.corp-image-cards-four-mosaic .corp-connection-card:nth-child(4){grid-column:span 7}
+.corp-image-cards-four-mosaic .corp-connection-card:nth-child(2),.corp-image-cards-four-mosaic .corp-connection-card:nth-child(3){grid-column:span 5}
+.corp-image-cards-four-mosaic .corp-connection-art{height:auto;aspect-ratio:3/2;padding:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 70% 15%,#e7eaff88,transparent 65%)}
+.corp-image-cards-four-mosaic .corp-connection-card:nth-child(2) .corp-connection-art,.corp-image-cards-four-mosaic .corp-connection-card:nth-child(3) .corp-connection-art{aspect-ratio:1}
+.corp-image-cards-four-mosaic .corp-connection-copy{padding:24px 28px 28px}
+.corp-image-cards-four-mosaic .corp-connection-copy>p{margin-bottom:0;max-width:52ch}
+.corp-image-cards-four-mosaic .text-center h2{max-width:800px;margin-inline:auto;text-wrap:balance}
+@container(max-width:700px){.corp-image-cards-four-mosaic .corp-connections-grid{grid-template-columns:minmax(0,1fr);gap:24px}.corp-image-cards-four-mosaic .corp-connection-card:nth-child(n){grid-column:auto}.corp-image-cards-four-mosaic .corp-connection-copy{padding:22px 24px 26px}}
+
+/* Pricing band: same FAQ/plan contracts, alternate bounded composition. */
+.corp-pricing-band-heading{text-align:center;max-width:900px;margin:0 auto 56px}.corp-pricing-band-heading h2{font-size:clamp(32px,4cqi,56px);line-height:1.12;letter-spacing:-.035em;margin:0 0 20px;text-wrap:balance}.corp-pricing-band-heading p{font-size:clamp(17px,2cqi,22px);line-height:1.6;margin:0;text-wrap:balance}.corp-pricing-band{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1.2fr) auto;align-items:center;column-gap:40px;row-gap:28px;padding:40px 48px;margin:0 0 72px;border-radius:28px}.corp-pricing-band .corp-starter-name{font-size:18px;margin-bottom:12px}.corp-pricing-band .corp-starter-price{font-size:clamp(36px,4.2cqi,58px);margin:0;gap:8px}.corp-pricing-band .corp-starter-price small{font-size:clamp(16px,1.8cqi,22px)}.corp-pricing-band-description{font-size:clamp(18px,2.1cqi,26px);font-weight:700;line-height:1.4;text-align:center;border-inline:1px solid #ac8aff66;padding:12px 28px;margin:0;white-space:pre-line;overflow-wrap:anywhere}.corp-pricing-band .corp-primary{font-size:16px;padding:16px 26px;justify-self:center;white-space:normal;text-align:center;max-width:100%}.corp-pricing-band .corp-starter-terms{grid-column:1/-1;text-align:center;max-width:none;font-size:14px;margin:0}.corp-pricing-band-faq .corp-starter-answers>h2{margin-bottom:32px}.corp-pricing-faq-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 24px;align-items:start}.corp-pricing-faq-grid details{margin:0}.corp-pricing-faq-grid summary{font-size:18px;padding:22px}.corp-pricing-faq-grid details>p{font-size:16px;padding:0 22px 22px}
+@container(max-width:900px){.corp-pricing-band{column-gap:24px;padding:32px 28px}.corp-pricing-band-description{padding:8px 16px}.corp-pricing-band .corp-primary{padding:14px 18px}}
+@container(max-width:700px){.corp-pricing-band-heading{margin-bottom:36px}.corp-pricing-band{grid-template-columns:minmax(0,1fr);gap:24px;padding:32px 24px;margin-bottom:48px}.corp-pricing-band-description{text-align:left;border:0;border-top:1px solid #ac8aff55;padding:22px 0 0;font-size:21px}.corp-pricing-band .corp-primary{justify-self:start}.corp-pricing-band .corp-starter-terms{text-align:left;font-size:13px}.corp-pricing-faq-grid{grid-template-columns:minmax(0,1fr);gap:14px}.corp-pricing-band-faq .corp-starter-answers>h2{font-size:30px}.corp-pricing-faq-grid summary{padding:18px;font-size:17px}.corp-pricing-faq-grid details>p{padding:0 18px 18px}}
+
+/* One foreground image, one action; light illustrated CTA family. */
+.corp-illustrated-panel{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(28px,4cqi,64px);align-items:center;padding:clamp(28px,4cqi,56px);border-radius:36px;background:linear-gradient(125deg,#e5f1ff 0%,#f3edff 53%,#ede0ff 100%);border:1px solid #d7d8ff;box-shadow:0 20px 42px -30px #452b944d,inset 0 0 0 3px #ffffff80}.corp-illustrated-visual{aspect-ratio:1.12;min-width:0;display:flex;align-items:center}.corp-illustrated-visual img{display:block;width:100%;height:100%;object-fit:contain}.corp-illustrated-copy{min-width:0}.corp-illustrated-copy h2{font-size:clamp(32px,4.4cqi,62px);line-height:1.08;letter-spacing:-.04em;margin:0 0 24px;white-space:pre-line;text-wrap:balance;overflow-wrap:anywhere}.corp-illustrated-copy>p{font-size:clamp(17px,2cqi,25px);line-height:1.55;white-space:pre-line;margin:0 0 32px;overflow-wrap:anywhere}.corp-illustrated-copy .corp-primary{font-size:clamp(16px,1.8cqi,20px);border-radius:999px;padding:16px 28px;box-shadow:0 12px 25px -12px #6438df88;max-width:100%;text-align:center;white-space:normal}.corp-illustrated-panel.without-image{grid-template-columns:minmax(0,1fr)}.corp-illustrated-panel.without-image .corp-illustrated-copy{max-width:820px;margin-inline:auto;text-align:center}
+@container(max-width:700px){.corp-illustrated-panel{grid-template-columns:minmax(0,1fr);padding:28px 24px 36px;gap:24px;border-radius:26px}.corp-illustrated-visual{aspect-ratio:1.15}.corp-illustrated-copy h2{font-size:clamp(30px,8.4cqi,40px);margin-bottom:18px}.corp-illustrated-copy>p{font-size:17px;margin-bottom:24px}.corp-illustrated-copy .corp-primary{font-size:16px;padding:14px 24px}}
+
+/* Bounded tablet density: preserve phone/desktop geometry and all artwork. */
+@container(min-width:600px) and (max-width:900px){
+ .corp-image-cards-three .corp-connections-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+ .corp-image-cards-three .corp-connection-art{aspect-ratio:4/5;height:auto}
+ .corp-image-cards-three .corp-connection-copy{padding:20px 16px}
+ .corp-image-cards-three .corp-connection-copy h3{font-size:21px}
+ .corp-image-cards-three .corp-connection-copy>p{font-size:15px}
+ .corp-image-cards-four-mosaic .corp-connections-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}
+ .corp-image-cards-four-mosaic .corp-connection-card:nth-child(n){grid-column:auto}
+ .corp-image-cards-four-mosaic .corp-connection-card:nth-child(n) .corp-connection-art{aspect-ratio:auto;height:clamp(220px,34cqi,300px);min-height:0}
+ .corp-image-cards-four-mosaic .corp-connection-copy{padding:20px}
+}

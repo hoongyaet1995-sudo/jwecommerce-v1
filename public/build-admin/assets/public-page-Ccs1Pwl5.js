@@ -1,1 +1,0 @@
-import{b0 as a,a$ as s,j as t,r,a3 as n,b1 as c,b2 as i}from"./index-CSwVZsos.js";const o=document.getElementById("cms-page-root");if(o){const e=a();s.createRoot(o).render(t.jsx(r.StrictMode,{children:e?t.jsx(n,{payload:e,children:t.jsx(c,{sections:e.page.document.sections,mode:e.context.mode})}):t.jsx(i,{})}))}

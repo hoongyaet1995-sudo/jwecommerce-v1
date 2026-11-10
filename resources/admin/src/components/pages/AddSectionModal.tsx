@@ -1,3 +1,8 @@
+import {illustratedCta} from '../../cms/illustratedCta';
+import {pricingBandFaq} from '../../cms/pricingBandFaq';
+import {connectedFeatureRows,isConnectedRows} from '../../cms/connectedFeatureRows';
+import {imageHighlights,isImageHighlights} from '../../cms/imageHighlights';
+import {threeImageCards,fourMosaicImageCards,isFixedImageCards} from '../../cms/imageCardsThree';
 import solutionDetail from '../../cms/logisticsSolutionTemplate.json';
 import galleryDetail from '../../cms/logisticsGalleryTemplate.json';
 import {logisticsSections} from '../../cms/logisticsTemplates';
@@ -79,7 +84,13 @@ export interface SectionTemplateOption {
 }
 
 const SOURCE_SECTION_TEMPLATES: SectionTemplateOption[] = [
+ {type:'media_gallery',title:'Connected Feature Rows',category:'Benefits & Trust',description:'Three alternating image and text rows with independent buttons.',icon:LayoutTemplate,defaultData:connectedFeatureRows('connected-rows-starter')},
+ {type:'media_text_split',title:'Image & Highlights',category:'Benefits & Trust',description:'One main image and four editable icon, title and description highlights.',icon:LayoutTemplate,defaultData:imageHighlights('highlights-starter')},
+ {type:'media_gallery',title:'Image Cards — Four Mosaic',category:'Media & Visuals',description:'Four fixed images with editable titles and descriptions in a staggered mosaic.',icon:LayoutTemplate,defaultData:fourMosaicImageCards('four-mosaic-starter')},
+ {type:'media_gallery',title:'Image Cards — Three',category:'Media & Visuals',description:'Three fixed images with editable titles and descriptions. No links or extra card controls.',icon:LayoutTemplate,defaultData:threeImageCards('image-cards-starter')},
+ {type:'cta_strip',title:'Illustrated CTA Panel',category:'Conversion & Leads',description:'One foreground illustration beside editable heading, body and action. Add your own image and destination.',icon:LayoutTemplate,defaultData:illustratedCta('illustrated-cta')},
  {type:'cta_strip',title:'Gradient CTA Panel',category:'Conversion & Leads',description:'A gradient panel with editable heading, description and one button. Add your own destination.',icon:LayoutTemplate,defaultData:gradientClosing('gradient-cta')},
+ {type:'faq_accordion',title:'Pricing Band & FAQ',category:'Support & Contact',description:'A horizontal pricing band above editable questions and answers. Enter your own plan or reference existing pricing.',icon:LayoutTemplate,defaultData:pricingBandFaq('pricing-band-faq')},
  {type:'faq_accordion',title:'Pricing Card & FAQ',category:'Support & Contact',description:'An editable pricing card beside FAQs. Enter your own pricing or reference an existing plan.',icon:LayoutTemplate,defaultData:pricingFaqSection('pricing-faq')},
  {type:'media_gallery',title:'Website Connected Features',category:'Benefits & Trust',description:'Independent illustrations, copy and feature-page buttons. Only buttons navigate.',icon:LayoutTemplate,defaultData:websiteBuilderConnections('website-connections-starter')},
  {type:'media_gallery',title:'Website Illustrated Steps',category:'Storytelling & Narrative',description:'Independent illustrations and editable step copy with automatic numbering and connecting arrows.',icon:LayoutTemplate,defaultData:websiteBuilderWorkflow('website-workflow-starter')},
@@ -1232,6 +1243,7 @@ export const AddSectionModal: React.FC<AddSectionModalProps> = ({
     if (newSection.pricingPreset==='saas-packages'||newSection.featureCardsPreset?.startsWith('saas-')||newSection.faqPreset==='saas-split'||newSection.featureCardsPreset?.startsWith('industrial-')||newSection.faqPreset==='industrial-split'||newSection.comparisonPreset==='device-table'||newSection.layoutPreset==='tech-feature'||newSection.type==='promotion_highlights'||newSection.type==='chapter_block'||newSection.galleryPreset?.startsWith('editorial-')||newSection.featureCardsPreset==='editorial-columns') {
       newSection.items=newSection.items?.map((item,index)=>({...item,id:`${newSection.id}-item-${index}`}));
     }
+    if(isConnectedRows(newSection)||isFixedImageCards(newSection)||isImageHighlights(newSection))newSection.items=newSection.items?.map((item,index)=>({...item,id:`${newSection.id}-item-${index}`}));
     newSection.productTabs=newSection.productTabs?.map((tab,index)=>({...tab,id:`${newSection.id}-tab-${index}`}));
     if(newSection.heroBannerPreset==='corporate-centered')newSection.secondaryButtonLink='';
     if(newSection.layoutPreset?.startsWith('saas-')){if(newSection.buttonLink?.startsWith('#section-saas-starter-'))newSection.buttonLink='';if(newSection.secondaryButtonLink?.startsWith('#section-saas-starter-'))newSection.secondaryButtonLink='';}

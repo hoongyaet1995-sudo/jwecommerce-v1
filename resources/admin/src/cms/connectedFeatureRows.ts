@@ -1,0 +1,7 @@
+import type {PageSection,SectionItem} from '../types';
+import {threeImageCards} from './imageCardsThree';
+export const connectedRowsPassport={preset:'connected-feature-rows',slots:3,contentFields:['title','content'],itemFields:['title','description','imageUrl','buttonText','linkUrl'],colors:['customBgColor','titleColor','contentColor']} as const;
+export function isConnectedRows(s:PageSection|null|undefined):boolean{return s?.type==='media_gallery'&&s.galleryPreset===connectedRowsPassport.preset;}
+export function normalizeConnectedRows<T extends PageSection|null|undefined>(s:T):T{if(!s||!isConnectedRows(s))return s;const items=[...(s.items??[])];for(let i=items.length;i<connectedRowsPassport.slots;i++)items.push({id:`${s.id}-row-${i+1}`,title:'',description:'',imageUrl:'',buttonText:'',linkUrl:''});return {...s,items} as T;}
+export function connectedRowItems(s:PageSection):SectionItem[]{return normalizeConnectedRows(s).items!.slice(0,connectedRowsPassport.slots);}
+export function connectedFeatureRows(prefix:string):PageSection{const s=threeImageCards(prefix);return {...s,id:prefix+'-connected-rows',galleryPreset:'connected-feature-rows',title:'Connect your next steps.',content:'Explore three parts of your wider workflow.',items:s.items!.map((item,i)=>({...item,id:`${prefix}-row-${i+1}`,title:'Feature '+(i+1),description:'Introduce this feature and where to learn more.',buttonText:'Explore feature',linkUrl:''}))};}

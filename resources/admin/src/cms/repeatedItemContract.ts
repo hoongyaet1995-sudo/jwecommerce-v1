@@ -1,3 +1,6 @@
+import {isConnectedRows,connectedRowsPassport} from './connectedFeatureRows';
+import {isImageHighlights,imageHighlightsPassport} from './imageHighlights';
+import {isFixedImageCards,imageCardsThreePassport} from './imageCardsThree';
 import type {PageSection,SectionItem} from '../types';
 /** Inspector capabilities describe consumed renderer fields, never accidental data presence. */
 const fields:Partial<Record<PageSection['type'],readonly string[]>>={
@@ -16,6 +19,9 @@ const fields:Partial<Record<PageSection['type'],readonly string[]>>={
  delivery_table:['title','deliveryEstimate','deliveryFee'],chapter_navigation:['title','linkUrl'],
 };
 export function repeatedItemFields(section:PageSection):readonly string[]{
+ if(isConnectedRows(section))return connectedRowsPassport.itemFields;
+ if(isImageHighlights(section))return imageHighlightsPassport.itemFields;
+ if(isFixedImageCards(section))return imageCardsThreePassport.itemFields;
  if(section.type==='media_gallery'&&section.galleryPreset==='corporate-connections')return ['title','description','imageUrl','buttonText','linkUrl'];
  if(section.type==='media_gallery'&&section.galleryPreset==='corporate-illustrated-steps')return ['title','description','imageUrl'];
  if(section.type==='media_gallery'&&section.galleryPreset==='corporate-scenarios')return ['title','icon','imageUrl'];

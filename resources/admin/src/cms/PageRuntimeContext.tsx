@@ -291,11 +291,11 @@ export const PAGE_SECTION_BOOTSTRAP_FIELD_RULES = {
   shopNavigationPreset: {kind: 'optional-enum', values: ['cards','collection-banners','kids-banners','fashion-banners','market-hero','market-offers','image-overlay','image-caption','catalog-captions','recipe-cards','age-cards']},
   bannerProportions: {kind: 'optional-enum', values: ['50:50','60:40','40:60']},
   bannerHeight: {kind: 'optional-enum', values: ['compact','comfortable','tall']},
-  layoutPreset: {kind: 'optional-enum', values: ['corporate-image-story','corporate-payments','corporate-courier','corporate-marketplace','corporate-section-story','corporate-builder-overview','corporate-support','corporate-feature','saas-hero','saas-showcase','saas-analytics','default', 'editorial-hero', 'editorial-story', 'editorial-cover', 'editorial-story-cards','editorial-journal-rows', 'story-with-steps','flush-split','producer-story','tech-feature','kids-discovery', 'artisan-story']},
+  layoutPreset: {kind: 'optional-enum', values: ['corporate-image-story','corporate-payments','corporate-courier','corporate-marketplace','corporate-section-story','image-highlights','corporate-builder-overview','corporate-support','corporate-feature','saas-hero','saas-showcase','saas-analytics','default', 'editorial-hero', 'editorial-story', 'editorial-cover', 'editorial-story-cards','editorial-journal-rows', 'story-with-steps','flush-split','producer-story','tech-feature','kids-discovery', 'artisan-story']},
   containerMode: {kind: 'optional-enum', values: ['page','full-bleed']},
   sectionBorder: {kind: 'optional-enum', values: ['default','none','top','bottom','both']},
   sectionBorderColor: {kind: 'optional-string'},
-  ctaPreset: {kind: 'optional-enum', values: ['gradient-panel','saas-closing','default','image-banner','editorial-band','help-panel','industrial-outline']},
+  ctaPreset: {kind: 'optional-enum', values: ['illustrated-panel','gradient-panel','saas-closing','default','image-banner','editorial-band','help-panel','industrial-outline']},
   leadText: {kind:'optional-string'},
   policyPreset:{kind:'optional-enum',values:['guidelines','choices','steps','document','directory','process-flow','timeline','tabs','columns']},
   policyNote:{kind:'optional-string'},
@@ -310,9 +310,9 @@ export const PAGE_SECTION_BOOTSTRAP_FIELD_RULES = {
   deliveryDestinationLabel:{kind:'optional-string'},
   deliveryEstimateLabel:{kind:'optional-string'},
   deliveryFeeLabel:{kind:'optional-string'},
-  planContentSource:{kind:'optional-enum',values:['manual','reference']},planName:{kind:'optional-string'},planAmount:{kind:'optional-number'},planCurrency:{kind:'optional-string'},planPeriod:{kind:'optional-string'},planTerms:{kind:'optional-string'},planPricingMode:{kind:'optional-enum',values:['amount','contact']},planPriceLabel:{kind:'optional-string'},
+  planContentSource:{kind:'optional-enum',values:['manual','reference']},planName:{kind:'optional-string'},planAmount:{kind:'optional-number'},planCurrency:{kind:'optional-string'},planPeriod:{kind:'optional-string'},planTerms:{kind:'optional-string'},planDescription:{kind:'optional-string'},planPricingMode:{kind:'optional-enum',values:['amount','contact']},planPriceLabel:{kind:'optional-string'},
   pricingSourcePageId:{kind:'optional-string'},pricingSourceSectionId:{kind:'optional-string'},pricingSourceItemId:{kind:'optional-string'},pricingSourceTermsSectionId:{kind:'optional-string'},
-  faqPreset:{kind:'optional-enum',values:['corporate-starter-faq','saas-split','default','minimal','industrial-split']},
+  faqPreset:{kind:'optional-enum',values:['pricing-band-faq','corporate-starter-faq','saas-split','default','minimal','industrial-split']},
   faqInitiallyOpen:{kind:'optional-boolean'},
   chapterPreset: {kind:'optional-enum',values:['story','perspective','principles','process','delivery','actions','policy']},
   mediaContainerMode: {kind:'optional-enum',values:['page','full-bleed']},
@@ -327,7 +327,7 @@ export const PAGE_SECTION_BOOTSTRAP_FIELD_RULES = {
   marqueeSpeed:{kind:'optional-number'},
   marqueeDirection:{kind:'optional-enum',values:['left','right']},
   marqueePauseOnHover:{kind:'optional-boolean'},
-  galleryPreset: {kind: 'optional-enum', values: ['corporate-connections','corporate-illustrated-steps','corporate-scenarios','product-preview-tabs','photo-marquee','default', 'editorial-montage', 'editorial-cards','editorial-triptych','portfolio-cards','routine-steps','industrial-mosaic','album-browser']},
+  galleryPreset: {kind: 'optional-enum', values: ['connected-feature-rows','image-cards-four-mosaic','image-cards-three','corporate-connections','corporate-illustrated-steps','corporate-scenarios','product-preview-tabs','photo-marquee','default', 'editorial-montage', 'editorial-cards','editorial-triptych','portfolio-cards','routine-steps','industrial-mosaic','album-browser']},
   galleryFilters:{kind:'optional-boolean'}, galleryLightbox:{kind:'optional-boolean'}, galleryInitialCount:{kind:'optional-number'},galleryLoadCount:{kind:'optional-number'},
   showSectionHeading: {kind: 'optional-boolean'},
   valuesShowHeading: {kind: 'optional-boolean'},
@@ -468,7 +468,7 @@ const isPageSection = (value: unknown): value is PageSection => {
   if (isRecord(value) && 'galleryPreset' in value && value.type !== 'media_gallery') return false;
   if (isRecord(value) && 'showSectionHeading' in value && !['media_gallery','feature_cards','policy_content','chapter_block','shop_navigation'].includes(String(value.type))) return false;
   if (isRecord(value) && ['ctaPreset','ctaBannerHeight'].some(field=>field in value) && value.type !== 'cta_strip') return false;
-  if(isRecord(value)&&['planContentSource', 'planName', 'planAmount', 'planCurrency', 'planPeriod', 'planTerms', 'planPricingMode', 'planPriceLabel', 'pricingSourcePageId', 'pricingSourceSectionId', 'pricingSourceItemId', 'pricingSourceTermsSectionId'].some(k=>k in value)&&value.type!=='faq_accordion')return false;
+  if(isRecord(value)&&['planContentSource', 'planName', 'planAmount', 'planCurrency', 'planPeriod', 'planTerms', 'planDescription', 'planPricingMode', 'planPriceLabel', 'pricingSourcePageId', 'pricingSourceSectionId', 'pricingSourceItemId', 'pricingSourceTermsSectionId'].some(k=>k in value)&&value.type!=='faq_accordion')return false;
   if(isRecord(value)&&'mediaContainerMode' in value&&!['media_text_split','media_gallery','chapter_block','policy_content'].includes(String(value.type)))return false;
   if(isRecord(value)&&(['deliverySource','deliveryNote','deliveryDestinationLabel','deliveryEstimateLabel','deliveryFeeLabel'].some(key=>key in value)&&value.type!=='delivery_table'&&value.type!=='chapter_block'||['faqPreset','faqInitiallyOpen'].some(key=>key in value)&&value.type!=='faq_accordion'))return false;
   if(isRecord(value)&&('contactPreset' in value)&&!['contact_form','store_locator'].includes(String(value.type)))return false;
@@ -720,7 +720,7 @@ export const createAdminPageRuntimePayload = (
 
   page.sections.forEach((section, sectionIndex) => {
     if (!section.isVisible) return;
-    if(section.type==='faq_accordion'&&section.faqPreset==='corporate-starter-faq')runtimeSections[sectionIndex]={starterPricing:resolveStarterPricing(section,sourcePages.find(p=>p.id===section.pricingSourcePageId))};
+    if(section.type==='faq_accordion'&&['corporate-starter-faq','pricing-band-faq'].includes(section.faqPreset??''))runtimeSections[sectionIndex]={starterPricing:resolveStarterPricing(section,sourcePages.find(p=>p.id===section.pricingSourcePageId))};
     if(section.type==='promotion_highlights')runtimeSections[sectionIndex]={promotions:{offers:promotionOffers}};
     if(section.type==='delivery_table'||section.type==='chapter_block'&&section.chapterPreset==='delivery')runtimeSections[sectionIndex]={delivery:{rows:deliveryRows(shippingRates??[]),status:shippingRates===undefined?'unavailable':'ready'}};
 

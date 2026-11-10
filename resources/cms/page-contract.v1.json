@@ -651,6 +651,9 @@
     "galleryPreset": {
       "type": "string",
       "enum": [
+        "connected-feature-rows",
+        "image-cards-four-mosaic",
+        "image-cards-three",
         "corporate-connections",
         "corporate-illustrated-steps",
         "corporate-scenarios",
@@ -733,7 +736,8 @@
         "help-panel",
         "industrial-outline",
         "saas-closing",
-        "gradient-panel"
+        "gradient-panel",
+        "illustrated-panel"
       ]
     },
     "ctaBannerHeight": {
@@ -786,6 +790,7 @@
         "saas-showcase",
         "saas-analytics",
         "corporate-section-story",
+        "image-highlights",
         "corporate-builder-overview",
         "corporate-feature",
         "corporate-support",
@@ -1338,7 +1343,8 @@
         "minimal",
         "industrial-split",
         "saas-split",
-        "corporate-starter-faq"
+        "corporate-starter-faq",
+        "pricing-band-faq"
       ]
     },
     "faqInitiallyOpen": {
@@ -1748,6 +1754,9 @@
       ]
     },
     "planPriceLabel": {
+      "type": "string"
+    },
+    "planDescription": {
       "type": "string"
     }
   },
@@ -2544,7 +2553,8 @@
           "planPeriod",
           "planTerms",
           "planPricingMode",
-          "planPriceLabel"
+          "planPriceLabel",
+          "planDescription"
         ],
         "publishRequired": [
           "title"
