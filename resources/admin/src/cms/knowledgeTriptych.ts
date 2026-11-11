@@ -1,0 +1,3 @@
+import type {PageSection} from '../types';
+export const isKnowledgeTriptych=(s:PageSection|null|undefined)=>s?.type==='media_gallery'&&s.galleryPreset==='editorial-knowledge-triptych';
+export function knowledgeTriptych(prefix:string):PageSection{return {id:prefix+'-knowledge',type:'media_gallery',galleryPreset:'editorial-knowledge-triptych',containerMode:'page',sectionBorder:'none',isVisible:true,motionPreset:'subtle-lift',paddingY:'normal',subtitle:'A clearer perspective',title:'Make room for useful knowledge.',content:'Bring three sources of information into view.',items:[1,2,3].map(n=>({id:prefix+'-card-'+n,title:'Knowledge source '+n,description:'Introduce this source of information.',imageUrl:''}))};}

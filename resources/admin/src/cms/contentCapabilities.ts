@@ -1,4 +1,10 @@
-import {isIllustratedCta,illustratedCtaPassport} from './illustratedCta';
+import {isImageFlow} from './imageFlow';
+import {isPlanComparison,isFramedFaq} from './planComparison';
+import {isFocusedSteps} from './focusedSteps';
+import {isScrollStackCards} from './scrollStackCards';
+import {isTeamStoryOverview} from './teamStoryOverview';
+import {isKnowledgeTriptych} from './knowledgeTriptych';
+import {isIllustratedCta,illustratedCtaPassport,isEditorialIllustratedCta,editorialIllustratedCtaPassport} from './illustratedCta';
 import {isConnectedRows,connectedRowsPassport} from './connectedFeatureRows';
 import {isImageHighlights,imageHighlightsPassport} from './imageHighlights';
 import {isFixedImageCards,imageCardsThreePassport} from './imageCardsThree';
@@ -25,9 +31,17 @@ const fields:Record<PageSection['type'],readonly string[]>={
 };
 export const contentFieldKeys=new Set(Object.values(fields).flat().concat(['leadText','mapEmbedUrl','contactAddressIcon','buttonText','buttonLink']));
 export function sectionContentFields(section:PageSection):readonly string[]{
+ if(isImageFlow(section))return ['title','content'];
+ if(isPlanComparison(section))return ['subtitle','title','content','buttonText','buttonLink'];
+ if(isFramedFaq(section))return ['subtitle','title','content'];
+ if(isEditorialIllustratedCta(section))return editorialIllustratedCtaPassport.contentFields;
  if(isIllustratedCta(section))return illustratedCtaPassport.contentFields;
  if(isConnectedRows(section))return connectedRowsPassport.contentFields;
  if(isImageHighlights(section))return imageHighlightsPassport.contentFields;
+ if(isFocusedSteps(section))return ['subtitle','title','content'];
+ if(isScrollStackCards(section))return ['subtitle','title','content'];
+ if(isTeamStoryOverview(section))return ['subtitle','title','content','mediaUrl','mediaAlt'];
+ if(isKnowledgeTriptych(section))return ['subtitle','title','content'];
  if(isFixedImageCards(section))return imageCardsThreePassport.contentFields;
  let result=[...fields[section.type]];
  if(section.type==='faq_accordion'&&['corporate-starter-faq','pricing-band-faq'].includes(section.faqPreset??''))return ['title','subtitle','content','buttonText','buttonLink'];

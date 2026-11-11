@@ -1,0 +1,1853 @@
+{
+  "connected-business": {
+    "containerWidth": "site",
+    "sections": [
+      {
+        "isVisible": true,
+        "containerMode": "page",
+        "motionPreset": "subtle-lift",
+        "sectionBorder": "none",
+        "paddingY": "spacious",
+        "backgroundColor": "custom",
+        "textColor": "dark",
+        "id": "corporate-review-hero",
+        "type": "hero_banner",
+        "heroBannerPreset": "corporate-centered",
+        "title": "Your business. Connected.",
+        "subtitle": "CONNECTED COMMERCE & AI OPERATIONS",
+        "content": "Build your website, manage commerce and support customers from one connected platform.",
+        "buttonText": "Request a demo",
+        "buttonLink": "#storefront-support-widget",
+        "secondaryButtonText": "Explore the platform",
+        "secondaryButtonLink": "#section-corporate-review-tabs"
+      },
+      {
+        "isVisible": true,
+        "containerMode": "page",
+        "motionPreset": "subtle-lift",
+        "sectionBorder": "none",
+        "paddingY": "spacious",
+        "backgroundColor": "custom",
+        "textColor": "dark",
+        "id": "corporate-review-tabs",
+        "type": "media_gallery",
+        "galleryPreset": "product-preview-tabs",
+        "title": "Explore your connected workspace.",
+        "subtitle": "THE PLATFORM",
+        "content": "Explore the tools that bring your business together.",
+        "items": [
+          {
+            "id": "corporate-review-tab-0",
+            "title": "Website Builder",
+            "subtitle": "Shape your website around your business.",
+            "description": "Combine editable content and reusable sections.",
+            "icon": "LayoutTemplate",
+            "imageUrl": "/images/cms/templates/connected/ef52c39786dd6684623a3b7b.webp",
+            "buttonText": "Explore Website Builder",
+            "linkUrl": "/pages/website-builder"
+          },
+          {
+            "id": "corporate-review-tab-1",
+            "title": "Ecommerce",
+            "subtitle": "Bring your catalogue and customer journey together.",
+            "description": "Present products and services with purchase and enquiry paths.",
+            "icon": "ShoppingCart",
+            "imageUrl": "/images/cms/templates/connected/ef52c39786dd6684623a3b7b.webp",
+            "buttonText": "Explore Ecommerce",
+            "linkUrl": "/pages/ecommerce"
+          },
+          {
+            "id": "corporate-review-tab-2",
+            "title": "AI Support",
+            "subtitle": "Every conversation. A clearer next step.",
+            "description": "Shared conversations, AI assistance and human control.",
+            "icon": "Headphones",
+            "imageUrl": "/images/cms/templates/connected/ef52c39786dd6684623a3b7b.webp",
+            "buttonText": "Explore AI Support",
+            "linkUrl": "/pages/multichannel-ai-chat"
+          },
+          {
+            "id": "corporate-review-tab-3",
+            "title": "Marketplace",
+            "subtitle": "Different storefronts. One operational view.",
+            "description": "Order visibility, SKU mapping and stock workflows.",
+            "icon": "Layers",
+            "imageUrl": "/images/cms/templates/connected/ef52c39786dd6684623a3b7b.webp",
+            "buttonText": "Explore Marketplace",
+            "linkUrl": "/pages/marketplace-orders"
+          },
+          {
+            "id": "corporate-review-tab-4",
+            "title": "Marketing",
+            "subtitle": "Your brand. Ready for what’s next.",
+            "description": "Business sources, AI drafts, review and schedules.",
+            "icon": "Megaphone",
+            "imageUrl": "/images/cms/templates/connected/ef52c39786dd6684623a3b7b.webp",
+            "buttonText": "Explore Marketing",
+            "linkUrl": "/pages/marketing-studio"
+          },
+          {
+            "id": "corporate-review-tab-5",
+            "title": "Reports",
+            "subtitle": "Operational facts for informed decisions.",
+            "description": "Explore reporting areas and data coverage.",
+            "icon": "BarChart3",
+            "imageUrl": "/images/cms/templates/connected/ef52c39786dd6684623a3b7b.webp",
+            "buttonText": "Explore Reports",
+            "linkUrl": "/pages/reports"
+          }
+        ],
+        "showSectionHeading": true
+      },
+      {
+        "isVisible": true,
+        "containerMode": "page",
+        "motionPreset": "subtle-lift",
+        "sectionBorder": "none",
+        "paddingY": "spacious",
+        "backgroundColor": "custom",
+        "textColor": "dark",
+        "id": "corporate-review-website",
+        "type": "media_text_split",
+        "layoutPreset": "corporate-feature",
+        "title": "A stronger presence.\nA clearer path to purchase.",
+        "subtitle": "WEBSITE & COMMERCE",
+        "content": "Present your business, showcase products and services, and guide customers towards a purchase or enquiry.",
+        "mediaUrl": "/images/cms/templates/connected/ef52c39786dd6684623a3b7b.webp",
+        "mediaAlt": "Illustrative business team planning a product and service website",
+        "mediaPosition": "left",
+        "buttonText": "Explore Website Builder",
+        "buttonLink": "/pages/website-builder",
+        "secondaryButtonText": "View Ecommerce",
+        "secondaryButtonLink": "/pages/ecommerce",
+        "items": [
+          {
+            "id": "corporate-review-benefit-1",
+            "title": "Editable website sections",
+            "description": "",
+            "icon": "LayoutTemplate"
+          },
+          {
+            "id": "corporate-review-benefit-2",
+            "title": "Connected product catalogue",
+            "description": "",
+            "icon": "Layers"
+          },
+          {
+            "id": "corporate-review-benefit-3",
+            "title": "Purchase and quotation journeys",
+            "description": "",
+            "icon": "ShoppingCart"
+          },
+          {
+            "id": "corporate-review-step-1",
+            "title": "Website",
+            "description": "",
+            "category": "workflow",
+            "icon": "Globe"
+          },
+          {
+            "id": "corporate-review-step-2",
+            "title": "Enquiry",
+            "description": "",
+            "category": "workflow",
+            "icon": "FileText"
+          },
+          {
+            "id": "corporate-review-step-3",
+            "title": "Order",
+            "description": "",
+            "category": "workflow",
+            "icon": "ShoppingCart"
+          }
+        ]
+      },
+      {
+        "isVisible": true,
+        "containerMode": "page",
+        "motionPreset": "subtle-lift",
+        "sectionBorder": "none",
+        "paddingY": "spacious",
+        "backgroundColor": "custom",
+        "textColor": "dark",
+        "id": "corporate-review-support",
+        "type": "media_text_split",
+        "layoutPreset": "corporate-image-story",
+        "title": "Every conversation.\nA clearer next step.",
+        "subtitle": "AI CUSTOMER SUPPORT",
+        "content": "Bring customer conversations into one workspace, with AI assistance and your team in control.",
+        "mediaUrl": "/images/cms/templates/connected/3db839151d0a47be526bc5dd.webp",
+        "mediaAlt": "Illustrative support specialist with customer channels flowing to AI assistance and your team",
+        "mediaPosition": "right",
+        "buttonText": "Explore Multichannel AI Chat",
+        "buttonLink": "/pages/multichannel-ai-chat",
+        "secondaryButtonText": "Explore Website AI Chat",
+        "secondaryButtonLink": "/pages/website-ai-chat",
+        "items": [
+          {
+            "id": "corporate-review-support-benefit-1",
+            "title": "Shared conversations",
+            "description": "",
+            "icon": "MessageCircle",
+            "category": "benefit"
+          },
+          {
+            "id": "corporate-review-support-benefit-2",
+            "title": "Business-aware AI assistance",
+            "description": "",
+            "icon": "Sparkles",
+            "category": "benefit"
+          },
+          {
+            "id": "corporate-review-support-benefit-3",
+            "title": "Human takeover when needed",
+            "description": "",
+            "icon": "Users",
+            "category": "benefit"
+          }
+        ],
+        "mediaFocalPoint": "center",
+        "buttonStyle": "button",
+        "imageFit": "contain",
+        "imageRatio": "default"
+      },
+      {
+        "isVisible": true,
+        "containerMode": "page",
+        "motionPreset": "subtle-lift",
+        "sectionBorder": "none",
+        "paddingY": "spacious",
+        "backgroundColor": "custom",
+        "textColor": "dark",
+        "id": "corporate-review-marketing",
+        "type": "media_text_split",
+        "layoutPreset": "corporate-image-story",
+        "title": "Your brand.\nReady for what’s next.",
+        "subtitle": "MARKETING STUDIO",
+        "content": "Turn business and product information into channel-specific content. Review your drafts and plan your publishing schedule.",
+        "mediaUrl": "/images/cms/templates/connected/0d8add0be6e8d2e42acad9ff.webp",
+        "mediaAlt": "Illustrative marketing team with Business sources, AI drafts, Team review and Schedule workflow",
+        "mediaPosition": "left",
+        "buttonText": "Explore Marketing Studio",
+        "buttonLink": "/pages/marketing-studio",
+        "secondaryButtonText": "",
+        "secondaryButtonLink": "",
+        "items": [
+          {
+            "id": "corporate-review-marketing-benefit-1",
+            "title": "AI-assisted copy and creative",
+            "description": "",
+            "icon": "Sparkles",
+            "category": "benefit"
+          },
+          {
+            "id": "corporate-review-marketing-benefit-2",
+            "title": "Content drafts for each channel",
+            "description": "",
+            "icon": "Layers",
+            "category": "benefit"
+          },
+          {
+            "id": "corporate-review-marketing-benefit-3",
+            "title": "Separate generation and publishing controls",
+            "description": "",
+            "icon": "ArrowLeftRight",
+            "category": "benefit"
+          }
+        ],
+        "mediaFocalPoint": "center",
+        "buttonStyle": "button",
+        "imageFit": "contain",
+        "imageRatio": "default"
+      },
+      {
+        "isVisible": true,
+        "containerMode": "page",
+        "motionPreset": "subtle-lift",
+        "sectionBorder": "none",
+        "paddingY": "spacious",
+        "backgroundColor": "custom",
+        "textColor": "dark",
+        "id": "corporate-review-payments",
+        "type": "media_text_split",
+        "layoutPreset": "corporate-payments",
+        "title": "A clearer path from\ncheckout to payment.",
+        "subtitle": "PAYMENTS",
+        "content": "Connect customer payment journeys with the records your team needs to manage each order.",
+        "mediaUrl": "/images/cms/templates/connected/0254c01ae87f831bba0278c9.webp",
+        "mediaAlt": "Illustrative boutique owner with Checkout, Payment method, Payment record and Order follow-up workflow",
+        "mediaPosition": "left",
+        "buttonText": "Explore Payments",
+        "buttonLink": "/pages/payments",
+        "secondaryButtonText": "",
+        "secondaryButtonLink": "",
+        "items": [
+          {
+            "id": "corporate-review-payment-logo-0",
+            "title": "PayPal",
+            "imageUrl": "/images/cms/templates/connected/f2525d3a8cb0262999058260.webp",
+            "linkUrl": ""
+          },
+          {
+            "id": "corporate-review-payment-logo-1",
+            "title": "Curlec",
+            "imageUrl": "/images/cms/templates/connected/dd5507265d7e563bbee5bd92.webp",
+            "linkUrl": ""
+          },
+          {
+            "id": "corporate-review-payment-logo-2",
+            "title": "Hoolah",
+            "imageUrl": "/images/cms/templates/connected/bbab31611fcff6777281bf0b.webp",
+            "linkUrl": ""
+          },
+          {
+            "id": "corporate-review-payment-logo-3",
+            "title": "SenangPay",
+            "imageUrl": "/images/cms/templates/connected/4376952697f254abace154e2.webp",
+            "linkUrl": ""
+          },
+          {
+            "id": "corporate-review-payment-logo-4",
+            "title": "KipplePay",
+            "imageUrl": "/images/cms/templates/connected/6430649315103877b3fc8549.webp",
+            "linkUrl": ""
+          }
+        ],
+        "imageFit": "contain",
+        "imageSlots": [
+          {
+            "target": "item:corporate-review-payment-logo-0:imageUrl",
+            "mediaAlt": "PayPal"
+          }
+        ]
+      },
+      {
+        "isVisible": true,
+        "containerMode": "full-bleed",
+        "motionPreset": "subtle-lift",
+        "sectionBorder": "none",
+        "paddingY": "spacious",
+        "backgroundColor": "custom",
+        "textColor": "dark",
+        "id": "corporate-review-courier",
+        "type": "media_text_split",
+        "layoutPreset": "corporate-courier",
+        "title": "From your business to their doorstep.",
+        "subtitle": "COURIER & SHIPPING",
+        "content": "Prepare shipments, manage delivery workflows and follow tracking updates from one operations workspace.",
+        "mediaUrl": "/images/cms/templates/connected/b931fbe7d926693b13f3b0ae.webp",
+        "mediaAlt": "Illustrative parcel handoff and packing inset, with Prepare shipment, Arrange delivery and Track progress journey",
+        "mediaPosition": "left",
+        "buttonText": "Explore Shipping",
+        "buttonLink": "/pages/shipping",
+        "secondaryButtonText": "",
+        "secondaryButtonLink": "",
+        "items": [
+          {
+            "id": "corporate-review-courier-logo-0",
+            "title": "Ninja Van",
+            "imageUrl": "/images/cms/templates/connected/0ec398d70aec8e571e6da696.webp",
+            "linkUrl": "#"
+          },
+          {
+            "id": "corporate-review-courier-logo-1",
+            "title": "J&T Express",
+            "imageUrl": "/images/cms/templates/connected/8b5bad2a84cfad4b63bbe505.webp",
+            "linkUrl": "#"
+          },
+          {
+            "id": "corporate-review-courier-logo-2",
+            "title": "Pos Laju",
+            "imageUrl": "/images/cms/templates/connected/72cced27b1b4ccf3fd3e55e4.webp",
+            "linkUrl": "#"
+          },
+          {
+            "id": "corporate-review-courier-logo-3",
+            "title": "Flash Express",
+            "imageUrl": "/images/cms/templates/connected/326ae31025f36da81264b25b.webp",
+            "linkUrl": "#"
+          }
+        ],
+        "imageFit": "contain",
+        "imageSlots": [
+          {
+            "target": "item:corporate-review-courier-logo-0:imageUrl",
+            "mediaAlt": "Ninja Van"
+          }
+        ]
+      },
+      {
+        "isVisible": true,
+        "containerMode": "page",
+        "motionPreset": "subtle-lift",
+        "sectionBorder": "none",
+        "paddingY": "spacious",
+        "backgroundColor": "custom",
+        "textColor": "dark",
+        "id": "corporate-review-marketplace",
+        "type": "media_text_split",
+        "layoutPreset": "corporate-marketplace",
+        "title": "Different storefronts.\nOne operational view.",
+        "subtitle": "MARKETPLACE OPERATIONS",
+        "content": "Bring marketplace orders, catalogue mapping and stock workflows into a central workspace.",
+        "mediaUrl": "/images/cms/templates/connected/1ba1095e032641941ac9452c.webp",
+        "mediaAlt": "Illustrative marketplace workflow connecting Shopee, Lazada and TikTok Shop to JW Workspace for orders, SKU mapping and stock workflows",
+        "mediaPosition": "left",
+        "buttonText": "Explore Marketplace",
+        "buttonLink": "/pages/marketplace-orders",
+        "secondaryButtonText": "",
+        "secondaryButtonLink": "",
+        "items": [
+          {
+            "id": "corporate-review-marketplace-benefit-0",
+            "title": "Central order visibility",
+            "description": "",
+            "icon": "Package"
+          },
+          {
+            "id": "corporate-review-marketplace-benefit-1",
+            "title": "Product & SKU mapping",
+            "description": "",
+            "icon": "Tag"
+          },
+          {
+            "id": "corporate-review-marketplace-benefit-2",
+            "title": "Stock workflow management",
+            "description": "",
+            "icon": "Layers"
+          }
+        ],
+        "imageFit": "contain",
+        "mediaFocalPoint": "center",
+        "buttonStyle": "button"
+      },
+      {
+        "backgroundColor": "custom",
+        "containerMode": "page",
+        "content": "Choose the plan that fits your business today, with the freedom to grow tomorrow.",
+        "id": "corporate-review-pricing",
+        "isVisible": true,
+        "items": [
+          {
+            "billingLabel": "",
+            "buttonText": "Explore Starter",
+            "description": "Website & ecommerce + customer support",
+            "features": [
+              "Editable website",
+              "Product catalogue",
+              "Support workspace"
+            ],
+            "id": "corporate-review-pricing-item-0",
+            "linkUrl": "/pages/contact-jw-studio",
+            "title": "Starter",
+            "pricingMode": "contact",
+            "pricingLabel": "Contact us"
+          },
+          {
+            "billingLabel": "",
+            "buttonText": "Explore Growth",
+            "description": "Everything in Starter, plus AI assistance.",
+            "features": [
+              "Everything in Starter",
+              "AI Auto Reply",
+              "Supported messaging channels"
+            ],
+            "highlightLabel": "AI ENABLED",
+            "id": "corporate-review-pricing-item-1",
+            "isHighlighted": true,
+            "linkUrl": "/pages/contact-jw-studio",
+            "title": "Growth",
+            "pricingMode": "contact",
+            "pricingLabel": "Contact us"
+          },
+          {
+            "buttonText": "Contact sales",
+            "description": "More stores, teams and modules.",
+            "features": [
+              "Expanded deployment",
+              "Module planning",
+              "Agreed usage allowances"
+            ],
+            "id": "corporate-review-pricing-item-2",
+            "linkUrl": "/pages/contact-jw-studio",
+            "pricingLabel": "Contact us",
+            "pricingMode": "contact",
+            "title": "Enterprise",
+            "billingLabel": ""
+          },
+          {
+            "buttonText": "Discuss your project",
+            "description": "A tailored setup for your workflow.",
+            "features": [
+              "Workflow consultation",
+              "Integration planning",
+              "Tailored rollout"
+            ],
+            "id": "corporate-review-pricing-item-3",
+            "linkUrl": "/pages/contact-jw-studio",
+            "pricingLabel": "Contact us",
+            "pricingMode": "contact",
+            "title": "Custom",
+            "billingLabel": ""
+          }
+        ],
+        "motionPreset": "subtle-lift",
+        "paddingY": "spacious",
+        "pricingCurrency": "MYR",
+        "pricingPreset": "saas-packages",
+        "sectionBorder": "none",
+        "subtitle": "FLEXIBLE PLANS FOR YOUR NEXT STAGE",
+        "textColor": "dark",
+        "title": "Room to start.\nFreedom to grow.",
+        "type": "pricing_table"
+      },
+      {
+        "backgroundColor": "custom",
+        "containerMode": "page",
+        "content": "Add your usage limits and optional services.",
+        "featureCardsPreset": "saas-addons",
+        "id": "corporate-review-addons",
+        "isVisible": true,
+        "items": [
+          {
+            "description": "Describe this optional service and its pricing.",
+            "icon": "ShoppingCart",
+            "id": "corporate-review-addons-item-0",
+            "title": "Marketplace"
+          },
+          {
+            "description": "Describe this optional service and its pricing.",
+            "icon": "BarChart3",
+            "id": "corporate-review-addons-item-1",
+            "title": "Marketing Studio"
+          }
+        ],
+        "motionPreset": "subtle-lift",
+        "paddingY": "spacious",
+        "sectionBorder": "none",
+        "textColor": "dark",
+        "title": "Optional add-ons",
+        "type": "feature_cards"
+      }
+    ],
+    "style": {
+      "colorSource": "custom",
+      "palette": {
+        "paper": "#ffffff",
+        "ink": "#0d1234",
+        "muted": "#626981",
+        "accent": "#2860ff",
+        "light": "#ffffff",
+        "secondary": "#8524ff",
+        "secondaryInk": "#ffffff",
+        "hover": "#2354e0"
+      },
+      "spacing": "spacious",
+      "buttonRadius": 6,
+      "buttonSize": "normal",
+      "typography": {
+        "eyebrow": {
+          "fontFamily": "sans",
+          "fontSize": 12,
+          "fontWeight": 700,
+          "lineHeight": 1.5,
+          "letterSpacing": 1.2
+        },
+        "title": {
+          "fontFamily": "notosc",
+          "fontSize": 42,
+          "fontWeight": 700,
+          "lineHeight": 1.15,
+          "letterSpacing": -0.8
+        },
+        "content": {
+          "fontFamily": "sans",
+          "fontSize": 18,
+          "fontWeight": 400,
+          "lineHeight": 1.6
+        },
+        "lead": {
+          "fontFamily": "sans",
+          "fontSize": 18,
+          "fontWeight": 400,
+          "lineHeight": 1.6
+        },
+        "itemTitle": {
+          "fontFamily": "sans",
+          "fontSize": 22,
+          "fontWeight": 700,
+          "lineHeight": 1.3
+        },
+        "itemContent": {
+          "fontFamily": "sans",
+          "fontSize": 16,
+          "fontWeight": 400,
+          "lineHeight": 1.6
+        }
+      }
+    }
+  },
+  "business-showcase": {
+    "containerWidth": "site",
+    "sections": [
+      {
+        "id": "f01-hero",
+        "type": "hero_banner",
+        "heroBannerPreset": "corporate-split-composite",
+        "isVisible": true,
+        "containerMode": "page",
+        "motionPreset": "subtle-lift",
+        "sectionBorder": "none",
+        "paddingY": "normal",
+        "backgroundColor": "custom",
+        "textColor": "dark",
+        "subtitle": "BUSINESS WEBSITES & VISUAL BUILDER",
+        "title": "Your business.\nBeautifully\npresented.",
+        "content": "Bring your business, products and services together. Keep everyday updates in your hands with visual editing and reusable sections.",
+        "mediaUrl": "/images/cms/templates/connected/0929d0319b41559adf4504a3.webp",
+        "imageSlots": [
+          {
+            "target": "mediaUrl",
+            "mediaAlt": "Illustration of a business owner and designer collaborating, with a visual website builder preview"
+          }
+        ],
+        "buttonText": "Request a demo",
+        "buttonLink": "https://www.jwaistudio.online/pages/contact-jw-studio",
+        "secondaryButtonText": "Explore the builder",
+        "secondaryButtonLink": "#section-f01-builder"
+      },
+      {
+        "id": "f01-builder",
+        "type": "media_text_split",
+        "layoutPreset": "corporate-builder-overview",
+        "isVisible": true,
+        "containerMode": "page",
+        "motionPreset": "subtle-lift",
+        "sectionBorder": "none",
+        "paddingY": "spacious",
+        "backgroundColor": "custom",
+        "textColor": "dark",
+        "title": "Make changes. See them take shape.",
+        "content": "Your page canvas, section outline and editing panel. One workspace.",
+        "mediaUrl": "/images/cms/templates/connected/0495eaec3c212a5bd3ab3b1b.webp",
+        "imageSlots": [
+          {
+            "target": "mediaUrl",
+            "mediaAlt": "Illustrative visual page builder showing the section outline, editable page canvas and editing panel"
+          }
+        ],
+        "items": [
+          {
+            "id": "f01-arrange",
+            "title": "Arrange sections",
+            "icon": "Layers"
+          },
+          {
+            "id": "f01-edit",
+            "title": "Edit content",
+            "icon": "Pencil"
+          },
+          {
+            "id": "f01-preview",
+            "title": "Preview each device",
+            "icon": "Monitor"
+          }
+        ],
+        "subtitle": "",
+        "mediaAlt": "",
+        "mediaFocalPoint": "center",
+        "mediaPosition": "right",
+        "buttonText": "",
+        "buttonLink": "",
+        "buttonStyle": "button"
+      },
+      {
+        "id": "f01-story",
+        "type": "media_text_split",
+        "layoutPreset": "corporate-section-story",
+        "isVisible": true,
+        "containerMode": "page",
+        "motionPreset": "subtle-lift",
+        "sectionBorder": "none",
+        "paddingY": "normal",
+        "backgroundColor": "custom",
+        "textColor": "dark",
+        "title": "Build a page that\ntells your story.",
+        "content": "Start with reusable sections. Make the message, imagery and customer actions your own.",
+        "mediaUrl": "/images/cms/templates/connected/ccc01c341064077c209c939a.webp",
+        "imageSlots": [
+          {
+            "target": "mediaUrl",
+            "mediaAlt": "Illustrative layered website sections showing a story hero, services and image gallery"
+          }
+        ],
+        "items": [
+          {
+            "id": "f01-hero-label",
+            "title": "Hero & introduction",
+            "icon": "Layers"
+          },
+          {
+            "id": "f01-services-label",
+            "title": "Services & features",
+            "icon": "LayoutGrid"
+          },
+          {
+            "id": "f01-gallery-label",
+            "title": "Galleries, FAQs & contact",
+            "icon": "Image"
+          }
+        ],
+        "subtitle": "",
+        "mediaAlt": "",
+        "mediaFocalPoint": "center",
+        "mediaPosition": "right",
+        "buttonText": "",
+        "buttonLink": "",
+        "buttonStyle": "button"
+      },
+      {
+        "id": "f01-scenarios",
+        "type": "media_gallery",
+        "galleryPreset": "corporate-scenarios",
+        "isVisible": true,
+        "containerMode": "page",
+        "motionPreset": "subtle-lift",
+        "sectionBorder": "none",
+        "paddingY": "normal",
+        "backgroundColor": "custom",
+        "textColor": "dark",
+        "textAlignment": "center",
+        "showSectionHeading": true,
+        "title": "Made for the way you do business.",
+        "content": "",
+        "items": [
+          {
+            "id": "f01-scenario-business",
+            "title": "Business websites",
+            "icon": "Monitor",
+            "imageUrl": "/images/cms/templates/connected/ad38153a34b0481881a7140a.webp"
+          },
+          {
+            "id": "f01-scenario-services",
+            "title": "Service showcases",
+            "icon": "Layers",
+            "imageUrl": "/images/cms/templates/connected/e5227e758fbd225ca52a9e59.webp"
+          },
+          {
+            "id": "f01-scenario-catalogue",
+            "title": "Product catalogues",
+            "icon": "ShoppingBag",
+            "imageUrl": "/images/cms/templates/connected/d1de5964a2469770e256381b.webp"
+          }
+        ],
+        "imageSlots": [
+          {
+            "target": "item:f01-scenario-business:imageUrl",
+            "mediaAlt": "Illustrative Business websites preview"
+          },
+          {
+            "target": "item:f01-scenario-services:imageUrl",
+            "mediaAlt": "Illustrative Service showcases preview"
+          },
+          {
+            "target": "item:f01-scenario-catalogue:imageUrl",
+            "mediaAlt": "Illustrative Product catalogues preview"
+          }
+        ]
+      },
+      {
+        "id": "f01-workflow",
+        "type": "media_gallery",
+        "galleryPreset": "corporate-illustrated-steps",
+        "isVisible": true,
+        "containerMode": "page",
+        "motionPreset": "subtle-lift",
+        "sectionBorder": "none",
+        "paddingY": "normal",
+        "backgroundColor": "custom",
+        "textColor": "dark",
+        "textAlignment": "center",
+        "title": "From first draft to your next update.",
+        "content": "Keep refining your pages as your business changes.",
+        "items": [
+          {
+            "id": "f01-step-shape",
+            "title": "Shape your page",
+            "description": "Choose a starting point and arrange your sections.",
+            "imageUrl": "/images/cms/templates/connected/08e58c2e54d44700b6e603a3.webp"
+          },
+          {
+            "id": "f01-step-edit",
+            "title": "Make it yours",
+            "description": "Add your content, imagery and links.",
+            "imageUrl": "/images/cms/templates/connected/0f6def500bfaa1e9f5623c51.webp"
+          },
+          {
+            "id": "f01-step-publish",
+            "title": "Review & publish",
+            "description": "Check every device. Publish when you are ready.",
+            "imageUrl": "/images/cms/templates/connected/125793c94668fc99a4d9a8cf.webp"
+          }
+        ],
+        "imageSlots": [
+          {
+            "target": "item:f01-step-shape:imageUrl",
+            "mediaAlt": "Illustration: Shape your page"
+          },
+          {
+            "target": "item:f01-step-edit:imageUrl",
+            "mediaAlt": "Illustration: Make it yours"
+          },
+          {
+            "target": "item:f01-step-publish:imageUrl",
+            "mediaAlt": "Illustration: Review & publish"
+          }
+        ]
+      },
+      {
+        "id": "f01-connections",
+        "type": "media_gallery",
+        "galleryPreset": "corporate-connections",
+        "isVisible": true,
+        "containerMode": "page",
+        "motionPreset": "subtle-lift",
+        "sectionBorder": "none",
+        "paddingY": "normal",
+        "backgroundColor": "custom",
+        "textColor": "dark",
+        "textAlignment": "center",
+        "title": "A website that connects to what comes next.",
+        "content": "",
+        "items": [
+          {
+            "id": "f01-connection-ecommerce",
+            "title": "Ecommerce",
+            "description": "Purchase and enquiry paths.",
+            "buttonText": "Explore Ecommerce",
+            "linkUrl": "/pages/ecommerce",
+            "imageUrl": "/images/cms/templates/connected/f181069a9e9cc2c581b7ebe7.webp"
+          },
+          {
+            "id": "f01-connection-ai-support",
+            "title": "Website AI Support",
+            "description": "Another way for visitors to ask questions.",
+            "buttonText": "Explore Website AI Support",
+            "linkUrl": "/pages/website-ai-chat",
+            "imageUrl": "/images/cms/templates/connected/05cd2e1d4c86fc8c1279cde1.webp"
+          },
+          {
+            "id": "f01-connection-ai-page",
+            "title": "AI Page Generator",
+            "description": "AI-assisted drafts. Your final review.",
+            "buttonText": "Explore AI Page Generator",
+            "linkUrl": "/pages/ai-page-generator",
+            "imageUrl": "/images/cms/templates/connected/00d00f7799462bd1a56821b4.webp"
+          }
+        ],
+        "imageSlots": [
+          {
+            "target": "item:f01-connection-ecommerce:imageUrl",
+            "mediaAlt": "Illustration: Ecommerce"
+          },
+          {
+            "target": "item:f01-connection-ai-support:imageUrl",
+            "mediaAlt": "Illustration: Website AI Support"
+          },
+          {
+            "target": "item:f01-connection-ai-page:imageUrl",
+            "mediaAlt": "Illustration: AI Page Generator"
+          }
+        ]
+      },
+      {
+        "id": "f01-starter-faq",
+        "type": "faq_accordion",
+        "faqPreset": "corporate-starter-faq",
+        "faqInitiallyOpen": true,
+        "isVisible": true,
+        "containerMode": "page",
+        "motionPreset": "subtle-lift",
+        "sectionBorder": "none",
+        "paddingY": "normal",
+        "backgroundColor": "custom",
+        "textColor": "dark",
+        "textAlignment": "left",
+        "title": "A place to start.\nSpace to grow.",
+        "subtitle": "A few helpful answers.",
+        "content": "Editable website, product catalogue and support workspace.",
+        "buttonText": "Compare plans",
+        "buttonLink": "https://www.jwaistudio.online/#section-sec-a25d72bd-6236-44af-84b8-b15e4ff5965e-plans",
+        "items": [
+          {
+            "id": "f01-faq-content",
+            "title": "Can I update content myself?",
+            "description": "Edit supported text, images, links and section content in the visual builder."
+          },
+          {
+            "id": "f01-faq-mobile",
+            "title": "Can I preview the mobile layout?",
+            "description": "Desktop, tablet and mobile previews help you review your page before publication."
+          },
+          {
+            "id": "f01-faq-catalogue",
+            "title": "Can I show products and services?",
+            "description": "Yes. Purchase and enquiry options follow your catalogue setup."
+          },
+          {
+            "id": "f01-faq-ai",
+            "title": "Is AI generation included in Starter?",
+            "description": "AI features and usage allowances are confirmed with your selected plan. Contact us to discuss your setup."
+          }
+        ],
+        "typography": {
+          "title": {
+            "fontSize": 39
+          },
+          "content": {
+            "fontSize": 18
+          },
+          "itemTitle": {
+            "fontSize": 19
+          },
+          "itemContent": {
+            "fontSize": 14
+          }
+        },
+        "planContentSource": "manual",
+        "planName": "Starter",
+        "planPricingMode": "contact",
+        "planPriceLabel": "Contact us",
+        "planDescription": "Describe what this option includes.",
+        "planTerms": "Add your billing terms before publishing."
+      },
+      {
+        "id": "f01-closing",
+        "type": "cta_strip",
+        "ctaPreset": "gradient-panel",
+        "isVisible": true,
+        "containerMode": "page",
+        "motionPreset": "subtle-lift",
+        "sectionBorder": "none",
+        "paddingY": "normal",
+        "backgroundColor": "custom",
+        "textColor": "light",
+        "textAlignment": "center",
+        "title": "Let’s build your next chapter online.",
+        "content": "Tell us about your business. We’ll walk you through a setup that fits.",
+        "buttonText": "Request a demo",
+        "buttonLink": "https://www.jwaistudio.online/pages/contact-jw-studio",
+        "surface": "contrast"
+      }
+    ],
+    "style": {
+      "colorSource": "custom",
+      "palette": {
+        "paper": "#ffffff",
+        "ink": "#0d1234",
+        "muted": "#626981",
+        "accent": "#2860ff",
+        "light": "#ffffff",
+        "secondary": "#8524ff",
+        "secondaryInk": "#ffffff",
+        "hover": "#2354e0"
+      },
+      "spacing": "spacious",
+      "buttonRadius": 6,
+      "buttonSize": "normal",
+      "typography": {
+        "eyebrow": {
+          "fontFamily": "sans",
+          "fontSize": 12,
+          "fontWeight": 700,
+          "lineHeight": 1.5,
+          "letterSpacing": 1.2
+        },
+        "title": {
+          "fontFamily": "notosc",
+          "fontSize": 42,
+          "fontWeight": 700,
+          "lineHeight": 1.15,
+          "letterSpacing": -0.8
+        },
+        "content": {
+          "fontFamily": "sans",
+          "fontSize": 18,
+          "fontWeight": 400,
+          "lineHeight": 1.6
+        },
+        "lead": {
+          "fontFamily": "sans",
+          "fontSize": 18,
+          "fontWeight": 400,
+          "lineHeight": 1.6
+        },
+        "itemTitle": {
+          "fontFamily": "sans",
+          "fontSize": 22,
+          "fontWeight": 700,
+          "lineHeight": 1.3
+        },
+        "itemContent": {
+          "fontFamily": "sans",
+          "fontSize": 16,
+          "fontWeight": 400,
+          "lineHeight": 1.6
+        }
+      }
+    }
+  },
+  "commerce-catalogue": {
+    "containerWidth": "site",
+    "sections": [
+      {
+        "id": "ecom-f01-hero",
+        "type": "hero_banner",
+        "heroBannerPreset": "corporate-split-composite",
+        "isVisible": true,
+        "containerMode": "page",
+        "motionPreset": "subtle-lift",
+        "sectionBorder": "none",
+        "paddingY": "normal",
+        "backgroundColor": "custom",
+        "textColor": "dark",
+        "subtitle": "ECOMMERCE",
+        "title": "Your products.\nA better way\nto sell.",
+        "content": "Bring products, purchases and enquiries into one connected storefront. Give customers a clear path to buy, request a quote or explore what you offer.",
+        "mediaUrl": "/images/cms/templates/connected/f7838f8b9a20713ace480ffd.webp",
+        "imageSlots": [
+          {
+            "target": "mediaUrl",
+            "mediaAlt": "Illustrative boutique owner using a tablet, with a ceramics storefront preview and order confirmation artwork"
+          }
+        ],
+        "buttonText": "Request a demo",
+        "buttonLink": "https://www.jwaistudio.online/pages/contact-jw-studio",
+        "secondaryButtonText": "Explore ecommerce",
+        "secondaryButtonLink": "#section-ecom-f02-three-cards"
+      },
+      {
+        "id": "ecom-f02-three-cards",
+        "type": "media_gallery",
+        "galleryPreset": "image-cards-three",
+        "isVisible": true,
+        "containerMode": "page",
+        "motionPreset": "subtle-lift",
+        "sectionBorder": "none",
+        "paddingY": "normal",
+        "backgroundColor": "custom",
+        "textColor": "dark",
+        "textAlignment": "center",
+        "title": "One catalogue. Three ways to do business.",
+        "content": "Choose how each product works for your business.",
+        "items": [
+          {
+            "id": "ecom-f02-card-1",
+            "title": "Buy online",
+            "description": "Let customers add products to their cart and complete checkout.",
+            "imageUrl": "/images/cms/templates/connected/6cbcf9dff4664fdfe4e17a37.webp"
+          },
+          {
+            "id": "ecom-f02-card-2",
+            "title": "Request a quote",
+            "description": "Collect enquiries for products that need a tailored price or discussion.",
+            "imageUrl": "/images/cms/templates/connected/9247c014e9d859b2626c4c2b.webp"
+          },
+          {
+            "id": "ecom-f02-card-3",
+            "title": "Showcase only",
+            "description": "Present your products with useful details, without a purchasing action.",
+            "imageUrl": "/images/cms/templates/connected/1e9e346ebcf72152f33dc28e.webp"
+          }
+        ],
+        "imageSlots": [
+          {
+            "target": "item:ecom-f02-card-1:imageUrl",
+            "mediaAlt": "Illustrative chair with embedded cart and checkout journey"
+          },
+          {
+            "target": "item:ecom-f02-card-2:imageUrl",
+            "mediaAlt": "Illustrative display kiosk with embedded quotation request journey"
+          },
+          {
+            "target": "item:ecom-f02-card-3:imageUrl",
+            "mediaAlt": "Illustrative pendant light with embedded information and browse journey"
+          }
+        ],
+        "showSectionHeading": true
+      },
+      {
+        "id": "ecom-f03-four-mosaic",
+        "type": "media_gallery",
+        "galleryPreset": "image-cards-four-mosaic",
+        "isVisible": true,
+        "containerMode": "page",
+        "motionPreset": "subtle-lift",
+        "sectionBorder": "none",
+        "paddingY": "normal",
+        "backgroundColor": "custom",
+        "textColor": "dark",
+        "textAlignment": "center",
+        "title": "Give every product a clear place to shine.",
+        "content": "Bring products to life with considered imagery, useful details and a catalogue that is easy to explore.",
+        "items": [
+          {
+            "id": "ecom-f03-card-1",
+            "title": "Product imagery",
+            "description": "Show the details that matter.",
+            "imageUrl": "/images/cms/templates/connected/c94ea4e29540a6aba8fc479c.webp"
+          },
+          {
+            "id": "ecom-f03-card-2",
+            "title": "Clear descriptions",
+            "description": "Help customers understand your offering.",
+            "imageUrl": "/images/cms/templates/connected/41684b43725d8f5257bef4e6.webp"
+          },
+          {
+            "id": "ecom-f03-card-3",
+            "title": "Organised categories",
+            "description": "Make the right products easier to find.",
+            "imageUrl": "/images/cms/templates/connected/b7a9a9a80b36347ea00339be.webp"
+          },
+          {
+            "id": "ecom-f03-card-4",
+            "title": "Curated collections",
+            "description": "Bring related products together.",
+            "imageUrl": "/images/cms/templates/connected/940d0c49beb360697a1fe210.webp"
+          }
+        ],
+        "imageSlots": [
+          {
+            "target": "item:ecom-f03-card-1:imageUrl",
+            "mediaAlt": "Illustrative stoneware product photography and thumbnail selection"
+          },
+          {
+            "target": "item:ecom-f03-card-2:imageUrl",
+            "mediaAlt": "Illustrative product material, finish and care details"
+          },
+          {
+            "target": "item:ecom-f03-card-3:imageUrl",
+            "mediaAlt": "Illustrative Home, Lighting and Furniture categories"
+          },
+          {
+            "target": "item:ecom-f03-card-4:imageUrl",
+            "mediaAlt": "Illustrative coordinated interior product collection"
+          }
+        ],
+        "showSectionHeading": true
+      },
+      {
+        "id": "ecom-f04-workflow",
+        "type": "media_gallery",
+        "galleryPreset": "corporate-illustrated-steps",
+        "isVisible": true,
+        "containerMode": "page",
+        "motionPreset": "subtle-lift",
+        "sectionBorder": "none",
+        "paddingY": "normal",
+        "backgroundColor": "custom",
+        "textColor": "dark",
+        "textAlignment": "center",
+        "title": "A clear path from product to order.",
+        "content": "Help customers move from discovery to a confirmed order.",
+        "items": [
+          {
+            "id": "ecom-f04-step-browse",
+            "title": "Browse products",
+            "description": "Explore the catalogue and view product details.",
+            "imageUrl": "/images/cms/templates/connected/533ac978c654a036124de5d2.webp"
+          },
+          {
+            "id": "ecom-f04-step-cart",
+            "title": "Add to cart",
+            "description": "Choose products and review the cart.",
+            "imageUrl": "/images/cms/templates/connected/9b1c9d432d0db283a5b204e8.webp"
+          },
+          {
+            "id": "ecom-f04-step-checkout",
+            "title": "Checkout",
+            "description": "Enter details and complete the payment journey.",
+            "imageUrl": "/images/cms/templates/connected/9b5ef4d538c6a1d348550710.webp"
+          },
+          {
+            "id": "ecom-f04-step-confirmation",
+            "title": "Order confirmation",
+            "description": "See the order confirmation and next steps.",
+            "imageUrl": "/images/cms/templates/connected/869989b8af69fb0f631ce293.webp"
+          }
+        ],
+        "imageSlots": [
+          {
+            "target": "item:ecom-f04-step-browse:imageUrl",
+            "mediaAlt": "Illustrative browse products panel with a sample tan handbag; embedded UI is artwork"
+          },
+          {
+            "target": "item:ecom-f04-step-cart:imageUrl",
+            "mediaAlt": "Illustrative add to cart panel with a sample tan handbag; embedded UI is artwork"
+          },
+          {
+            "target": "item:ecom-f04-step-checkout:imageUrl",
+            "mediaAlt": "Illustrative checkout panel with a sample tan handbag; embedded UI is artwork"
+          },
+          {
+            "target": "item:ecom-f04-step-confirmation:imageUrl",
+            "mediaAlt": "Illustrative order confirmation panel with a sample tan handbag; embedded UI is artwork"
+          }
+        ],
+        "showSectionHeading": true
+      },
+      {
+        "id": "ecom-f05-highlights",
+        "type": "media_text_split",
+        "layoutPreset": "image-highlights",
+        "title": "Keep orders moving from one workspace.",
+        "content": "Bring customer information, order details, payment status and fulfilment progress into one clear view.",
+        "mediaUrl": "/images/cms/templates/connected/5e5cbd251124621a2c35261d.webp",
+        "mediaAlt": "Illustrative order workspace with a fictitious Sample Customer, layered product card, payment state and fulfilment progress; all interface details are artwork.",
+        "isVisible": true,
+        "containerMode": "page",
+        "motionPreset": "subtle-lift",
+        "sectionBorder": "none",
+        "paddingY": "normal",
+        "backgroundColor": "custom",
+        "textColor": "dark",
+        "textAlignment": "center",
+        "items": [
+          {
+            "id": "ecom-f05-highlight-1",
+            "icon": "Users",
+            "title": "Customer information",
+            "description": "Keep customer details close to each order."
+          },
+          {
+            "id": "ecom-f05-highlight-2",
+            "icon": "FileText",
+            "title": "Order details",
+            "description": "Review products, quantities and order records."
+          },
+          {
+            "id": "ecom-f05-highlight-3",
+            "icon": "CreditCard",
+            "title": "Payment status",
+            "description": "See payment information alongside the order."
+          },
+          {
+            "id": "ecom-f05-highlight-4",
+            "icon": "Package",
+            "title": "Fulfilment progress",
+            "description": "Follow the order through its next steps."
+          }
+        ],
+        "subtitle": "",
+        "mediaFocalPoint": "center",
+        "mediaPosition": "right",
+        "buttonText": "",
+        "buttonLink": "",
+        "buttonStyle": "button"
+      },
+      {
+        "id": "ecom-f06-connected-rows",
+        "type": "media_gallery",
+        "galleryPreset": "connected-feature-rows",
+        "isVisible": true,
+        "containerMode": "page",
+        "motionPreset": "subtle-lift",
+        "sectionBorder": "none",
+        "paddingY": "normal",
+        "backgroundColor": "custom",
+        "textColor": "dark",
+        "textAlignment": "center",
+        "title": "Connect what happens after checkout.",
+        "content": "Bring payments, delivery and marketplace operations into your wider commerce workflow.",
+        "items": [
+          {
+            "id": "ecom-f06-row-1",
+            "title": "Payments",
+            "description": "Connect the payment journey with the order records your team needs.",
+            "imageUrl": "/images/cms/templates/connected/d152d6094a462e5617b0f76a.webp",
+            "buttonText": "Explore Payments",
+            "linkUrl": "https://www.jwaistudio.online/#section-corporate-review-payments"
+          },
+          {
+            "id": "ecom-f06-row-2",
+            "title": "Courier & Shipping",
+            "description": "Prepare shipments and follow delivery progress from one operations workspace.",
+            "imageUrl": "/images/cms/templates/connected/4e572f4288f30422492cc8cd.webp",
+            "buttonText": "Explore Shipping",
+            "linkUrl": "https://www.jwaistudio.online/#section-corporate-review-courier"
+          },
+          {
+            "id": "ecom-f06-row-3",
+            "title": "Marketplace Operations",
+            "description": "Bring marketplace orders, product mapping and stock workflows into a central view.",
+            "imageUrl": "/images/cms/templates/connected/356051eb67663ea18e0093b1.webp",
+            "buttonText": "Explore Marketplace",
+            "linkUrl": "https://www.jwaistudio.online/#section-corporate-review-marketplace"
+          }
+        ],
+        "imageSlots": [
+          {
+            "target": "item:ecom-f06-row-1:imageUrl",
+            "mediaAlt": "Illustrative boutique products and raised payment record card"
+          },
+          {
+            "target": "item:ecom-f06-row-2:imageUrl",
+            "mediaAlt": "Illustrative boutique owner handing a parcel to a courier with embedded shipping journey"
+          },
+          {
+            "target": "item:ecom-f06-row-3:imageUrl",
+            "mediaAlt": "Illustrative Shopee, Lazada and TikTok Shop channels flowing into one order inbox"
+          }
+        ],
+        "showSectionHeading": true
+      },
+      {
+        "id": "ecom-f07-pricing-faq",
+        "type": "faq_accordion",
+        "faqPreset": "pricing-band-faq",
+        "faqInitiallyOpen": true,
+        "isVisible": true,
+        "containerMode": "page",
+        "motionPreset": "subtle-lift",
+        "sectionBorder": "none",
+        "paddingY": "normal",
+        "backgroundColor": "custom",
+        "textColor": "dark",
+        "textAlignment": "left",
+        "title": "A practical place to start.",
+        "subtitle": "A few helpful answers.",
+        "content": "Start with the essentials. Build on them as your business grows.",
+        "buttonText": "Compare plans",
+        "buttonLink": "https://www.jwaistudio.online/#section-corporate-review-pricing",
+        "items": [
+          {
+            "id": "ecom-f07-faq-included",
+            "title": "What is included in Starter?",
+            "description": "An editable website, product catalogue and support workspace."
+          },
+          {
+            "id": "ecom-f07-faq-content",
+            "title": "Can I update my store content?",
+            "description": "Edit supported text, images, links and section content in the visual builder."
+          },
+          {
+            "id": "ecom-f07-faq-modes",
+            "title": "Can products be purchased or quoted?",
+            "description": "Products and services can offer direct purchase, quotation requests or display-only presentation, according to your catalogue setup."
+          },
+          {
+            "id": "ecom-f07-faq-ai",
+            "title": "Is AI generation included in Starter?",
+            "description": "AI features and usage allowances are confirmed with your selected plan. Contact us to discuss your setup."
+          }
+        ],
+        "planContentSource": "manual",
+        "planName": "Starter",
+        "planPricingMode": "contact",
+        "planPriceLabel": "Contact us",
+        "planDescription": "Describe what this option includes.",
+        "planTerms": "Add your billing terms before publishing."
+      },
+      {
+        "id": "ecom-f08-illustrated-cta",
+        "type": "cta_strip",
+        "ctaPreset": "illustrated-panel",
+        "isVisible": true,
+        "containerMode": "page",
+        "motionPreset": "subtle-lift",
+        "sectionBorder": "none",
+        "paddingY": "normal",
+        "backgroundColor": "custom",
+        "textColor": "dark",
+        "title": "Your next storefront starts here.",
+        "content": "Tell us what you sell. We’ll help you shape a setup that fits.",
+        "mediaUrl": "/images/cms/templates/connected/a51bfec0c60d38981f79d27f.webp",
+        "buttonText": "Request a demo",
+        "buttonLink": "https://www.jwaistudio.online/pages/contact-jw-studio",
+        "imageSlots": [
+          {
+            "target": "mediaUrl",
+            "mediaAlt": "Illustrative JW Studio storefront with leather bag, product display and parcels"
+          }
+        ]
+      }
+    ],
+    "style": {
+      "colorSource": "custom",
+      "palette": {
+        "paper": "#ffffff",
+        "ink": "#0d1234",
+        "muted": "#626981",
+        "accent": "#2860ff",
+        "light": "#ffffff",
+        "secondary": "#8524ff",
+        "secondaryInk": "#ffffff",
+        "hover": "#2354e0"
+      },
+      "spacing": "spacious",
+      "buttonRadius": 6,
+      "buttonSize": "normal",
+      "typography": {
+        "eyebrow": {
+          "fontFamily": "sans",
+          "fontSize": 12,
+          "fontWeight": 700,
+          "lineHeight": 1.5,
+          "letterSpacing": 1.2
+        },
+        "title": {
+          "fontFamily": "notosc",
+          "fontSize": 42,
+          "fontWeight": 700,
+          "lineHeight": 1.15,
+          "letterSpacing": -0.8
+        },
+        "content": {
+          "fontFamily": "sans",
+          "fontSize": 18,
+          "fontWeight": 400,
+          "lineHeight": 1.6
+        },
+        "lead": {
+          "fontFamily": "sans",
+          "fontSize": 18,
+          "fontWeight": 400,
+          "lineHeight": 1.6
+        },
+        "itemTitle": {
+          "fontFamily": "sans",
+          "fontSize": 22,
+          "fontWeight": 700,
+          "lineHeight": 1.3
+        },
+        "itemContent": {
+          "fontFamily": "sans",
+          "fontSize": 16,
+          "fontWeight": 400,
+          "lineHeight": 1.6
+        }
+      }
+    }
+  },
+  "customer-conversations": {
+    "containerWidth": "site",
+    "style": {
+      "colorSource": "custom",
+      "palette": {
+        "paper": "#ffffff",
+        "ink": "#0d1234",
+        "muted": "#626981",
+        "accent": "#2860ff",
+        "light": "#ffffff",
+        "secondary": "#8524ff",
+        "secondaryInk": "#ffffff",
+        "hover": "#2354e0"
+      },
+      "spacing": "spacious",
+      "buttonRadius": 6,
+      "buttonSize": "normal",
+      "typography": {
+        "eyebrow": {
+          "fontFamily": "sans",
+          "fontSize": 12,
+          "fontWeight": 700,
+          "lineHeight": 1.5,
+          "letterSpacing": 1.2
+        },
+        "title": {
+          "fontFamily": "notosc",
+          "fontSize": 42,
+          "fontWeight": 700,
+          "lineHeight": 1.15,
+          "letterSpacing": -0.8
+        },
+        "content": {
+          "fontFamily": "sans",
+          "fontSize": 18,
+          "fontWeight": 400,
+          "lineHeight": 1.6
+        },
+        "lead": {
+          "fontFamily": "sans",
+          "fontSize": 18,
+          "fontWeight": 400,
+          "lineHeight": 1.6
+        },
+        "itemTitle": {
+          "fontFamily": "sans",
+          "fontSize": 22,
+          "fontWeight": 700,
+          "lineHeight": 1.3
+        },
+        "itemContent": {
+          "fontFamily": "sans",
+          "fontSize": 16,
+          "fontWeight": 400,
+          "lineHeight": 1.6
+        }
+      }
+    },
+    "sections": [
+      {
+        "id": "omnichannel-review-hero",
+        "type": "hero_banner",
+        "heroBannerPreset": "corporate-centered-composite",
+        "isVisible": true,
+        "containerMode": "page",
+        "motionPreset": "subtle-lift",
+        "sectionBorder": "none",
+        "paddingY": "normal",
+        "subtitle": "OMNICHANNEL AI SUPPORT",
+        "title": "Every conversation.\nOne clearer workspace.",
+        "content": "Bring website and social conversations together, with business-aware AI assistance and a clear path to your team.",
+        "mediaUrl": "/images/cms/templates/connected/c03e976838efa9fb0c8ef17b.webp",
+        "imageSlots": [
+          {
+            "target": "mediaUrl",
+            "mediaAlt": "Illustrative shared support workspace connecting Website, WhatsApp, Facebook, Instagram and TikTok, alongside a support professional."
+          }
+        ],
+        "buttonText": "Request a demo",
+        "buttonLink": "https://www.jwaistudio.online/pages/contact-jw-studio",
+        "secondaryButtonText": "Explore the workspace",
+        "secondaryButtonLink": "#section-omnichannel-review-flow"
+      },
+      {
+        "id": "omnichannel-review-flow",
+        "type": "media_gallery",
+        "galleryPreset": "image-flow",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "paddingY": "normal",
+        "title": "Meet customers where the conversation starts.",
+        "content": "From the first message to the right answer—and your team when it matters.",
+        "items": [
+          {
+            "id": "omnichannel-review-image-1",
+            "title": "",
+            "imageUrl": "/images/cms/templates/connected/ce5e283dc95816b5f0e51241.webp"
+          },
+          {
+            "id": "omnichannel-review-image-2",
+            "title": "",
+            "imageUrl": "/images/cms/templates/connected/e6f6003d1ca4745fa5476ab0.webp"
+          },
+          {
+            "id": "omnichannel-review-image-3",
+            "title": "",
+            "imageUrl": "/images/cms/templates/connected/ba519aa823a873ab38c53c16.webp"
+          }
+        ],
+        "imageSlots": [
+          {
+            "target": "item:omnichannel-review-image-1:imageUrl",
+            "mediaAlt": "Website, Facebook, Instagram, WhatsApp and TikTok conversations in one shared inbox."
+          },
+          {
+            "target": "item:omnichannel-review-image-3:imageUrl",
+            "mediaAlt": "Your team takes over with the conversation context ready."
+          },
+          {
+            "target": "item:omnichannel-review-image-2:imageUrl",
+            "mediaAlt": "AI assistance informed by FAQs, business information and product knowledge."
+          }
+        ]
+      },
+      {
+        "id": "omnichannel-review-knowledge",
+        "type": "media_gallery",
+        "galleryPreset": "editorial-knowledge-triptych",
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "isVisible": true,
+        "motionPreset": "subtle-lift",
+        "paddingY": "normal",
+        "subtitle": "BUSINESS-AWARE AI",
+        "title": "Give AI the context to be useful.",
+        "content": "Ground conversations in your FAQs, business information and product knowledge.",
+        "items": [
+          {
+            "id": "omnichannel-review-card-1",
+            "title": "FAQs & policies",
+            "description": "Make everyday answers easier to find.",
+            "imageUrl": "/images/cms/templates/connected/a9b04c20c44dfebbe6e6c46d.webp"
+          },
+          {
+            "id": "omnichannel-review-card-2",
+            "title": "Business information",
+            "description": "Keep the essentials of your business in view.",
+            "imageUrl": "/images/cms/templates/connected/a5f7e4a925b0c1c8c4e650be.webp"
+          },
+          {
+            "id": "omnichannel-review-card-3",
+            "title": "Product knowledge",
+            "description": "Help customers understand what you offer.",
+            "imageUrl": "/images/cms/templates/connected/424bc06a221d8e605cfd20c1.webp"
+          }
+        ],
+        "imageSlots": [
+          {
+            "target": "item:omnichannel-review-card-2:imageUrl",
+            "mediaAlt": "Illustrative business owner reviewing information beside a business details panel."
+          },
+          {
+            "target": "item:omnichannel-review-card-3:imageUrl",
+            "mediaAlt": "Illustrative stoneware products with a product information panel."
+          },
+          {
+            "target": "item:omnichannel-review-card-1:imageUrl",
+            "mediaAlt": "Illustrative FAQ and policy documents showing delivery, returns and a review check."
+          }
+        ]
+      },
+      {
+        "id": "omnichannel-review-team-story",
+        "type": "media_text_split",
+        "layoutPreset": "team-story-overview",
+        "isVisible": true,
+        "containerMode": "page",
+        "motionPreset": "subtle-lift",
+        "sectionBorder": "none",
+        "paddingY": "normal",
+        "subtitle": "",
+        "title": "Keep your team in the conversation",
+        "content": "",
+        "mediaUrl": "/images/cms/templates/connected/c8a0da36149eeb56e107c37c.webp",
+        "items": [
+          {
+            "id": "omni-team-shared",
+            "icon": "MessageCircle",
+            "title": "Shared conversations"
+          },
+          {
+            "id": "omni-team-handover",
+            "icon": "Users",
+            "title": "Human handover"
+          },
+          {
+            "id": "omni-team-context",
+            "icon": "Layers",
+            "title": "Conversation context"
+          }
+        ],
+        "imageSlots": [
+          {
+            "target": "mediaUrl",
+            "mediaAlt": "Front-facing conversation handover window showing a customer question, team reply and handover context.",
+            "imageFit": "cover",
+            "imageWidth": "50"
+          }
+        ]
+      },
+      {
+        "id": "omnichannel-review-stack",
+        "type": "media_gallery",
+        "galleryPreset": "scroll-stack-cards",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "none",
+        "paddingY": "normal",
+        "subtitle": "SUPPORT IMPROVEMENT",
+        "title": "Turn unanswered questions into better support.",
+        "content": "Find the gaps. Improve the FAQ. Review every update.",
+        "items": [
+          {
+            "id": "omnichannel-review-step-1",
+            "title": "Find the gaps",
+            "description": "See which questions need a clearer answer.",
+            "imageUrl": "/images/cms/templates/connected/734355f027d57dab20c9fb98.webp"
+          },
+          {
+            "id": "omnichannel-review-step-2",
+            "title": "Improve the FAQ",
+            "description": "Turn useful insights into better knowledge.",
+            "imageUrl": "/images/cms/templates/connected/cd7c1acc70d46251c884ed89.webp"
+          },
+          {
+            "id": "omnichannel-review-step-3",
+            "title": "Review & update",
+            "description": "Let your team check changes before publishing.",
+            "imageUrl": "/images/cms/templates/connected/f1af0d386f8731f528793f71.webp"
+          }
+        ],
+        "imageSlots": [
+          {
+            "target": "item:omnichannel-review-step-1:imageUrl",
+            "mediaAlt": "Illustrative support analyst reviewing a question that needs a clearer answer."
+          },
+          {
+            "target": "item:omnichannel-review-step-2:imageUrl",
+            "mediaAlt": "Illustrative business colleague improving FAQ knowledge with notes."
+          },
+          {
+            "target": "item:omnichannel-review-step-3:imageUrl",
+            "mediaAlt": "Illustrative team reviewing a support knowledge update before publication."
+          }
+        ]
+      },
+      {
+        "id": "omnichannel-review-focused",
+        "type": "media_gallery",
+        "galleryPreset": "focused-steps",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "paddingY": "normal",
+        "subtitle": "A CONNECTED SUPPORT JOURNEY",
+        "title": "From first question to the right next step.",
+        "content": "Help customers find an answer, bring in your team when needed, and keep the conversation moving.",
+        "items": [
+          {
+            "id": "omnichannel-review-step-1",
+            "title": "Customer question",
+            "description": "Let customers ask through the channels they already use.",
+            "imageUrl": "/images/cms/templates/connected/5e757f7bf0cacbb35a7c1375.webp"
+          },
+          {
+            "id": "omnichannel-review-step-2",
+            "title": "AI assistance",
+            "description": "Use business knowledge to help with relevant answers.",
+            "imageUrl": "/images/cms/templates/connected/7f005cfad648b2b6774a0b91.webp"
+          },
+          {
+            "id": "omnichannel-review-step-3",
+            "title": "Human handover",
+            "description": "Pass the conversation to your team with the context they need to continue.",
+            "imageUrl": "/images/cms/templates/connected/952f43acfcdbb16bd4474d0f.webp"
+          },
+          {
+            "id": "omnichannel-review-step-4",
+            "title": "Team follow-up",
+            "description": "Keep the next action clear as your team follows up.",
+            "imageUrl": "/images/cms/templates/connected/4085dff1033a82aa4682a937.webp"
+          }
+        ],
+        "imageSlots": [
+          {
+            "target": "item:omnichannel-review-step-1:imageUrl",
+            "mediaAlt": "Illustrative customer asking a question through a chat window."
+          },
+          {
+            "target": "item:omnichannel-review-step-2:imageUrl",
+            "mediaAlt": "Illustrative AI assistance drawing on FAQ and product information."
+          },
+          {
+            "target": "item:omnichannel-review-step-4:imageUrl",
+            "mediaAlt": "Illustrative team reviewing the next action for a customer conversation."
+          },
+          {
+            "target": "item:omnichannel-review-step-3:imageUrl",
+            "mediaAlt": "Illustrative support colleague receiving a conversation with context for human handover."
+          }
+        ]
+      },
+      {
+        "id": "omnichannel-review-plans",
+        "type": "pricing_table",
+        "pricingPreset": "plan-comparison",
+        "planContentSource": "manual",
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "paddingY": "normal",
+        "isVisible": true,
+        "subtitle": "PLANS & SUPPORT",
+        "title": "Choose the support setup that fits.",
+        "content": "Start with your website and support workspace. Add AI assistance with Growth.",
+        "buttonText": "Compare all plans",
+        "buttonLink": "#section-corporate-review-pricing",
+        "items": [
+          {
+            "id": "omnichannel-starter",
+            "title": "Starter",
+            "icon": "Monitor",
+            "buttonText": "Explore Starter",
+            "linkUrl": "https://www.jwaistudio.online/pages/contact-jw-studio",
+            "description": "Describe what this option includes.",
+            "features": [
+              "Add your included services."
+            ],
+            "pricingMode": "contact",
+            "pricingLabel": "Contact us",
+            "billingLabel": ""
+          },
+          {
+            "id": "omnichannel-growth",
+            "title": "Growth",
+            "icon": "MessageCircle",
+            "buttonText": "Explore Growth",
+            "linkUrl": "https://www.jwaistudio.online/pages/contact-jw-studio",
+            "description": "Describe what this option includes.",
+            "features": [
+              "Add your included services."
+            ],
+            "pricingMode": "contact",
+            "pricingLabel": "Contact us",
+            "billingLabel": ""
+          }
+        ],
+        "planTerms": "Add your billing terms before publishing."
+      },
+      {
+        "id": "omnichannel-review-support-faq",
+        "type": "faq_accordion",
+        "faqPreset": "framed-faq",
+        "faqInitiallyOpen": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "paddingY": "normal",
+        "isVisible": true,
+        "title": "A few helpful answers.",
+        "items": [
+          {
+            "id": "omnichannel-support-question-1",
+            "title": "Is AI assistance included in Starter?",
+            "description": "No. AI assistance is part of Growth. Starter includes the website, product catalogue and support workspace."
+          },
+          {
+            "id": "omnichannel-support-question-2",
+            "title": "Can my team take over a conversation?",
+            "description": "Yes. Your team can take over a conversation with the available conversation context."
+          },
+          {
+            "id": "omnichannel-support-question-3",
+            "title": "What information can AI use?",
+            "description": "Your configured FAQs, business information and product knowledge help provide relevant context."
+          },
+          {
+            "id": "omnichannel-support-question-4",
+            "title": "Are there usage or provider limits?",
+            "description": "Usage allowances and provider limits are confirmed before activation."
+          }
+        ]
+      },
+      {
+        "id": "omnichannel-review-closing",
+        "type": "cta_strip",
+        "ctaPreset": "editorial-illustrated",
+        "isVisible": true,
+        "containerMode": "page",
+        "motionPreset": "subtle-lift",
+        "sectionBorder": "none",
+        "paddingY": "normal",
+        "subtitle": "LET’S TALK ABOUT YOUR SUPPORT",
+        "title": "Bring your next conversation into focus.",
+        "content": "Tell us where your customers get in touch. We’ll help you shape a support setup around your business.",
+        "mediaUrl": "/images/cms/templates/connected/95087e55d73e1d18bc26816b.webp",
+        "imageSlots": [
+          {
+            "target": "mediaUrl",
+            "mediaAlt": "Illustrative business colleagues discussing support around a laptop, framed by translucent conversation bubbles and a blue-violet orbit."
+          }
+        ],
+        "buttonText": "Request a demo",
+        "buttonLink": "https://www.jwaistudio.online/pages/contact-jw-studio"
+      }
+    ]
+  }
+}

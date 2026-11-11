@@ -1,3 +1,4 @@
+import {isConnectedShowcase} from '../../cms/connectedShowcaseTemplates';
 import {usePublicationReview} from '../search/PublicationReview';
 import {savePublicationToken} from '../../integration/searchVisibility';
 import {PageHistoryPanel} from './PageHistoryPanel';
@@ -578,7 +579,7 @@ export const PageAdmin: React.FC = () => {
         status:'draft', template:'standard', createdAt:new Date().toISOString().split('T')[0], updatedAt:new Date().toISOString().split('T')[0],
         ...(['about-editorial','about-studio','about-chapters'].includes(templateId) ? {containerWidth:'standard' as const} : {}),
         style:createPageTemplateStyle(templateId),
-    ...(templateId==='wedding-photography'?{containerWidth:'site' as const}:{}),
+    ...((templateId==='wedding-photography'||isConnectedShowcase(templateId))?{containerWidth:'site' as const}:{}),
         ...(templateId==='wedding-photography'?{shellDesign:{business:'service' as const,style:'editorial' as const,appearance:'light' as const,showAnnouncement:false,showAccount:false,showCurrency:false,showThemeSwitch:false,ctaLabel:'',ctaUrl:'',tagline:'',contactEmail:''}}:{}),
         ...(templateId==='beauty-skincare'?{headerPresentation:{mode:'translucent' as const,tone:'dark' as const}}:{}),
         ...(templateId==='everyday-market'?{containerWidth:'wide' as const}:{}),
@@ -1423,7 +1424,7 @@ export const PageAdmin: React.FC = () => {
 
         {/* Center Stage: Interactive Live Storefront Canvas */}
         <div ref={canvasScrollRef} data-cms-canvas-scroll className="flex-1 overflow-y-auto p-4 sm:p-8 flex justify-center bg-neutral-200/60 dark:bg-neutral-950/80 scrollbar-thin">
-          <div className={`w-full ${getCanvasWidthClass()} flex flex-col bg-neutral-900 border border-neutral-800 rounded-3xl shadow-2xl overflow-hidden transition-all duration-300 self-start`}>
+          <div className={`w-full ${getCanvasWidthClass()} flex flex-col bg-neutral-900 border border-neutral-800 rounded-3xl shadow-2xl ${currentPage.sections.some(s=>s.type==='media_gallery'&&s.galleryPreset==='scroll-stack-cards')?'overflow-clip':'overflow-hidden'} transition-all duration-300 self-start`}>
             {/* Simulated Storefront Navbar */}
             {(storefrontShellSettings.shellDesign??currentPage.shellDesign) ? <BuilderShellHeader currentPage={currentPage} pages={pages} value={(storefrontShellSettings.shellDesign??currentPage.shellDesign)!} brand={shopSettings.shopName||'JW Studio'} logo={shopSettings.shopLogo} announcement={storefrontShellSettings.enabled?(storefrontShellSettings.zones.center.enabled?storefrontShellSettings.zones.center.text:storefrontShellSettings.zones.left.enabled?storefrontShellSettings.zones.left.text:undefined):undefined} menus={headerMenus} mobile={viewport!=='desktop'} presentation={resolveHeaderPresentation(currentPage.headerPresentation,storefrontShellSettings.headerPresentation,currentPage.sections)}/> : <>            <link rel="stylesheet" href="/css/cms-header-overlay.css"/><div data-builder-header data-mode={resolveHeaderPresentation(currentPage.headerPresentation,storefrontShellSettings.headerPresentation,currentPage.sections).mode} style={viewport==='desktop'&&resolveHeaderPresentation(currentPage.headerPresentation,storefrontShellSettings.headerPresentation,currentPage.sections).mode!=='normal'?{marginBottom:-56,zIndex:40,background:resolveHeaderPresentation(currentPage.headerPresentation,storefrontShellSettings.headerPresentation,currentPage.sections).mode==='translucent'?'rgba(255,255,255,.7)':'transparent',color:resolveHeaderPresentation(currentPage.headerPresentation,storefrontShellSettings.headerPresentation,currentPage.sections).tone==='light'?'#ffffff':'#18181b'}:undefined} className="h-14 px-6 bg-neutral-950 border-b border-neutral-800 flex items-center justify-between text-neutral-300 text-xs">
               <div className="flex items-center gap-4">

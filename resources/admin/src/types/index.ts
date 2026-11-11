@@ -696,7 +696,7 @@ export interface PageSection {
   authorAvatar?: string;
   mediaUrl?: string; // Image or Video asset URL
   mediaType?: 'image' | 'video';
-  pricingPreset?: 'default' | 'saas-packages';
+  pricingPreset?: 'default' | 'saas-packages' | 'plan-comparison';
   pricingCurrency?: string;
   mediaPosition?: 'left' | 'right';
   imageRatio?: 'default' | 'auto' | '16:9' | '3:2' | '4:3' | '1:1' | '3:4';
@@ -709,7 +709,7 @@ export interface PageSection {
   imageForeground?: boolean;
   imageForegroundColor?: string;
   imageForegroundOpacity?: 0 | 10 | 20 | 30 | 40 | 50 | 60 | 70 | 80 | 90 | 100;
-  layoutPreset?: 'default' | 'editorial-hero' | 'editorial-story' | 'editorial-cover' | 'editorial-story-cards' | 'editorial-journal-rows' | 'story-with-steps' | 'flush-split' | 'producer-story' | 'tech-feature' | 'kids-discovery' | 'artisan-story' | 'saas-hero' | 'saas-showcase' | 'saas-analytics' | 'corporate-section-story' | 'image-highlights' | 'corporate-builder-overview' | 'corporate-feature' | 'corporate-support' | 'corporate-image-story' | 'corporate-payments' | 'corporate-courier' | 'corporate-marketplace';
+  layoutPreset?: 'default' | 'editorial-hero' | 'editorial-story' | 'editorial-cover' | 'editorial-story-cards' | 'editorial-journal-rows' | 'story-with-steps' | 'flush-split' | 'producer-story' | 'tech-feature' | 'kids-discovery' | 'artisan-story' | 'saas-hero' | 'saas-showcase' | 'saas-analytics' | 'corporate-section-story' | 'image-highlights' | 'team-story-overview' | 'corporate-builder-overview' | 'corporate-feature' | 'corporate-support' | 'corporate-image-story' | 'corporate-payments' | 'corporate-courier' | 'corporate-marketplace';
   paymentLayout?: 'cards' | 'list';
   paymentNote?: string;
   deliverySource?: 'settings' | 'manual';
@@ -730,7 +730,7 @@ export interface PageSection {
   pricingSourceSectionId?: string;
   pricingSourceItemId?: string;
   pricingSourceTermsSectionId?: string;
-  faqPreset?: 'pricing-band-faq' | 'corporate-starter-faq' | 'default' | 'minimal' | 'industrial-split' | 'saas-split';
+  faqPreset?: 'pricing-band-faq' | 'corporate-starter-faq' | 'default' | 'minimal' | 'industrial-split' | 'framed-faq' | 'saas-split';
   faqInitiallyOpen?: boolean;
   leadText?: string;
   policyPreset?: 'guidelines' | 'choices' | 'steps' | 'document' | 'directory' | 'process-flow' | 'timeline' | 'tabs' | 'columns';
@@ -744,11 +744,11 @@ export interface PageSection {
   containerMode?: 'page' | 'full-bleed';
   sectionBorder?: 'default' | 'none' | 'top' | 'bottom' | 'both';
   sectionBorderColor?: string;
-  ctaPreset?: 'illustrated-panel' | 'gradient-panel' | 'default' | 'image-banner' | 'editorial-band' | 'help-panel' | 'industrial-outline' | 'saas-closing';
+  ctaPreset?: 'editorial-illustrated' | 'illustrated-panel' | 'gradient-panel' | 'default' | 'image-banner' | 'editorial-band' | 'help-panel' | 'industrial-outline' | 'saas-closing';
   ctaBannerHeight?: 'compact' | 'normal' | 'spacious';
   richTextPreset?: 'default' | 'manifesto' | 'industrial-split';
   featureCardsPreset?: 'default' | 'values-list' | 'editorial-columns' | 'numbered-process' | 'service-highlights' | 'industrial-cards' | 'industrial-process' | 'industrial-process-split' | 'saas-modules' | 'saas-addons';
-  heroBannerPreset?: 'default' | 'editorial-gradient' | 'industrial-overlay' | 'corporate-centered' | 'corporate-split-composite';
+  heroBannerPreset?: 'default' | 'editorial-gradient' | 'industrial-overlay' | 'corporate-centered' | 'corporate-split-composite' | 'corporate-centered-composite';
   testimonialPreset?: 'default' | 'editorial-quote';
   logoPreset?: "classic" | "partners";
   logoHeight?: number;
@@ -756,7 +756,7 @@ export interface PageSection {
   marqueeSpeed?: number;
   marqueeDirection?: 'left' | 'right';
   marqueePauseOnHover?: boolean;
-  galleryPreset?: 'connected-feature-rows' | 'image-cards-four-mosaic' | 'image-cards-three' | 'corporate-connections' | 'corporate-illustrated-steps' | 'corporate-scenarios' | 'photo-marquee' | 'default' | 'editorial-montage' | 'editorial-cards' | 'editorial-triptych' | 'portfolio-cards' | 'routine-steps' | 'industrial-mosaic' | 'album-browser' | 'product-preview-tabs';
+  galleryPreset?: 'focused-steps'|'scroll-stack-cards'|'editorial-knowledge-triptych'|'image-flow' | 'connected-feature-rows' | 'image-cards-four-mosaic' | 'image-cards-three' | 'corporate-connections' | 'corporate-illustrated-steps' | 'corporate-scenarios' | 'photo-marquee' | 'default' | 'editorial-montage' | 'editorial-cards' | 'editorial-triptych' | 'portfolio-cards' | 'routine-steps' | 'industrial-mosaic' | 'album-browser' | 'product-preview-tabs';
   galleryFilters?: boolean;
   galleryLightbox?: boolean;
   galleryInitialCount?: number;

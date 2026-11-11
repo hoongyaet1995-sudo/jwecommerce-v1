@@ -1,3 +1,5 @@
+import {builderNavigationHref} from './builderNavigation';
+import {resolvePlanComparison,isPlanComparisonFacts,type PlanComparisonFacts} from './planComparison';
 import {resolveStarterPricing,isStarterPricing,type StarterPricing} from './websiteBuilderStarterFaq';
 import {validSaasPricingSection} from './saasPackages';
 import {useCmsBrand} from './useCmsBrand';
@@ -38,6 +40,7 @@ export interface PageRuntimeSource {
 
 export interface PageRuntimeSectionFacts {
   starterPricing?: StarterPricing;
+  planComparison?:PlanComparisonFacts;
   promotions?: {offers:PromotionOffer[]};
   payments?: PaymentFacts;
   delivery?: {rows: import('./deliveryInformation').DeliveryRow[]; status?: 'ready'|'unavailable'};
@@ -256,7 +259,7 @@ type PageSectionFieldRule =
 // `satisfies Record<keyof PageSection, ...>` makes a PageSection type change fail compilation
 // until its browser-bootstrap rule is deliberately classified here.
 export const PAGE_SECTION_BOOTSTRAP_FIELD_RULES = {
- pricingPreset:{kind:'optional-enum',values:['default','saas-packages']},pricingCurrency:{kind:'optional-string'},
+ pricingPreset:{kind:'optional-enum',values:['default','saas-packages','plan-comparison']},pricingCurrency:{kind:'optional-string'},
   newsletterPreset:{kind:'optional-enum',values:['default','inline-signup']},
   surface:{kind:'optional-enum',values:['light','contrast']},
   brandPalette:{kind:'nested'},
@@ -291,11 +294,11 @@ export const PAGE_SECTION_BOOTSTRAP_FIELD_RULES = {
   shopNavigationPreset: {kind: 'optional-enum', values: ['cards','collection-banners','kids-banners','fashion-banners','market-hero','market-offers','image-overlay','image-caption','catalog-captions','recipe-cards','age-cards']},
   bannerProportions: {kind: 'optional-enum', values: ['50:50','60:40','40:60']},
   bannerHeight: {kind: 'optional-enum', values: ['compact','comfortable','tall']},
-  layoutPreset: {kind: 'optional-enum', values: ['corporate-image-story','corporate-payments','corporate-courier','corporate-marketplace','corporate-section-story','image-highlights','corporate-builder-overview','corporate-support','corporate-feature','saas-hero','saas-showcase','saas-analytics','default', 'editorial-hero', 'editorial-story', 'editorial-cover', 'editorial-story-cards','editorial-journal-rows', 'story-with-steps','flush-split','producer-story','tech-feature','kids-discovery', 'artisan-story']},
+  layoutPreset: {kind: 'optional-enum', values: ['corporate-image-story','corporate-payments','corporate-courier','corporate-marketplace','corporate-section-story','image-highlights','team-story-overview','corporate-builder-overview','corporate-support','corporate-feature','saas-hero','saas-showcase','saas-analytics','default', 'editorial-hero', 'editorial-story', 'editorial-cover', 'editorial-story-cards','editorial-journal-rows', 'story-with-steps','flush-split','producer-story','tech-feature','kids-discovery', 'artisan-story']},
   containerMode: {kind: 'optional-enum', values: ['page','full-bleed']},
   sectionBorder: {kind: 'optional-enum', values: ['default','none','top','bottom','both']},
   sectionBorderColor: {kind: 'optional-string'},
-  ctaPreset: {kind: 'optional-enum', values: ['illustrated-panel','gradient-panel','saas-closing','default','image-banner','editorial-band','help-panel','industrial-outline']},
+  ctaPreset: {kind: 'optional-enum', values: ['editorial-illustrated','illustrated-panel','gradient-panel','saas-closing','default','image-banner','editorial-band','help-panel','industrial-outline']},
   leadText: {kind:'optional-string'},
   policyPreset:{kind:'optional-enum',values:['guidelines','choices','steps','document','directory','process-flow','timeline','tabs','columns']},
   policyNote:{kind:'optional-string'},
@@ -312,14 +315,14 @@ export const PAGE_SECTION_BOOTSTRAP_FIELD_RULES = {
   deliveryFeeLabel:{kind:'optional-string'},
   planContentSource:{kind:'optional-enum',values:['manual','reference']},planName:{kind:'optional-string'},planAmount:{kind:'optional-number'},planCurrency:{kind:'optional-string'},planPeriod:{kind:'optional-string'},planTerms:{kind:'optional-string'},planDescription:{kind:'optional-string'},planPricingMode:{kind:'optional-enum',values:['amount','contact']},planPriceLabel:{kind:'optional-string'},
   pricingSourcePageId:{kind:'optional-string'},pricingSourceSectionId:{kind:'optional-string'},pricingSourceItemId:{kind:'optional-string'},pricingSourceTermsSectionId:{kind:'optional-string'},
-  faqPreset:{kind:'optional-enum',values:['pricing-band-faq','corporate-starter-faq','saas-split','default','minimal','industrial-split']},
+  faqPreset:{kind:'optional-enum',values:['pricing-band-faq','corporate-starter-faq','framed-faq','saas-split','default','minimal','industrial-split']},
   faqInitiallyOpen:{kind:'optional-boolean'},
   chapterPreset: {kind:'optional-enum',values:['story','perspective','principles','process','delivery','actions','policy']},
   mediaContainerMode: {kind:'optional-enum',values:['page','full-bleed']},
   ctaBannerHeight: {kind: 'optional-enum', values: ['compact','normal','spacious']},
   richTextPreset: {kind: 'optional-enum', values: ['default', 'manifesto','industrial-split']},
   featureCardsPreset: {kind: 'optional-enum', values: ['saas-modules','saas-addons','default', 'values-list', 'editorial-columns','numbered-process','service-highlights','industrial-cards','industrial-process','industrial-process-split']},
-  heroBannerPreset:{kind:'optional-enum',values:['default','editorial-gradient','industrial-overlay','corporate-centered','corporate-split-composite']},
+  heroBannerPreset:{kind:'optional-enum',values:['default','editorial-gradient','industrial-overlay','corporate-centered','corporate-split-composite','corporate-centered-composite']},
   testimonialPreset:{kind:'optional-enum',values:['default','editorial-quote']},
   logoPreset:{kind:'optional-enum',values:['classic','partners']},
   logoHeight:{kind:'optional-number'},
@@ -327,7 +330,7 @@ export const PAGE_SECTION_BOOTSTRAP_FIELD_RULES = {
   marqueeSpeed:{kind:'optional-number'},
   marqueeDirection:{kind:'optional-enum',values:['left','right']},
   marqueePauseOnHover:{kind:'optional-boolean'},
-  galleryPreset: {kind: 'optional-enum', values: ['connected-feature-rows','image-cards-four-mosaic','image-cards-three','corporate-connections','corporate-illustrated-steps','corporate-scenarios','product-preview-tabs','photo-marquee','default', 'editorial-montage', 'editorial-cards','editorial-triptych','portfolio-cards','routine-steps','industrial-mosaic','album-browser']},
+  galleryPreset: {kind: 'optional-enum', values: ['focused-steps','scroll-stack-cards','editorial-knowledge-triptych','image-flow','connected-feature-rows','image-cards-four-mosaic','image-cards-three','corporate-connections','corporate-illustrated-steps','corporate-scenarios','product-preview-tabs','photo-marquee','default', 'editorial-montage', 'editorial-cards','editorial-triptych','portfolio-cards','routine-steps','industrial-mosaic','album-browser']},
   galleryFilters:{kind:'optional-boolean'}, galleryLightbox:{kind:'optional-boolean'}, galleryInitialCount:{kind:'optional-number'},galleryLoadCount:{kind:'optional-number'},
   showSectionHeading: {kind: 'optional-boolean'},
   valuesShowHeading: {kind: 'optional-boolean'},
@@ -468,7 +471,7 @@ const isPageSection = (value: unknown): value is PageSection => {
   if (isRecord(value) && 'galleryPreset' in value && value.type !== 'media_gallery') return false;
   if (isRecord(value) && 'showSectionHeading' in value && !['media_gallery','feature_cards','policy_content','chapter_block','shop_navigation'].includes(String(value.type))) return false;
   if (isRecord(value) && ['ctaPreset','ctaBannerHeight'].some(field=>field in value) && value.type !== 'cta_strip') return false;
-  if(isRecord(value)&&['planContentSource', 'planName', 'planAmount', 'planCurrency', 'planPeriod', 'planTerms', 'planDescription', 'planPricingMode', 'planPriceLabel', 'pricingSourcePageId', 'pricingSourceSectionId', 'pricingSourceItemId', 'pricingSourceTermsSectionId'].some(k=>k in value)&&value.type!=='faq_accordion')return false;
+  if(isRecord(value)&&['planName', 'planAmount', 'planCurrency', 'planPeriod', 'planDescription', 'planPricingMode', 'planPriceLabel', 'pricingSourceItemId'].some(k=>k in value)&&value.type!=='faq_accordion' || ['planContentSource','planTerms','pricingSourcePageId','pricingSourceSectionId','pricingSourceTermsSectionId'].some(k=>k in value)&&!['faq_accordion','pricing_table'].includes(String(value.type)))return false;
   if(isRecord(value)&&'mediaContainerMode' in value&&!['media_text_split','media_gallery','chapter_block','policy_content'].includes(String(value.type)))return false;
   if(isRecord(value)&&(['deliverySource','deliveryNote','deliveryDestinationLabel','deliveryEstimateLabel','deliveryFeeLabel'].some(key=>key in value)&&value.type!=='delivery_table'&&value.type!=='chapter_block'||['faqPreset','faqInitiallyOpen'].some(key=>key in value)&&value.type!=='faq_accordion'))return false;
   if(isRecord(value)&&('contactPreset' in value)&&!['contact_form','store_locator'].includes(String(value.type)))return false;
@@ -587,7 +590,8 @@ const isRuntimeTabFacts = (value: unknown): boolean => (
 );
 
 const isRuntimeSectionFacts = (value: unknown): value is PageRuntimeSectionFacts => {
-  if (!isRecord(value) || !hasOnlyKeys(value, ['starterPricing','productIds', 'tabs', 'newsletterCouponId', 'listing', 'delivery', 'payments','promotions'])) return false;
+  if (!isRecord(value) || !hasOnlyKeys(value, ['planComparison','starterPricing','productIds', 'tabs', 'newsletterCouponId', 'listing', 'delivery', 'payments','promotions'])) return false;
+  if('planComparison' in value&&!isPlanComparisonFacts(value.planComparison))return false;
   if('starterPricing' in value&&!isStarterPricing(value.starterPricing))return false;
   if('promotions' in value&&(!isRecord(value.promotions)||!hasOnlyKeys(value.promotions,['offers'])||!isPromotionOffers(value.promotions.offers)))return false;
   if('payments' in value&&!isPaymentFacts(value.payments))return false;
@@ -721,6 +725,7 @@ export const createAdminPageRuntimePayload = (
   page.sections.forEach((section, sectionIndex) => {
     if (!section.isVisible) return;
     if(section.type==='faq_accordion'&&['corporate-starter-faq','pricing-band-faq'].includes(section.faqPreset??''))runtimeSections[sectionIndex]={starterPricing:resolveStarterPricing(section,sourcePages.find(p=>p.id===section.pricingSourcePageId))};
+    if(section.type==='pricing_table'&&section.pricingPreset==='plan-comparison')runtimeSections[sectionIndex]={planComparison:resolvePlanComparison(section,sourcePages.find(p=>p.id===section.pricingSourcePageId))};
     if(section.type==='promotion_highlights')runtimeSections[sectionIndex]={promotions:{offers:promotionOffers}};
     if(section.type==='delivery_table'||section.type==='chapter_block'&&section.chapterPreset==='delivery')runtimeSections[sectionIndex]={delivery:{rows:deliveryRows(shippingRates??[]),status:shippingRates===undefined?'unavailable':'ready'}};
 
@@ -864,7 +869,7 @@ export const createAdminPageRuntimePayload = (
       newsletter: {},
       adminContractsEndpoint: `/admin/api/pages/${page.id}/form-contracts`,
     },
-    links: {},
+    links: Object.fromEntries(page.sections.filter(s=>s.isVisible).flatMap(s=>[s.buttonLink,s.secondaryButtonLink,...(s.items??[]).map(i=>i.linkUrl)]).filter((url):url is string=>typeof url==='string'&&url.length>0).map(url=>[url,builderNavigationHref(url,page,sourcePages)]).filter(([url,href])=>url!==href)),
     runtime: { sections: runtimeSections, errors: {} },
     context: { mode: 'editing', currency },
   };

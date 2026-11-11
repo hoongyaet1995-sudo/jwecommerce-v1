@@ -51,6 +51,14 @@ final class PageRuntimePayloadFactory
             $facts['sections'][$index] = [...($facts['sections'][$index] ?? []), ...$pricing];
         }
 
+        $actionUrls=[];
+        foreach($document['sections']??[] as $section){
+            if(!($section['isVisible']??false))continue;
+            foreach(['buttonLink','secondaryButtonLink'] as $field)if(is_string($section[$field]??null))$actionUrls[]=$section[$field];
+            foreach($section['items']??[] as $item)if(is_string($item['linkUrl']??null))$actionUrls[]=$item['linkUrl'];
+        }
+        $links=app(CmsNavigationLinks::class)->forPayload(['context'=>['mode'=>$mode],'page'=>['document'=>$document]],$actionUrls);
+
         return [
             'page' => [
                 'id' => (string) $page->getKey(),
@@ -65,7 +73,7 @@ final class PageRuntimePayloadFactory
             'forms' => [
                 ...$this->formContracts->forDocument($page, $pageDocument, $document, $audience),
             ],
-            'links' => new stdClass,
+            'links' => $links ?: new stdClass,
             'runtime' => [
                 'sections' => $facts['sections'],
                 'errors' => $this->contract->runtimeErrors($document, $facts),

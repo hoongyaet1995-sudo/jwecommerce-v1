@@ -6,14 +6,14 @@ use App\Models\Page;
 final class StarterPricingReference
 {
  public function forDocument(array $document,bool $preview):array {
-  $references=array_filter($document['sections']??[],fn($s)=>($s['type']??'')==='faq_accordion'&&in_array($s['faqPreset']??'',['corporate-starter-faq','pricing-band-faq'],true)&&($s['isVisible']??false));
+  $references=array_filter($document['sections']??[],fn($s)=>(($s['type']??'')==='faq_accordion'&&in_array($s['faqPreset']??'',['corporate-starter-faq','pricing-band-faq'],true)||($s['type']??'')==='pricing_table'&&($s['pricingPreset']??'')==='plan-comparison')&&($s['isVisible']??false));
   if(!$references)return [];
   $linked=array_filter($references,fn($s)=>($s['planContentSource']??(isset($s['pricingSourcePageId'])?'reference':'manual'))==='reference');
   $ids=array_values(array_unique(array_filter(array_column($linked,'pricingSourcePageId'),fn($id)=>is_string($id)&&ctype_digit($id))));
   $pages=Page::with($preview?'draftDocument':'publishedDocument')->whereIn('id',$ids)->get()->keyBy('id');$facts=[];
   foreach($references as $index=>$s){$page=$pages->get($s['pricingSourcePageId']??'');$source=null;
    if($page&&($preview||$page->status==='published'))$source=($preview?$page->draftDocument:$page->publishedDocument)?->document;
-   $facts[$index]=['starterPricing'=>$this->resolve($s,$source)];
+   $facts[$index]=($s['pricingPreset']??'')==='plan-comparison'?['planComparison'=>app(PlanComparisonReference::class)->resolve($s,$source)]:['starterPricing'=>$this->resolve($s,$source)];
   }return $facts;
  }
  public function resolve(array $reference,?array $document):array {

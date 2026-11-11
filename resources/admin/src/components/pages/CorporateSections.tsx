@@ -1,3 +1,4 @@
+import {isTeamStoryOverview} from '../../cms/teamStoryOverview';
 import {isImageHighlights,highlightItems} from '../../cms/imageHighlights';
 import React,{useState} from 'react';
 import type {PageSection} from '../../types';
@@ -19,6 +20,10 @@ function Copy({s,hero=false}:{s:PageSection;hero?:boolean}){
  const H=hero?'h1':'h2';return <>{s.subtitle&&<p className="corp-eyebrow" data-cms-text="eyebrow" style={{color:s.customColors?.eyebrowColor,...typographyStyle(s,'eyebrow')}}>{s.subtitle}</p>}<H data-cms-text="title" style={{color:s.customColors?.titleColor,...typographyStyle(s,'title')}}>{s.title}</H>{s.content&&<p className="corp-body" data-cms-text="content" style={{color:s.customColors?.contentColor,...typographyStyle(s,'content')}}>{s.content}</p>}</>;
 }
 export function CorporateHero({section:s,editing=false}:{section:PageSection;editing?:boolean}){
+ if(s.heroBannerPreset==='corporate-centered-composite')return <div className="corp corp-hero-centered-composite" style={{...brand(s),'--hero-paper':s.customColors?.customBgColor||'transparent','--hero-accent':s.customColors?.primaryBtnBg||'currentColor'} as React.CSSProperties} data-corporate="centered-composite-hero">
+  <div className="corp-centered-copy"><Copy s={s} hero/><div className="corp-actions"><Action s={s} editing={editing}/><Action s={s} editing={editing} secondary/></div></div>
+  <div className="corp-centered-art">{s.mediaUrl?<><ScopedImage section={s} targetId="mediaUrl" src={s.mediaUrl} alt={s.mediaAlt||s.title} fetchPriority="high"/><div className="corp-art-activity" aria-hidden="true"><i/><i/><i/></div></>:editing?<p>Add hero artwork in Content → Images.</p>:null}</div>
+ </div>;
  if(s.heroBannerPreset==='corporate-split-composite')return <div className="corp corp-hero-split" style={brand(s)} data-corporate="hero-split">
   <div className="corp-hero-copy"><Copy s={s} hero/><div className="corp-actions"><Action s={s} editing={editing}/><Action s={s} editing={editing} secondary/></div></div>
   <div className="corp-hero-art">{s.mediaUrl?<ScopedImage section={s} targetId="mediaUrl" src={s.mediaUrl} alt={s.mediaAlt||s.title} fetchPriority="high"/>:editing?<p>Add hero artwork in Content → Images.</p>:null}</div>
@@ -42,10 +47,17 @@ export function CorporateFeature({section:s,editing=false}:{section:PageSection;
 }
 /** One composite owns the illustrative UI; real labels remain independently editable. */
 export function CorporateBuilderOverview({section:s,editing=false}:{section:PageSection;editing?:boolean}){
- return <div className={`corp corp-builder-overview ${isImageHighlights(s)?'corp-image-highlights':''}`} style={brand(s)} data-corporate="builder-overview">
-  <header className="corp-builder-heading"><h2 data-cms-text="title" style={{color:s.customColors?.titleColor,...typographyStyle(s,'title')}}>{s.title}</h2>{s.content&&<p className="corp-body" data-cms-text="content" style={{color:s.customColors?.contentColor,...typographyStyle(s,'content')}}>{s.content}</p>}</header>
+ const team=isTeamStoryOverview(s);
+ const labels=<ul className="corp-builder-labels">{(isImageHighlights(s)?highlightItems(s):s.items)?.map(item=><li key={item.id} data-cms-item={item.id}><SectionIcon name={item.icon}/><span data-cms-text="itemTitle" data-cms-item={item.id} style={{color:s.customColors?.titleColor,...typographyStyle(s,'itemTitle')}}>{item.title}</span>{isImageHighlights(s)&&item.description&&<p data-cms-text="itemContent" data-cms-item={item.id} style={{color:s.customColors?.contentColor,...typographyStyle(s,'itemContent')}}>{item.description}</p>}</li>)}</ul>;
+ if(team)return <div className="corp corp-builder-overview corp-team-story-overview" style={{...brand(s),backgroundColor:s.customColors?.customBgColor}} data-corporate="team-story-overview">
   <div className="corp-builder-visual">{s.mediaUrl?<ScopedImage section={s} targetId="mediaUrl" src={s.mediaUrl} alt={s.mediaAlt||s.title}/>:editing?<p>Add builder artwork in Content → Images.</p>:null}</div>
-  <ul className="corp-builder-labels">{(isImageHighlights(s)?highlightItems(s):s.items)?.map(item=><li key={item.id} data-cms-item={item.id}><SectionIcon name={item.icon}/><span data-cms-text="itemTitle" data-cms-item={item.id} style={{color:s.customColors?.titleColor,...typographyStyle(s,'itemTitle')}}>{item.title}</span>{isImageHighlights(s)&&item.description&&<p data-cms-text="itemContent" data-cms-item={item.id} style={{color:s.customColors?.contentColor,...typographyStyle(s,'itemContent')}}>{item.description}</p>}</li>)}</ul>
+  <div className="corp-team-story-copy"><header className="corp-builder-heading"><Copy s={s}/></header>{labels}</div>
+ </div>;
+ return <div className={`corp corp-builder-overview ${team?'corp-team-story-overview':isImageHighlights(s)?'corp-image-highlights':''}`} style={{...brand(s),...(team?{backgroundColor:s.customColors?.customBgColor}: {})}} data-corporate={team?'team-story-overview':'builder-overview'}>
+  <header className="corp-builder-heading">{team&&s.subtitle&&<p className="corp-eyebrow" data-cms-text="eyebrow" style={{color:s.customColors?.eyebrowColor,...typographyStyle(s,'eyebrow')}}>{s.subtitle}</p>}<h2 data-cms-text="title" style={{color:s.customColors?.titleColor,...typographyStyle(s,'title')}}>{s.title}</h2>{s.content&&<p className="corp-body" data-cms-text="content" style={{color:s.customColors?.contentColor,...typographyStyle(s,'content')}}>{s.content}</p>}</header>
+  {team&&labels}
+  <div className="corp-builder-visual">{s.mediaUrl?<ScopedImage section={s} targetId="mediaUrl" src={s.mediaUrl} alt={s.mediaAlt||s.title}/>:editing?<p>Add builder artwork in Content → Images.</p>:null}</div>
+  {!team&&labels}
  </div>;
 }
 export function CorporateTabs({section:s,editing=false}:{section:PageSection;editing?:boolean}){

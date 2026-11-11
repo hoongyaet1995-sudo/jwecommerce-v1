@@ -4,8 +4,8 @@ import React from 'react';
 import type {PageSection} from '../../types';
 import {textRoles,textRoleLabels,type TextRole,type TextStyle,type SectionTypography} from '../../cms/inspectorCapabilities';
 const input='w-full mt-2 px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/60 text-neutral-900 dark:text-white';
-export function TypographySettings({section,onChange,selectedRole,onSelectRole,inheritedTypography}:{inheritedTypography?:SectionTypography;section:PageSection;onChange:(section:PageSection)=>void;selectedRole?:TextRole;onSelectRole:(role:TextRole)=>void}) {
- const roles=textRoles(section);if(!roles.length)return null;
+export function TypographySettings({section,onChange,selectedRole,onSelectRole,inheritedTypography,availableRoles}:{availableRoles?:TextRole[];inheritedTypography?:SectionTypography;section:PageSection;onChange:(section:PageSection)=>void;selectedRole?:TextRole;onSelectRole:(role:TextRole)=>void}) {
+ const roles=availableRoles??textRoles(section);if(!roles.length)return null;
  const role=selectedRole&&roles.includes(selectedRole)?selectedRole:roles[0];
  const style=section.typography?.[role]??{};
  const inherited=inheritedTypography?.[role];const effectiveFont=style.fontFamily??inherited?.fontFamily;

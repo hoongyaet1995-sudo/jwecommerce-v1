@@ -1,11 +1,13 @@
 import type {PageSection,SectionItem} from '../types';
+import {isKnowledgeTriptych} from './knowledgeTriptych';
+import {isImageFlow} from './imageFlow';
 
 /** Bounded presentation family; other-layout data is retained, never expanded into extra visible cards. */
 export const imageCardsThreePassport={preset:'image-cards-three',slots:3,itemFields:['title','description','imageUrl'],contentFields:['title','content'],colors:['customBgColor','titleColor','contentColor']} as const;
 export function isThreeImageCards(s:PageSection|null|undefined):boolean{return s?.type==='media_gallery'&&s.galleryPreset===imageCardsThreePassport.preset;}
 export const imageCardsFourMosaicPassport={...imageCardsThreePassport,preset:'image-cards-four-mosaic',slots:4} as const;
 export function isFourMosaicImageCards(s:PageSection|null|undefined):boolean{return s?.type==='media_gallery'&&s.galleryPreset===imageCardsFourMosaicPassport.preset;}
-export function isFixedImageCards(s:PageSection|null|undefined):boolean{return isThreeImageCards(s)||isFourMosaicImageCards(s);}
+export function isFixedImageCards(s:PageSection|null|undefined):boolean{return isKnowledgeTriptych(s)||isImageFlow(s)||isThreeImageCards(s)||isFourMosaicImageCards(s);}
 export function fixedImageCardCount(s:PageSection):number{return isFourMosaicImageCards(s)?4:3;}
 export function normalizeThreeImageCards<T extends PageSection|null|undefined>(s:T):T{
  if(!s||!isFixedImageCards(s))return s;

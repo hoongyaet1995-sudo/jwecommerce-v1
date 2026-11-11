@@ -654,6 +654,10 @@
         "connected-feature-rows",
         "image-cards-four-mosaic",
         "image-cards-three",
+        "focused-steps",
+        "scroll-stack-cards",
+        "editorial-knowledge-triptych",
+        "image-flow",
         "corporate-connections",
         "corporate-illustrated-steps",
         "corporate-scenarios",
@@ -730,6 +734,7 @@
     "ctaPreset": {
       "type": "string",
       "enum": [
+        "editorial-illustrated",
         "default",
         "image-banner",
         "editorial-band",
@@ -791,6 +796,7 @@
         "saas-analytics",
         "corporate-section-story",
         "image-highlights",
+        "team-story-overview",
         "corporate-builder-overview",
         "corporate-feature",
         "corporate-support",
@@ -1344,7 +1350,8 @@
         "industrial-split",
         "saas-split",
         "corporate-starter-faq",
-        "pricing-band-faq"
+        "pricing-band-faq",
+        "framed-faq"
       ]
     },
     "faqInitiallyOpen": {
@@ -1642,7 +1649,8 @@
         "editorial-gradient",
         "industrial-overlay",
         "corporate-centered",
-        "corporate-split-composite"
+        "corporate-split-composite",
+        "corporate-centered-composite"
       ]
     },
     "testimonialPreset": {
@@ -1704,7 +1712,8 @@
       "type": "string",
       "enum": [
         "default",
-        "saas-packages"
+        "saas-packages",
+        "plan-comparison"
       ]
     },
     "pricingCurrency": {
@@ -2267,7 +2276,14 @@
           "surface",
           "brandPalette",
           "pricingPreset",
-          "pricingCurrency"
+          "pricingCurrency",
+          "buttonText",
+          "buttonLink",
+          "planContentSource",
+          "planTerms",
+          "pricingSourcePageId",
+          "pricingSourceSectionId",
+          "pricingSourceTermsSectionId"
         ],
         "publishRequired": [
           "title"

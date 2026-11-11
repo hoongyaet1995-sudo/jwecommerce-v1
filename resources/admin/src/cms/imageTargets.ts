@@ -1,3 +1,6 @@
+import {isImageFlow} from './imageFlow';
+import {isKnowledgeTriptych} from './knowledgeTriptych';
+import {isFocusedSteps} from './focusedSteps';
 import {isConnectedRows,connectedRowItems} from './connectedFeatureRows';
 import {isImageHighlights} from './imageHighlights';
 import {isFixedImageCards,fixedImageCardItems} from './imageCardsThree';
@@ -6,6 +9,8 @@ export const imageControlKeys=['mediaAlt','imageRatio','imagePosition','imageFit
 export const imageSlotFamilies=['product_listing','promotion_highlights','shop_navigation','policy_content','chapter_block','cta_strip','hero_banner','hero_slider','split_hero','media_text_split','featured_deal','media_gallery','before_after','instagram_feed','testimonials_slider','logo_cloud','comparison_matrix'] as const;
 export interface ImageTarget {id:string;label:string;url:string;geometryLocked:boolean;itemId?:string;field:'mediaUrl'|'beforeImageUrl'|'afterImageUrl'|'imageUrl'|'authorAvatar'}
 export function imageTargets(section:PageSection):ImageTarget[] {
+ if(isImageFlow(section)||isKnowledgeTriptych(section))return fixedImageCardItems(section).map((item,index)=>({id:`item:${item.id}:imageUrl`,field:'imageUrl' as const,itemId:item.id,label:`Image ${index+1}`,url:item.imageUrl??'',geometryLocked:true}));
+ if(isFocusedSteps(section))return (section.items??[]).map((item,index)=>({id:`item:${item.id}:imageUrl`,field:'imageUrl' as const,itemId:item.id,label:`Step image ${index+1}`,url:item.imageUrl??'',geometryLocked:true}));
  if(isConnectedRows(section))return connectedRowItems(section).map((item,index)=>({id:`item:${item.id}:imageUrl`,field:'imageUrl' as const,itemId:item.id,label:`Row image ${index+1}`,url:item.imageUrl??'',geometryLocked:true}));
  if(isImageHighlights(section))return [{id:'mediaUrl',field:'mediaUrl',label:'Main illustration',url:section.mediaUrl??'',geometryLocked:true}];
  if(isFixedImageCards(section))return fixedImageCardItems(section).map((item,index)=>({id:`item:${item.id}:imageUrl`,field:'imageUrl' as const,itemId:item.id,label:`Card image ${index+1}`,url:item.imageUrl??'',geometryLocked:true}));
@@ -15,7 +20,7 @@ export function imageTargets(section:PageSection):ImageTarget[] {
   if(section.type==='media_text_split'&&['corporate-payments','corporate-courier'].includes(section.layoutPreset??''))return [{id:'mediaUrl',field:'mediaUrl',label:section.layoutPreset==='corporate-courier'?'Courier image':'Payment image',url:section.mediaUrl??'',geometryLocked:true},...(section.items??[]).map((item,index)=>({id:`item:${item.id}:imageUrl`,field:'imageUrl' as const,itemId:item.id,label:`${section.layoutPreset==='corporate-courier'?'Courier':'Payment'} logo ${index+1}`,url:item.imageUrl??'',geometryLocked:true}))];
   if(section.type==='hero_banner'&&section.heroBannerPreset==='corporate-centered')return [];
   if(section.type==='testimonials_slider'&&section.testimonialPreset==='editorial-quote')return [];
-  if(section.type==='chapter_block'&&['principles','process','actions'].includes(section.chapterPreset??'story')||section.type==='cta_strip'&&!['illustrated-panel','image-banner'].includes(section.ctaPreset??'')) return [];
+  if(section.type==='chapter_block'&&['principles','process','actions'].includes(section.chapterPreset??'story')||section.type==='cta_strip'&&!['illustrated-panel','editorial-illustrated','image-banner'].includes(section.ctaPreset??'')) return [];
   if(section.type==='comparison_matrix'&&section.comparisonPreset==='device-table')return (section.items??[]).filter(item=>item.subtitle==='device').map((item,index)=>({id:`item:${item.id}:imageUrl`,field:'imageUrl',itemId:item.id,label:`Device ${index+1}`,url:item.imageUrl??'',geometryLocked:false}));
   const main=['cta_strip','hero_banner','split_hero','media_text_split','featured_deal'].includes(section.type)||(section.type==='chapter_block'&&(section.chapterPreset??'story')==='story');
   if(main && !['editorial-story-cards','editorial-journal-rows','artisan-story'].includes(section.layoutPreset??'') && section.mediaType!=='video') return [{id:'mediaUrl',field:'mediaUrl',label:'Image',url:section.mediaUrl??'',geometryLocked:['hero_banner','cta_strip'].includes(section.type)}];
@@ -36,7 +41,7 @@ export function updateImageTarget(section:PageSection,targetId:string,patch:Part
   const target=imageTargets(section).find(target=>target.id===targetId);if(!target) return section;
   let result={...section};
   if(patch.mediaUrl!==undefined) {
-    if(target.itemId) result.items=(section.items??[]).map(item=>item.id===target.itemId?{...item,[target.field]:patch.mediaUrl}:item);
+    if(target.itemId){const items=[...(section.items??[])];if(!items.some(i=>i.id===target.itemId))items.push({id:target.itemId,title:''});result.items=items.map(item=>item.id===target.itemId?{...item,[target.field]:patch.mediaUrl}:item);}
     else result={...result,[target.field]:patch.mediaUrl};
   }
   const controls=Object.fromEntries(imageControlKeys.filter(key=>patch[key]!==undefined).map(key=>[key,patch[key]]));
@@ -56,7 +61,7 @@ export function pruneImageSlots(section:PageSection):PageSection {
   const ids=new Set(imageTargets(section).map(target=>target.id));
   if(isConnectedRows(section))for(const item of section.items??[])if(item.imageUrl!==undefined)ids.add(`item:${item.id}:imageUrl`);
   // Keep dormant, owned assets across layout/video switches; deletion still prunes by item ID.
-  if(['media_text_split','chapter_block','cta_strip'].includes(section.type))ids.add('mediaUrl');
+  if(['hero_banner','media_text_split','chapter_block','cta_strip'].includes(section.type))ids.add('mediaUrl');
   if(['product_listing','media_text_split','chapter_block','hero_slider'].includes(section.type))for(const item of section.items??[])if(item.imageUrl!==undefined)ids.add(`item:${item.id}:imageUrl`);
   return {...section,imageSlots:section.imageSlots.filter(slot=>ids.has(slot.target))};
 }

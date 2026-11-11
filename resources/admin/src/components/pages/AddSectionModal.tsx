@@ -1,4 +1,9 @@
-import {illustratedCta} from '../../cms/illustratedCta';
+import {planComparison,framedFaq} from '../../cms/planComparison';
+import {focusedSteps} from '../../cms/focusedSteps';
+import {scrollStackCards} from '../../cms/scrollStackCards';
+import {teamStoryOverview} from '../../cms/teamStoryOverview';
+import {knowledgeTriptych} from '../../cms/knowledgeTriptych';
+import {illustratedCta,editorialIllustratedCta} from '../../cms/illustratedCta';
 import {pricingBandFaq} from '../../cms/pricingBandFaq';
 import {connectedFeatureRows,isConnectedRows} from '../../cms/connectedFeatureRows';
 import {imageHighlights,isImageHighlights} from '../../cms/imageHighlights';
@@ -25,6 +30,8 @@ import {websiteBuilderWorkflow} from '../../cms/websiteBuilderWorkflow';
 import {websiteBuilderScenarios} from '../../cms/websiteBuilderScenarios';
 import {websiteBuilderStory} from '../../cms/websiteBuilderStory';
 import {websiteBuilderOverview} from '../../cms/websiteBuilderOverview';
+import {imageFlow} from '../../cms/imageFlow';
+import {centeredCompositeHero} from '../../cms/centeredCompositeHero';
 import {splitCompositeHero} from '../../cms/websiteBuilderHero';
 import {saasSections} from '../../cms/saasTemplates';
 import React, { useState } from 'react';
@@ -88,6 +95,7 @@ const SOURCE_SECTION_TEMPLATES: SectionTemplateOption[] = [
  {type:'media_text_split',title:'Image & Highlights',category:'Benefits & Trust',description:'One main image and four editable icon, title and description highlights.',icon:LayoutTemplate,defaultData:imageHighlights('highlights-starter')},
  {type:'media_gallery',title:'Image Cards — Four Mosaic',category:'Media & Visuals',description:'Four fixed images with editable titles and descriptions in a staggered mosaic.',icon:LayoutTemplate,defaultData:fourMosaicImageCards('four-mosaic-starter')},
  {type:'media_gallery',title:'Image Cards — Three',category:'Media & Visuals',description:'Three fixed images with editable titles and descriptions. No links or extra card controls.',icon:LayoutTemplate,defaultData:threeImageCards('image-cards-starter')},
+ {type:'cta_strip',title:'Editorial Illustrated CTA',category:'Conversion & Leads',description:'An editorial callout with editable copy, one foreground artwork and one action.',icon:LayoutTemplate,defaultData:editorialIllustratedCta('editorial-cta')},
  {type:'cta_strip',title:'Illustrated CTA Panel',category:'Conversion & Leads',description:'One foreground illustration beside editable heading, body and action. Add your own image and destination.',icon:LayoutTemplate,defaultData:illustratedCta('illustrated-cta')},
  {type:'cta_strip',title:'Gradient CTA Panel',category:'Conversion & Leads',description:'A gradient panel with editable heading, description and one button. Add your own destination.',icon:LayoutTemplate,defaultData:gradientClosing('gradient-cta')},
  {type:'faq_accordion',title:'Pricing Band & FAQ',category:'Support & Contact',description:'A horizontal pricing band above editable questions and answers. Enter your own plan or reference existing pricing.',icon:LayoutTemplate,defaultData:pricingBandFaq('pricing-band-faq')},
@@ -97,6 +105,14 @@ const SOURCE_SECTION_TEMPLATES: SectionTemplateOption[] = [
  {type:'media_gallery',title:'Business Website Scenarios',category:'Media & Visuals',description:'Independent website preview images with editable icons and names, without links.',icon:LayoutTemplate,defaultData:websiteBuilderScenarios('website-scenarios-starter')},
  {type:'media_text_split',title:'Website Section Story',category:'Storytelling & Narrative',description:'Editable narrative and icon labels beside one transparent layered-section illustration.',icon:LayoutTemplate,defaultData:websiteBuilderStory('website-story-starter')},
  {type:'media_text_split',title:'Website Builder Overview',category:'Storytelling & Narrative',description:'One editable builder illustration with independent icon labels. No tabs or actions.',icon:LayoutTemplate,defaultData:websiteBuilderOverview('website-builder-starter')},
+ {type:'pricing_table',title:'Plan Comparison',category:'Conversion & Leads',description:'Compare editable plans or reference existing plan facts and terms.',icon:LayoutTemplate,defaultData:planComparison('comparison-starter')},
+ {type:'faq_accordion',title:'Framed FAQ',category:'Support & Contact',description:'Editable questions beside a compact heading, with framed answers.',icon:LayoutTemplate,defaultData:framedFaq('framed-faq-starter')},
+ {type:'media_gallery',title:'Focused Steps',category:'Storytelling & Narrative',description:'Editable step navigation with one focused image, explanation and progress controls.',icon:LayoutTemplate,defaultData:focusedSteps('focused-starter')},
+ {type:'media_gallery',title:'Scroll Stack Cards',category:'Storytelling & Narrative',description:'Editable image and text steps that stack as you scroll, with a static mobile layout.',icon:LayoutTemplate,defaultData:scrollStackCards('stack-starter')},
+ {type:'media_text_split',title:'Team Story Overview',category:'Storytelling & Narrative',description:'One composite image beside editable copy and icon labels.',icon:LayoutTemplate,defaultData:teamStoryOverview('team-story-starter')},
+ {type:'media_gallery',title:'Editorial Knowledge Triptych',category:'Storytelling & Narrative',description:'Editorial heading with three independently editable image and text cards.',icon:LayoutTemplate,defaultData:knowledgeTriptych('knowledge-starter')},
+ {type:'media_gallery',title:'Image Flow',category:'Storytelling & Narrative',description:'Three replaceable card images with staggered float and page-brand SVG connectors. Card copy stays inside each image.',icon:LayoutTemplate,defaultData:imageFlow('image-flow-starter')},
+ {type:'hero_banner',title:'Centered Composite Hero',category:'Header & Intro',description:'Page-brand aligned headline, two optional actions and independently replaceable wide artwork.',icon:LayoutTemplate,defaultData:centeredCompositeHero('centered-composite-starter')},
  {type:'hero_banner',title:'Split Image Hero',category:'Header & Intro',description:'Editable split Hero with replaceable artwork and two optional buttons. Add your own destinations.',icon:LayoutTemplate,defaultData:splitCompositeHero('split-image-hero')},
  {type:'media_text_split',title:'Corporate Marketplace',category:'Storytelling & Narrative',description:'Connected marketplace artwork, split introduction, editable benefit icons and feature-page action.',icon:LayoutTemplate,defaultData:corporateMarketplaceSection('marketplace-starter')},
  {type:'media_text_split',title:'Corporate Courier',category:'Storytelling & Narrative',description:'Parcel handoff artwork, delivery journey, editable courier logo marquee and Shipping action.',icon:LayoutTemplate,defaultData:corporateCourierSection('courier-starter')},

@@ -1,0 +1,3 @@
+import type {PageSection} from '../types';
+export const isTeamStoryOverview=(s:PageSection|null|undefined)=>s?.type==='media_text_split'&&s.layoutPreset==='team-story-overview';
+export function teamStoryOverview(prefix:string):PageSection{return {id:prefix+'-team-story',type:'media_text_split',layoutPreset:'team-story-overview',isVisible:true,containerMode:'page',motionPreset:'subtle-lift',sectionBorder:'none',paddingY:'normal',subtitle:'People and possibilities',title:'Bring your people into the picture.',content:'Introduce the people and perspectives behind your work.',mediaUrl:'',items:[1,2,3].map(n=>({id:prefix+'-label-'+n,icon:'Layers',title:'Highlight '+n}))};}

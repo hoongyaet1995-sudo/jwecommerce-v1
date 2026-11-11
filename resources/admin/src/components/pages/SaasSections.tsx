@@ -3,6 +3,7 @@ import type {StarterPricing} from '../../cms/websiteBuilderStarterFaq';
 import {planContentSource} from '../../cms/websiteBuilderStarterFaq';
 import {shopNavigationHref} from '../../cms/shopNavigation';
 import './CorporateSections.css';
+import {EditorialIllustratedCta} from './EditorialIllustratedCta';
 import React from 'react';
 import {ArrowRight} from 'lucide-react';
 import type {PageSection} from '../../types';
@@ -27,7 +28,7 @@ export function SaasFaq({section:s,pricing,editing=false}:{section:PageSection;p
   <header className="corp-pricing-band-heading"><h2 data-cms-text="title" style={{color:s.customColors?.titleColor,...typographyStyle(s,'title')}}>{s.title}</h2>{s.content&&<p data-cms-text="content" style={{color:s.customColors?.contentColor,...typographyStyle(s,'content')}}>{s.content}</p>}</header>
   <article className="corp-starter-card corp-pricing-band">
    {pricing?.status==='ready'?<><div className="corp-pricing-band-facts"><p className="corp-starter-name">{pricing.name}</p><p className="corp-starter-price">{pricing.priceLabel??saasPriceText({id:'source',title:pricing.name??'',price:pricing.price},pricing.currency??'')}{!pricing.priceLabel&&<small>{pricing.billingLabel}</small>}</p></div>{pricing.description&&<p className="corp-pricing-band-description">{pricing.description}</p>}</>:<p className="corp-pricing-error" role="status">{planContentSource(s)==='reference'?'Pricing source unavailable. Choose a source page, plan and terms in Content.':'Add your plan name and price in Content → Pricing card.'}</p>}
-   {s.buttonText&&shopNavigationHref(s.buttonLink??'')&&<a className="corp-primary" data-cms-action="button" href={shopNavigationHref(s.buttonLink??'')} onClick={e=>editing&&e.preventDefault()}>{s.buttonText}<ArrowRight size={16} aria-hidden="true"/></a>}
+   {s.buttonText&&shopNavigationHref(s.buttonLink??'')&&<a className="corp-primary" data-cms-action="button" href={shopNavigationHref(s.buttonLink??'')} onClick={e=>saasAction(e,s.buttonLink,editing)}>{s.buttonText}<ArrowRight size={16} aria-hidden="true"/></a>}
    {pricing?.status==='ready'&&<p className="corp-starter-terms">{pricing.terms}</p>}
   </article>
   <div className="corp-starter-answers"><h2 data-cms-text="eyebrow" style={{color:s.customColors?.titleColor,...typographyStyle(s,'eyebrow')}}>{s.subtitle}</h2><div className="corp-pricing-faq-grid">{(s.items??[]).map((item,i)=><details key={item.id} data-cms-item={item.id} open={s.faqInitiallyOpen!==false&&i===0}><summary data-cms-text="itemTitle" data-cms-item={item.id} style={{color:s.customColors?.titleColor,...typographyStyle(s,'itemTitle')}}>{item.title}<span aria-hidden="true" className="corp-faq-sign"/></summary><p data-cms-text="itemContent" data-cms-item={item.id} style={{color:s.customColors?.contentColor,...typographyStyle(s,'itemContent')}}>{item.description}</p></details>)}</div></div>
@@ -38,7 +39,7 @@ export function SaasFaq({section:s,pricing,editing=false}:{section:PageSection;p
    <h2 data-cms-text="title" style={{color:s.customColors?.titleColor,...typographyStyle(s,'title')}}>{s.title}</h2>
    {pricing?.status==='ready'&&<p className="corp-starter-price">{pricing.priceLabel??saasPriceText({id:'source',title:pricing.name??'',price:pricing.price},pricing.currency??'')}{!pricing.priceLabel&&<small>{pricing.billingLabel}</small>}</p>}
    {s.content&&<p className="corp-starter-intro" data-cms-text="content" style={{color:s.customColors?.contentColor,...typographyStyle(s,'content')}}>{s.content}</p>}
-   {s.buttonText&&shopNavigationHref(s.buttonLink??'')&&<a className="corp-primary" data-cms-action="button" href={shopNavigationHref(s.buttonLink??'')} onClick={e=>editing&&e.preventDefault()}>{s.buttonText}<ArrowRight size={16} aria-hidden="true"/></a>}
+   {s.buttonText&&shopNavigationHref(s.buttonLink??'')&&<a className="corp-primary" data-cms-action="button" href={shopNavigationHref(s.buttonLink??'')} onClick={e=>saasAction(e,s.buttonLink,editing)}>{s.buttonText}<ArrowRight size={16} aria-hidden="true"/></a>}
    {pricing?.status==='ready'&&<p className="corp-starter-terms">{pricing.terms}</p>}
   </article>
   <div className="corp-starter-answers"><h2 data-cms-text="eyebrow" style={{color:s.customColors?.titleColor,...typographyStyle(s,'eyebrow')}}>{s.subtitle}</h2>
@@ -47,15 +48,16 @@ export function SaasFaq({section:s,pricing,editing=false}:{section:PageSection;p
  </div>;
  return <div className="jw-saas jw-saas-faq"><div><Copy s={s}/></div><div>{s.items?.map((item,i)=><details key={item.id} data-cms-item={item.id} open={s.faqInitiallyOpen && i===0}><summary data-cms-text="itemTitle" data-cms-item={item.id} style={typographyStyle(s,'itemTitle')}>{item.title}</summary><p data-cms-text="itemContent" data-cms-item={item.id} style={typographyStyle(s,'itemContent')}>{item.description}</p></details>)}</div></div>;}
 export function SaasClosing({section:s,editing}:{section:PageSection;editing:boolean}){
+ if(s.ctaPreset==='editorial-illustrated')return <EditorialIllustratedCta section={s} editing={editing}/>;
  if(s.ctaPreset==='illustrated-panel')return <div className="corp corp-closing-wrap" style={{'--corp-space':s.paddingY==='compact'?'32px':s.paddingY==='spacious'?'96px':'64px'} as React.CSSProperties}><div className={`corp-illustrated-panel ${!s.mediaUrl?'without-image':''}`}>
   {s.mediaUrl&&<div className="corp-illustrated-visual"><ScopedImage section={s} targetId="mediaUrl" src={s.mediaUrl} alt={s.mediaAlt??''}/></div>}
   <div className="corp-illustrated-copy"><h2 data-cms-text="title" style={{color:s.customColors?.titleColor,...typographyStyle(s,'title')}}>{s.title}</h2>
   {s.content&&<p data-cms-text="content" style={{color:s.customColors?.contentColor,...typographyStyle(s,'content')}}>{s.content}</p>}
-  {s.buttonText&&shopNavigationHref(s.buttonLink??'')&&<a data-cms-action="button" className="corp-primary" href={shopNavigationHref(s.buttonLink??'')} onClick={e=>editing&&e.preventDefault()}>{s.buttonText}<ArrowRight size={18} aria-hidden="true"/></a>}</div>
+  {s.buttonText&&shopNavigationHref(s.buttonLink??'')&&<a data-cms-action="button" className="corp-primary" href={shopNavigationHref(s.buttonLink??'')} onClick={e=>saasAction(e,s.buttonLink,editing)}>{s.buttonText}<ArrowRight size={18} aria-hidden="true"/></a>}</div>
  </div></div>;
- if(s.ctaPreset==='gradient-panel')return <div className="corp corp-closing-wrap" style={{'--corp-space':s.paddingY==='compact'?'32px':s.paddingY==='spacious'?'96px':'64px'} as React.CSSProperties}><div className="corp-gradient-panel">
+ if(s.ctaPreset==='gradient-panel')return <div className="corp corp-closing-wrap" style={{...(s.surface==='contrast'?{'--corp-closing-background':`linear-gradient(110deg, ${s.customColors?.customBgColor||'currentColor'}, ${s.customColors?.secondaryBtnBg||'currentColor'})`}:{}),'--corp-space':s.paddingY==='compact'?'32px':s.paddingY==='spacious'?'96px':'64px'} as React.CSSProperties}><div className="corp-gradient-panel">
   <h2 data-cms-text="title" style={{color:s.customColors?.titleColor,...typographyStyle(s,'title')}}>{s.title}</h2>
   {s.content&&<p data-cms-text="content" style={{color:s.customColors?.contentColor,...typographyStyle(s,'content')}}>{s.content}</p>}
-  {s.buttonText&&shopNavigationHref(s.buttonLink??'')&&<a data-cms-action="button" className="corp-closing-cta" href={shopNavigationHref(s.buttonLink??'')} onClick={e=>editing&&e.preventDefault()} style={{background:s.customColors?.primaryBtnBg,color:s.customColors?.primaryBtnText}}>{s.buttonText}<ArrowRight size={16} aria-hidden="true"/></a>}
+  {s.buttonText&&shopNavigationHref(s.buttonLink??'')&&<a data-cms-action="button" className="corp-closing-cta" href={shopNavigationHref(s.buttonLink??'')} onClick={e=>saasAction(e,s.buttonLink,editing)} style={{background:s.customColors?.primaryBtnBg,color:s.customColors?.primaryBtnText}}>{s.buttonText}<ArrowRight size={16} aria-hidden="true"/></a>}
  </div></div>;
  return <div className="jw-saas jw-saas-closing"><div><Copy s={s}/></div><Actions s={s} editing={editing}/></div>;}

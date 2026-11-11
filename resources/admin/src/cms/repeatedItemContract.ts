@@ -1,7 +1,9 @@
+import {isPlanComparison} from './planComparison';
 import {isConnectedRows,connectedRowsPassport} from './connectedFeatureRows';
 import {isImageHighlights,imageHighlightsPassport} from './imageHighlights';
 import {isFixedImageCards,imageCardsThreePassport} from './imageCardsThree';
 import type {PageSection,SectionItem} from '../types';
+import {isImageFlow} from './imageFlow';
 /** Inspector capabilities describe consumed renderer fields, never accidental data presence. */
 const fields:Partial<Record<PageSection['type'],readonly string[]>>={
  promotion_highlights:['title','description','imageUrl','sourceId','buttonText','linkUrl'],
@@ -19,13 +21,15 @@ const fields:Partial<Record<PageSection['type'],readonly string[]>>={
  delivery_table:['title','deliveryEstimate','deliveryFee'],chapter_navigation:['title','linkUrl'],
 };
 export function repeatedItemFields(section:PageSection):readonly string[]{
+ if(isPlanComparison(section))return section.planContentSource==='reference'?['sourceId','icon','buttonText','linkUrl']:['title','description','price','features','badge','isHighlighted','pricingMode','pricingLabel','billingLabel','highlightLabel','icon','buttonText','linkUrl'];
  if(isConnectedRows(section))return connectedRowsPassport.itemFields;
  if(isImageHighlights(section))return imageHighlightsPassport.itemFields;
+ if(isImageFlow(section))return ['imageUrl'];
  if(isFixedImageCards(section))return imageCardsThreePassport.itemFields;
  if(section.type==='media_gallery'&&section.galleryPreset==='corporate-connections')return ['title','description','imageUrl','buttonText','linkUrl'];
  if(section.type==='media_gallery'&&section.galleryPreset==='corporate-illustrated-steps')return ['title','description','imageUrl'];
  if(section.type==='media_gallery'&&section.galleryPreset==='corporate-scenarios')return ['title','icon','imageUrl'];
- if(section.type==='media_text_split'&&['corporate-builder-overview','corporate-section-story'].includes(section.layoutPreset??''))return ['title','icon'];
+ if(section.type==='media_text_split'&&['team-story-overview','corporate-builder-overview','corporate-section-story'].includes(section.layoutPreset??''))return ['title','icon'];
  if(section.type==='media_text_split'&&['corporate-payments','corporate-courier'].includes(section.layoutPreset??''))return ['title','imageUrl','linkUrl'];
  if(section.type==='media_text_split'&&['corporate-image-story','corporate-marketplace'].includes(section.layoutPreset??''))return ['title','description','icon'];
  if(section.type==='media_gallery'&&section.galleryPreset==='product-preview-tabs')return ['title','subtitle','description','icon','imageUrl','buttonText','linkUrl'];

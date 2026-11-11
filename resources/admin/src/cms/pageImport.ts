@@ -232,6 +232,7 @@ const hasPhpCompatibleRawHost = (value: string): boolean => {
 const isSafeMediaUrl = (value: string): boolean => {
   if (value === '') return true;
   if (MANAGED_MEDIA_PATTERN.test(value)) return true;
+  if (/^\/images\/cms\/templates\/connected\/[0-9a-f]{24}\.webp$/.test(value)) return true;
   if (/^\/images\/cms\/saas\/(?:editor|support|calendar|analytics)\.svg$/.test(value)) return true;
   if (/^\/images\/themes\/wedding\/(?:hero|account|album|prints)\.png$/.test(value)) return true;
   if (/^\/images\/themes\/logistics\/(?:hero|account|containers|delivery|enquiry)\.png$/.test(value)) return true;

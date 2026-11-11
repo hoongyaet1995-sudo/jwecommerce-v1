@@ -5,7 +5,7 @@ export function validSaasPricingSection(value:unknown):boolean {
  const s=value as PageSection;
  if(('pricingPreset'in s||'pricingCurrency'in s)&&s.type!=='pricing_table')return false;
  if(s.pricingCurrency!==undefined&&!/^[A-Z]{3}$/.test(s.pricingCurrency))return false;
- if(s.pricingPreset!==undefined&&!['default','saas-packages'].includes(s.pricingPreset))return false;
+ if(s.pricingPreset!==undefined&&!['default','saas-packages','plan-comparison'].includes(s.pricingPreset))return false;
  if(s.items!==undefined&&!Array.isArray(s.items))return false;
  return (s.items??[]).every(item=>{
   if(!item||typeof item!=='object')return false;

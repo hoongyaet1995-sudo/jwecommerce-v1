@@ -1,0 +1,3 @@
+import type {PageSection} from '../types';
+export const isScrollStackCards=(s:PageSection|null|undefined)=>s?.type==='media_gallery'&&s.galleryPreset==='scroll-stack-cards';
+export function scrollStackCards(prefix:string):PageSection{return {id:prefix+'-stack',type:'media_gallery',galleryPreset:'scroll-stack-cards',isVisible:true,containerMode:'page',sectionBorder:'none',motionPreset:'none',paddingY:'normal',subtitle:'A better process',title:'Make progress, one step at a time.',content:'Explain the steps behind your approach.',items:[1,2,3].map(n=>({id:prefix+'-step-'+n,title:'Step '+n,description:'Describe what happens at this stage.',imageUrl:''}))};}

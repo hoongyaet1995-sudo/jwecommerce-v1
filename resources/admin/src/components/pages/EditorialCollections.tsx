@@ -1,5 +1,13 @@
+import {isFocusedSteps} from '../../cms/focusedSteps';
+import {FocusedSteps} from './FocusedSteps';
+import {isScrollStackCards} from '../../cms/scrollStackCards';
+import {ScrollStackCards} from './ScrollStackCards';
+import {isKnowledgeTriptych} from '../../cms/knowledgeTriptych';
+import {KnowledgeTriptych} from './KnowledgeTriptych';
 import {isConnectedRows,connectedRowItems} from '../../cms/connectedFeatureRows';
 import {isFixedImageCards,fixedImageCardItems} from '../../cms/imageCardsThree';
+import {isImageFlow} from '../../cms/imageFlow';
+import {ImageFlow} from './ImageFlow';
 import {MediaWidthRegion} from './MediaWidthRegion';
 import {SectionIcon} from './IconPicker';
 import './CorporateSections.css';
@@ -22,6 +30,10 @@ function Heading({section,hero=false}:{section:PageSection;hero?:boolean}) {
  </div>;
 }
 export function EditorialGallery({section,editing=false}:{section:PageSection;editing?:boolean}) {
+ if(isFocusedSteps(section))return <FocusedSteps section={section} editing={editing}/>;
+ if(isScrollStackCards(section))return <ScrollStackCards section={section} editing={editing}/>;
+ if(isKnowledgeTriptych(section))return <KnowledgeTriptych section={section} editing={editing}/>;
+ if(isImageFlow(section))return <ImageFlow section={section} editing={editing}/>;
  if(isConnectedRows(section)||isFixedImageCards(section)||section.galleryPreset==='corporate-connections')return <div data-editorial-gallery={section.galleryPreset} className={`corp corp-connections ${isConnectedRows(section)?'corp-connected-feature-rows':section.galleryPreset==='image-cards-four-mosaic'?'corp-image-cards-four-mosaic':isFixedImageCards(section)?'corp-image-cards-three':''}`} style={{'--corp-space':section.paddingY==='compact'?'32px':section.paddingY==='spacious'?'96px':'64px'} as React.CSSProperties}>
   <Heading section={{...section,subtitle:undefined}}/>
   <div className="corp-connections-grid">{(isConnectedRows(section)?connectedRowItems(section):isFixedImageCards(section)?fixedImageCardItems(section):section.items??[]).map(item=><article key={item.id} data-cms-item={item.id} className="corp-connection-card">
