@@ -25,9 +25,13 @@ final class StarterPricingReference
    return ['status'=>'ready','name'=>$name,'price'=>$price,'currency'=>$reference['planCurrency'],'billingLabel'=>$reference['planPeriod']??'','terms'=>$terms,'description'=>$reference['planDescription']??''];
   }
   $missing=['status'=>'unavailable'];$sections=collect($document['sections']??[]);
-  $plan=$sections->first(fn($s)=>($s['id']??'')===($reference['pricingSourceSectionId']??null)&&($s['type']??'')==='pricing_table'&&($s['pricingPreset']??'')==='saas-packages'&&($s['isVisible']??false));
+  $plan=$sections->first(fn($s)=>($s['id']??'')===($reference['pricingSourceSectionId']??null)&&((($s['type']??'')==='pricing_table'&&($s['pricingPreset']??'')==='saas-packages')||(($s['type']??'')==='feature_cards'&&($s['featureCardsPreset']??'')==='saas-addons'))&&($s['isVisible']??false));
   $item=collect($plan['items']??[])->firstWhere('id',$reference['pricingSourceItemId']??null);
   $terms=$sections->first(fn($s)=>($s['id']??'')===($reference['pricingSourceTermsSectionId']??null)&&($s['isVisible']??false));
+  if(($plan['type']??'')==='feature_cards'&&($plan['featureCardsPreset']??'')==='saas-addons'){
+   $lines=preg_split('/\\r?\\n/',$item['description']??'');$priceLabel=array_shift($lines);
+   return !empty($item['title'])&&trim($priceLabel??'')!==''&&!empty($terms['content'])?['status'=>'ready','kind'=>'addon','label'=>$plan['title']??'','icon'=>$item['icon']??'','name'=>$item['title'],'priceLabel'=>$priceLabel,'description'=>implode("\n",$lines),'terms'=>$terms['content']]:$missing;
+  }
   if(!$item||empty($item['title'])||($item['pricingMode']??'')==='contact'||!is_numeric($item['price']??null)||!is_finite((float)$item['price'])||$item['price']<0||empty($item['billingLabel'])||!preg_match('/^[A-Z]{3}$/',$plan['pricingCurrency']??'')||empty($terms['content']))return $missing;
   return ['status'=>'ready','name'=>$item['title'],'price'=>$item['price'],'currency'=>$plan['pricingCurrency'],'billingLabel'=>$item['billingLabel'],'terms'=>$terms['content'],'description'=>$item['description']??''];
  }

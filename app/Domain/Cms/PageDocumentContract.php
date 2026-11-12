@@ -374,6 +374,11 @@ final class PageDocumentContract
                 }
             }
         }
+        // Foreground composite artwork uses the shared employee-owned image geometry.
+        if (($type === 'hero_banner' && in_array($section['heroBannerPreset'] ?? '', ['corporate-split-composite','corporate-centered-composite'], true))
+            || ($type === 'cta_strip' && in_array($section['ctaPreset'] ?? '', ['illustrated-panel','editorial-illustrated'], true))) {
+            $targets['mediaUrl'] = false;
+        }
         $seen = [];
         foreach ($section['imageSlots'] as $index => $slot) {
             $slot = $slot instanceof stdClass ? get_object_vars($slot) : $slot;

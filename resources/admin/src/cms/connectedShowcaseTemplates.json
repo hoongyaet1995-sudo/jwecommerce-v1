@@ -1849,5 +1849,316 @@
         "buttonLink": "https://www.jwaistudio.online/pages/contact-jw-studio"
       }
     ]
+  },
+  "content-campaigns": {
+    "containerWidth": "site",
+    "style": {
+      "colorSource": "custom",
+      "palette": {
+        "paper": "#ffffff",
+        "ink": "#0d1234",
+        "muted": "#626981",
+        "accent": "#2860ff",
+        "light": "#ffffff",
+        "secondary": "#8524ff",
+        "secondaryInk": "#ffffff",
+        "hover": "#2354e0"
+      },
+      "spacing": "spacious",
+      "buttonRadius": 6,
+      "buttonSize": "normal",
+      "typography": {
+        "eyebrow": {
+          "fontFamily": "sans",
+          "fontSize": 12,
+          "fontWeight": 700,
+          "lineHeight": 1.5,
+          "letterSpacing": 1.2,
+          "color": "#2860ff"
+        },
+        "title": {
+          "fontFamily": "sans",
+          "fontSize": 42,
+          "fontWeight": 700,
+          "lineHeight": 1.15,
+          "letterSpacing": -0.8
+        },
+        "content": {
+          "fontFamily": "sans",
+          "fontSize": 18,
+          "fontWeight": 400,
+          "lineHeight": 1.6
+        },
+        "lead": {
+          "fontFamily": "sans",
+          "fontSize": 18,
+          "fontWeight": 400,
+          "lineHeight": 1.6
+        },
+        "itemTitle": {
+          "fontFamily": "sans",
+          "fontSize": 22,
+          "fontWeight": 700,
+          "lineHeight": 1.3
+        },
+        "itemContent": {
+          "fontFamily": "sans",
+          "fontSize": 16,
+          "fontWeight": 400,
+          "lineHeight": 1.6
+        }
+      }
+    },
+    "sections": [
+      {
+        "id": "marketing-s01-hero",
+        "type": "hero_banner",
+        "heroBannerPreset": "corporate-split-composite",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "subtitle": "AI SOCIAL MEDIA POST AUTOMATION",
+        "title": "Stay active on social.\nSpend less time posting.",
+        "content": "Turn your products and promotions into AI-generated posts for Facebook, Instagram and TikTok. Set a recurring schedule, then choose draft review or automatic publishing.",
+        "mediaUrl": "/images/cms/templates/connected/792b74ec3427395a32891c1c.webp",
+        "imageSlots": [
+          {
+            "target": "mediaUrl",
+            "mediaAlt": "Illustrative recurring AI content creation with product sources, Facebook, Instagram and TikTok artwork, and a choice between draft review and automatic publishing.",
+            "imageWidth": "50"
+          }
+        ],
+        "buttonText": "Request a demo",
+        "buttonLink": "https://www.jwaistudio.online/pages/contact-jw-studio",
+        "secondaryButtonText": "See the automation workflow",
+        "secondaryButtonLink": "#section-marketing-s04-recurring",
+        "surface": "light"
+      },
+      {
+        "id": "marketing-s02-sources",
+        "type": "media_text_split",
+        "layoutPreset": "wide-visual-editorial",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "subtitle": "START WITH WHAT YOU ALREADY HAVE",
+        "title": "Your business already has something to say.",
+        "content": "You do not need to start every post from a blank page. Turn your products, current offers and existing content into fresh ideas for your social channels.",
+        "mediaUrl": "/images/cms/templates/connected/e4f8065c3be8201eda112560.webp",
+        "imageSlots": [
+          {
+            "target": "mediaUrl",
+            "mediaAlt": "Illustrative products, current offers and existing content connect through animated light trails to an AI-assisted social post draft.",
+            "imageShape": "default",
+            "imageWidth": "75"
+          }
+        ],
+        "surface": "light"
+      },
+      {
+        "id": "marketing-s03-formats",
+        "type": "media_gallery",
+        "galleryPreset": "image-cards-contrast",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "textAlignment": "center",
+        "title": "Give your audience more reasons to stop scrolling.",
+        "content": "Make your message worth noticing, exploring and keeping—with content that brings variety to your social feed.",
+        "items": [
+          {
+            "id": "marketing-s03-poster",
+            "title": "Make an impression.",
+            "description": "Give a product, offer or launch a clear visual moment.",
+            "imageUrl": "/images/cms/templates/connected/df5f1d736d36315b4cc2947e.webp"
+          },
+          {
+            "id": "marketing-s03-carousel",
+            "title": "Tell a fuller story.",
+            "description": "Let connected slides reveal more, one idea at a time.",
+            "imageUrl": "/images/cms/templates/connected/a779a380f7c2687eba3b57a6.webp"
+          },
+          {
+            "id": "marketing-s03-guide",
+            "title": "Be worth saving.",
+            "description": "Share useful tips and visual guides your audience can return to.",
+            "imageUrl": "/images/cms/templates/connected/3223953432fefaf0e7a48022.webp"
+          }
+        ],
+        "imageSlots": [
+          {
+            "target": "item:marketing-s03-poster:imageUrl",
+            "mediaAlt": "Warm lamp poster with olive branches and dimensional frame."
+          },
+          {
+            "target": "item:marketing-s03-carousel:imageUrl",
+            "mediaAlt": "Three overlapping interior-design carousel slides."
+          },
+          {
+            "target": "item:marketing-s03-guide:imageUrl",
+            "mediaAlt": "An illustrated home guide with photography and three practical tips."
+          }
+        ],
+        "surface": "contrast"
+      },
+      {
+        "id": "marketing-s04-recurring",
+        "type": "media_text_split",
+        "layoutPreset": "inset-surface-panel",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "title": "Keep creating—\neven when business gets busy.",
+        "content": "Set a recurring creation schedule around your products, offers and brand. Keep fresh content coming without rebuilding the brief for every post.",
+        "mediaUrl": "/images/cms/templates/connected/979068ef53eb44ab9eb10b29.webp",
+        "imageSlots": [
+          {
+            "target": "mediaUrl",
+            "mediaAlt": "Illustrative recurring creation schedule with Monday, Wednesday and Friday product, collection and helpful-tip content saved as drafts for review.",
+            "imageForeground": false,
+            "imageOverlay": false,
+            "imageWidth": "75",
+            "imageShape": "rounded"
+          }
+        ],
+        "surface": "contrast"
+      },
+      {
+        "id": "marketing-s05-channels",
+        "type": "media_text_split",
+        "layoutPreset": "wide-visual-centered",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "title": "Your channels. Your voice.\nYour publishing choice.",
+        "content": "Keep your brand consistent while your content fits each channel. Review drafts first, or let scheduled generations move into publishing for the accounts you choose.",
+        "mediaUrl": "/images/cms/templates/connected/f8649b8a20d183a0c3040ce0.webp",
+        "imageSlots": [
+          {
+            "target": "mediaUrl",
+            "mediaAlt": "Illustrative Facebook, Instagram and TikTok content versions for one product, with alternatives to review drafts first or publish after scheduled generation completes.",
+            "imageRatio": "3:2",
+            "imageFit": "cover",
+            "imageWidth": "50"
+          }
+        ],
+        "surface": "light"
+      },
+      {
+        "id": "marketing-s06-calendar",
+        "type": "media_text_split",
+        "layoutPreset": "team-story-overview",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "title": "See what's next.\nKnow what needs attention.",
+        "content": "Keep planned posts, publishing destinations and delivery status in one clear view. See what’s coming up and which posts need a closer look.",
+        "mediaUrl": "/images/cms/templates/connected/594d0f75b5058f7f3011185b.webp",
+        "imageSlots": [
+          {
+            "target": "mediaUrl",
+            "mediaAlt": "Illustrative publishing calendar with published, scheduled, draft and needs-attention posts. Product update highlights before a review notification appears."
+          }
+        ],
+        "items": [
+          {
+            "id": "marketing-s06-plan",
+            "icon": "Calendar",
+            "title": "Plan ahead"
+          },
+          {
+            "id": "marketing-s06-follow",
+            "icon": "Layers",
+            "title": "Follow each post"
+          },
+          {
+            "id": "marketing-s06-attention",
+            "icon": "Flag",
+            "title": "Spot what needs you"
+          }
+        ],
+        "surface": "light"
+      },
+      {
+        "id": "marketing-s07-addon-faq",
+        "type": "faq_accordion",
+        "faqPreset": "pricing-band-faq",
+        "faqInitiallyOpen": true,
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "paddingY": "normal",
+        "title": "Choose a content service that fits.",
+        "content": "Add Marketing Studio to your plan and build a more consistent content routine.",
+        "subtitle": "A few helpful answers.",
+        "buttonText": "Discuss your setup",
+        "buttonLink": "https://www.jwaistudio.online/pages/contact-jw-studio",
+        "planContentSource": "manual",
+        "items": [
+          {
+            "id": "marketing-s07-faq-1",
+            "title": "Can this service fit my current setup?",
+            "description": "Describe how customers can add this service to their existing setup."
+          },
+          {
+            "id": "marketing-s07-faq-2",
+            "title": "Can I review posts before they publish?",
+            "description": "Yes. Keep generated content as drafts, review it with your team and choose when to publish. Manually generated posts remain drafts."
+          },
+          {
+            "id": "marketing-s07-faq-3",
+            "title": "Can posts publish automatically?",
+            "description": "Yes. Scheduled generation can pass completed content into publishing when automatic publishing is enabled for selected, connected accounts with the required permissions. Generation and publishing have separate controls."
+          },
+          {
+            "id": "marketing-s07-faq-4",
+            "title": "Which social channels can I create content for?",
+            "description": "Create content versions for Facebook, Instagram and TikTok. Publishing follows your connected accounts, permissions and the requirements of each channel."
+          },
+          {
+            "id": "marketing-s07-faq-5",
+            "title": "Are there usage or provider limits?",
+            "description": "Usage allowances and provider limits are confirmed before activation. Available generation and publishing options depend on your setup and the connected providers."
+          }
+        ],
+        "surface": "light",
+        "planName": "Content services",
+        "planPricingMode": "contact",
+        "planPriceLabel": "Contact us",
+        "planDescription": "Describe your content service.",
+        "planTerms": "Add your service terms before publishing."
+      },
+      {
+        "id": "marketing-s08-closing",
+        "type": "cta_strip",
+        "ctaPreset": "illustrated-panel",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "paddingY": "normal",
+        "title": "Make your next post part of a bigger plan.",
+        "content": "Tell us how your business creates and shares content. We’ll help you shape an automation setup around your products, channels and working rhythm.",
+        "mediaUrl": "/images/cms/templates/connected/3a3288305a6e020c58b79cef.webp",
+        "imageSlots": [
+          {
+            "target": "mediaUrl",
+            "mediaAlt": "Illustrative social content cards with warm product photography, channel content symbols and a recurring automation badge.",
+            "imageFit": "contain",
+            "imageRatio": "auto"
+          }
+        ],
+        "buttonText": "Request a demo",
+        "buttonLink": "https://www.jwaistudio.online/pages/contact-jw-studio",
+        "surface": "light"
+      }
+    ]
   }
 }

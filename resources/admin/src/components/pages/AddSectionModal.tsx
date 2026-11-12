@@ -1,3 +1,4 @@
+import {insetSurfacePanel,centeredWideVisual,splitVisualSurface,wideVisualEditorial} from '../../cms/wideVisualEditorial';
 import {planComparison,framedFaq} from '../../cms/planComparison';
 import {focusedSteps} from '../../cms/focusedSteps';
 import {scrollStackCards} from '../../cms/scrollStackCards';
@@ -7,7 +8,7 @@ import {illustratedCta,editorialIllustratedCta} from '../../cms/illustratedCta';
 import {pricingBandFaq} from '../../cms/pricingBandFaq';
 import {connectedFeatureRows,isConnectedRows} from '../../cms/connectedFeatureRows';
 import {imageHighlights,isImageHighlights} from '../../cms/imageHighlights';
-import {threeImageCards,fourMosaicImageCards,isFixedImageCards} from '../../cms/imageCardsThree';
+import {contrastImageCards,staggeredImageCards,threeImageCards,fourMosaicImageCards,isFixedImageCards} from '../../cms/imageCardsThree';
 import solutionDetail from '../../cms/logisticsSolutionTemplate.json';
 import galleryDetail from '../../cms/logisticsGalleryTemplate.json';
 import {logisticsSections} from '../../cms/logisticsTemplates';
@@ -104,6 +105,12 @@ const SOURCE_SECTION_TEMPLATES: SectionTemplateOption[] = [
  {type:'media_gallery',title:'Website Illustrated Steps',category:'Storytelling & Narrative',description:'Independent illustrations and editable step copy with automatic numbering and connecting arrows.',icon:LayoutTemplate,defaultData:websiteBuilderWorkflow('website-workflow-starter')},
  {type:'media_gallery',title:'Business Website Scenarios',category:'Media & Visuals',description:'Independent website preview images with editable icons and names, without links.',icon:LayoutTemplate,defaultData:websiteBuilderScenarios('website-scenarios-starter')},
  {type:'media_text_split',title:'Website Section Story',category:'Storytelling & Narrative',description:'Editable narrative and icon labels beside one transparent layered-section illustration.',icon:LayoutTemplate,defaultData:websiteBuilderStory('website-story-starter')},
+ {type:'media_gallery',title:'Contrast Image Cards',category:'Media & Visuals',description:'Three editable pictures with page-brand contrasting copy surfaces.',icon:LayoutTemplate,defaultData:contrastImageCards('contrast-cards')},
+ {type:'media_text_split',title:'Inset Surface Panel',category:'Storytelling & Narrative',description:'Editable picture and copy in a rounded Light or Contrast panel.',icon:LayoutTemplate,defaultData:insetSurfacePanel('inset-panel')},
+ {type:'media_gallery',title:'Three Images — Staggered',category:'Media & Visuals',description:'Three independent images with editable headings and descriptions. Open staggered presentation, no links.',icon:LayoutTemplate,defaultData:staggeredImageCards('staggered-starter')},
+ {type:'media_text_split',title:'Wide Visual — Centered Header',category:'Storytelling & Narrative',description:'Editable centered headline and introduction above one image. No tabs, cards or actions.',icon:LayoutTemplate,defaultData:centeredWideVisual('centered-visual-starter')},
+ {type:'media_text_split',title:'Split Visual — Surface Panel',category:'Storytelling & Narrative',description:'Editable title and description beside one image inside a page-brand surface panel. No cards or actions.',icon:LayoutTemplate,defaultData:splitVisualSurface('surface-panel-starter')},
+ {type:'media_text_split',title:'Wide Visual — Editorial Header',category:'Storytelling & Narrative',description:'Editable headline and introduction above one wide image or GIF. No cards or actions.',icon:LayoutTemplate,defaultData:wideVisualEditorial('wide-visual-starter')},
  {type:'media_text_split',title:'Website Builder Overview',category:'Storytelling & Narrative',description:'One editable builder illustration with independent icon labels. No tabs or actions.',icon:LayoutTemplate,defaultData:websiteBuilderOverview('website-builder-starter')},
  {type:'pricing_table',title:'Plan Comparison',category:'Conversion & Leads',description:'Compare editable plans or reference existing plan facts and terms.',icon:LayoutTemplate,defaultData:planComparison('comparison-starter')},
  {type:'faq_accordion',title:'Framed FAQ',category:'Support & Contact',description:'Editable questions beside a compact heading, with framed answers.',icon:LayoutTemplate,defaultData:framedFaq('framed-faq-starter')},

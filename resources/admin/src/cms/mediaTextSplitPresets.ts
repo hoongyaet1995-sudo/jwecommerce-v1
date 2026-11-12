@@ -4,6 +4,7 @@ export function isEditorialMediaTextSplit(section:PageSection) {
   return section.type==='media_text_split' && (['flush-split','producer-story'].includes(section.layoutPreset??'') || section.layoutPreset==='editorial-cover' || section.layoutPreset==='editorial-hero' || section.layoutPreset==='editorial-story' || section.layoutPreset==='story-with-steps');
 }
 export function mediaTextSplitPresetPatch(section:PageSection,preset:NonNullable<PageSection['layoutPreset']>):Partial<PageSection> {
+  if(['team-story-overview','wide-visual-centered','wide-visual-editorial','inset-surface-panel','split-visual-surface'].includes(preset)||['team-story-overview','wide-visual-centered','wide-visual-editorial','inset-surface-panel','split-visual-surface'].includes(section.layoutPreset??''))return {layoutPreset:preset};
   if(['editorial-story-cards','editorial-journal-rows'].includes(preset))return {layoutPreset:preset,items:section.items??[{id:crypto.randomUUID(),title:'Your story',description:'Introduce the article.',imageUrl:section.mediaUrl??'',buttonText:'Read the story',linkUrl:''}],buttonStyle:'text-link'};
   if(preset==='default') return {layoutPreset:'default'};
   let dark=section.backgroundColor!==undefined && !['bg-white','bg-neutral-50'].includes(section.backgroundColor);

@@ -675,6 +675,273 @@
           ]
         }
       },
+      "wide-visual-centered": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:unset": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:true": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:false": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        }
+      },
+      "inset-surface-panel": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:unset": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:true": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:false": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        }
+      },
+      "split-visual-surface": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:unset": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:true": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:false": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        }
+      },
       "corporate-starter-faq": {
         "unset:unset": {
           "section": [
@@ -10171,6 +10438,540 @@
           ]
         }
       },
+      "contrast-cards": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:unset": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:true": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:false": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        }
+      },
+      "inset-panel": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:unset": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:true": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:false": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        }
+      },
+      "staggered-starter": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:unset": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:true": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:false": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        }
+      },
+      "centered-visual-starter": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:unset": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:true": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:false": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        }
+      },
+      "surface-panel-starter": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:unset": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:true": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:false": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        }
+      },
+      "wide-visual-starter": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:unset": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:true": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:false": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        }
+      },
       "website-builder-starter": {
         "unset:unset": {
           "section": [
@@ -30196,6 +30997,95 @@
           ]
         }
       },
+      "image-cards-three-staggered": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:unset": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:true": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:false": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        }
+      },
       "image-cards-three": {
         "unset:unset": {
           "section": [
@@ -30642,6 +31532,95 @@
         }
       },
       "editorial-cards": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:unset": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:true": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:false": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        }
+      },
+      "image-cards-contrast": {
         "unset:unset": {
           "section": [
             "title",
@@ -31354,6 +32333,95 @@
         }
       },
       "image-highlights": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:unset": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:true": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:false": {
+          "section": [],
+          "items": [
+            "title",
+            "description"
+          ]
+        }
+      },
+      "wide-visual-editorial": {
         "unset:unset": {
           "section": [
             "title",
@@ -35868,6 +36936,201 @@
         "false:false": {
           "section": [
             "buttonText"
+          ],
+          "items": []
+        }
+      },
+      "wide-visual-centered": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "content"
+          ],
+          "items": []
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "content"
+          ],
+          "items": []
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "content"
+          ],
+          "items": []
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "content"
+          ],
+          "items": []
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "content"
+          ],
+          "items": []
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "content"
+          ],
+          "items": []
+        },
+        "false:unset": {
+          "section": [
+            "title",
+            "content"
+          ],
+          "items": []
+        },
+        "false:true": {
+          "section": [
+            "title",
+            "content"
+          ],
+          "items": []
+        },
+        "false:false": {
+          "section": [
+            "title",
+            "content"
+          ],
+          "items": []
+        }
+      },
+      "inset-surface-panel": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "content"
+          ],
+          "items": []
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "content"
+          ],
+          "items": []
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "content"
+          ],
+          "items": []
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "content"
+          ],
+          "items": []
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "content"
+          ],
+          "items": []
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "content"
+          ],
+          "items": []
+        },
+        "false:unset": {
+          "section": [
+            "title",
+            "content"
+          ],
+          "items": []
+        },
+        "false:true": {
+          "section": [
+            "title",
+            "content"
+          ],
+          "items": []
+        },
+        "false:false": {
+          "section": [
+            "title",
+            "content"
+          ],
+          "items": []
+        }
+      },
+      "split-visual-surface": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "content"
+          ],
+          "items": []
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "content"
+          ],
+          "items": []
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "content"
+          ],
+          "items": []
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "content"
+          ],
+          "items": []
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "content"
+          ],
+          "items": []
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "content"
+          ],
+          "items": []
+        },
+        "false:unset": {
+          "section": [
+            "title",
+            "content"
+          ],
+          "items": []
+        },
+        "false:true": {
+          "section": [
+            "title",
+            "content"
+          ],
+          "items": []
+        },
+        "false:false": {
+          "section": [
+            "title",
+            "content"
           ],
           "items": []
         }
@@ -44231,6 +45494,450 @@
           "items": []
         }
       },
+      "contrast-cards": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:unset": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:true": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:false": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        }
+      },
+      "inset-panel": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:unset": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:true": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:false": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        }
+      },
+      "staggered-starter": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:unset": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:true": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:false": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        }
+      },
+      "centered-visual-starter": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:unset": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:true": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:false": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        }
+      },
+      "surface-panel-starter": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:unset": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:true": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:false": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        }
+      },
+      "wide-visual-starter": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:unset": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:true": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:false": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        }
+      },
       "website-builder-starter": {
         "unset:unset": {
           "section": [
@@ -60881,6 +62588,80 @@
           "items": []
         }
       },
+      "image-cards-three-staggered": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:unset": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:true": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:false": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        }
+      },
       "image-cards-three": {
         "unset:unset": {
           "section": [
@@ -61252,6 +63033,80 @@
         }
       },
       "editorial-cards": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "subtitle",
+            "content",
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:unset": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:true": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        },
+        "false:false": {
+          "section": [
+            "buttonText"
+          ],
+          "items": []
+        }
+      },
+      "image-cards-contrast": {
         "unset:unset": {
           "section": [
             "title",
@@ -61933,6 +63788,80 @@
             "title",
             "description"
           ]
+        }
+      },
+      "wide-visual-editorial": {
+        "unset:unset": {
+          "section": [
+            "subtitle",
+            "title",
+            "content"
+          ],
+          "items": []
+        },
+        "unset:true": {
+          "section": [
+            "subtitle",
+            "title",
+            "content"
+          ],
+          "items": []
+        },
+        "unset:false": {
+          "section": [
+            "subtitle",
+            "title",
+            "content"
+          ],
+          "items": []
+        },
+        "true:unset": {
+          "section": [
+            "subtitle",
+            "title",
+            "content"
+          ],
+          "items": []
+        },
+        "true:true": {
+          "section": [
+            "subtitle",
+            "title",
+            "content"
+          ],
+          "items": []
+        },
+        "true:false": {
+          "section": [
+            "subtitle",
+            "title",
+            "content"
+          ],
+          "items": []
+        },
+        "false:unset": {
+          "section": [
+            "subtitle",
+            "title",
+            "content"
+          ],
+          "items": []
+        },
+        "false:true": {
+          "section": [
+            "subtitle",
+            "title",
+            "content"
+          ],
+          "items": []
+        },
+        "false:false": {
+          "section": [
+            "subtitle",
+            "title",
+            "content"
+          ],
+          "items": []
         }
       },
       "defaults": {
@@ -67210,6 +69139,98 @@
           ]
         }
       },
+      "image-cards-three-staggered": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:unset": {
+          "section": [
+            "title",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:true": {
+          "section": [
+            "title",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:false": {
+          "section": [
+            "title",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        }
+      },
       "image-cards-three": {
         "unset:unset": {
           "section": [
@@ -67668,6 +69689,98 @@
             "content"
           ],
           "items": []
+        }
+      },
+      "image-cards-contrast": {
+        "unset:unset": {
+          "section": [
+            "title",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "unset:true": {
+          "section": [
+            "title",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "unset:false": {
+          "section": [
+            "title",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:unset": {
+          "section": [
+            "title",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:true": {
+          "section": [
+            "title",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "true:false": {
+          "section": [
+            "title",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:unset": {
+          "section": [
+            "title",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:true": {
+          "section": [
+            "title",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
+        },
+        "false:false": {
+          "section": [
+            "title",
+            "content"
+          ],
+          "items": [
+            "title",
+            "description"
+          ]
         }
       }
     },

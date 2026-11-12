@@ -653,6 +653,7 @@
       "enum": [
         "connected-feature-rows",
         "image-cards-four-mosaic",
+        "image-cards-three-staggered",
         "image-cards-three",
         "focused-steps",
         "scroll-stack-cards",
@@ -670,7 +671,8 @@
         "photo-marquee",
         "industrial-mosaic",
         "album-browser",
-        "product-preview-tabs"
+        "product-preview-tabs",
+        "image-cards-contrast"
       ]
     },
     "showSectionHeading": {
@@ -797,13 +799,17 @@
         "corporate-section-story",
         "image-highlights",
         "team-story-overview",
+        "wide-visual-centered",
+        "split-visual-surface",
+        "wide-visual-editorial",
         "corporate-builder-overview",
         "corporate-feature",
         "corporate-support",
         "corporate-image-story",
         "corporate-payments",
         "corporate-courier",
-        "corporate-marketplace"
+        "corporate-marketplace",
+        "inset-surface-panel"
       ]
     },
     "mediaAlt": {

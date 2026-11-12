@@ -1,5 +1,5 @@
 import type {PageDocument,PageSection} from '../types';
-export interface StarterPricing {status:'ready'|'unavailable';name?:string;price?:number;priceLabel?:string;currency?:string;billingLabel?:string;terms?:string;description?:string}
+export interface StarterPricing {status:'ready'|'unavailable';kind?:'addon';label?:string;icon?:string;name?:string;price?:number;priceLabel?:string;currency?:string;billingLabel?:string;terms?:string;description?:string}
 export function planContentSource(s:PageSection):'manual'|'reference' {return s.planContentSource??(s.pricingSourcePageId?'reference':'manual');}
 export function resolveStarterPricing(s:PageSection,document?:Pick<PageDocument,'sections'>):StarterPricing {
  if(planContentSource(s)==='manual'){
@@ -8,9 +8,13 @@ export function resolveStarterPricing(s:PageSection,document?:Pick<PageDocument,
   if(typeof s.planAmount!=='number'||!Number.isFinite(s.planAmount)||s.planAmount<0||!/^[A-Z]{3}$/.test(s.planCurrency??''))return {status:'unavailable'};
   return {status:'ready',name:s.planName,price:s.planAmount,currency:s.planCurrency,billingLabel:s.planPeriod??'',terms:s.planTerms??'',description:s.planDescription??''};
  }
- const plan=document?.sections.find(x=>x.id===s.pricingSourceSectionId&&x.type==='pricing_table'&&x.pricingPreset==='saas-packages'&&x.isVisible);
+ const plan=document?.sections.find(x=>x.id===s.pricingSourceSectionId&&(x.type==='pricing_table'&&x.pricingPreset==='saas-packages'||x.type==='feature_cards'&&x.featureCardsPreset==='saas-addons')&&x.isVisible);
  const item=plan?.items?.find(x=>x.id===s.pricingSourceItemId);
  const terms=document?.sections.find(x=>x.id===s.pricingSourceTermsSectionId&&x.isVisible);
+ if(plan?.type==='feature_cards'&&plan.featureCardsPreset==='saas-addons'){
+  const [priceLabel,...description]=(item?.description??'').split(/\r?\n/);
+  return item?.title&&priceLabel.trim()&&terms?.content?{status:'ready',kind:'addon',label:plan.title,icon:item.icon,name:item.title,priceLabel,description:description.join('\n'),terms:terms.content}:{status:'unavailable'};
+ }
  if(!item?.title||item.pricingMode==='contact'||typeof item.price!=='number'||!Number.isFinite(item.price)||item.price<0||!item.billingLabel||!plan?.pricingCurrency||!terms?.content)return {status:'unavailable'};
  return {status:'ready',name:item.title,price:item.price,currency:plan.pricingCurrency,billingLabel:item.billingLabel,terms:terms.content,description:item.description??''};
 }

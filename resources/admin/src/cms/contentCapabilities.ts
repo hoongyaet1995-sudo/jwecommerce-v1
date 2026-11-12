@@ -1,3 +1,4 @@
+import {isWideVisualEditorial} from './wideVisualEditorial';
 import {isImageFlow} from './imageFlow';
 import {isPlanComparison,isFramedFaq} from './planComparison';
 import {isFocusedSteps} from './focusedSteps';
@@ -31,6 +32,8 @@ const fields:Record<PageSection['type'],readonly string[]>={
 };
 export const contentFieldKeys=new Set(Object.values(fields).flat().concat(['leadText','mapEmbedUrl','contactAddressIcon','buttonText','buttonLink']));
 export function sectionContentFields(section:PageSection):readonly string[]{
+ if(section.type==='media_text_split'&&['wide-visual-centered','inset-surface-panel','split-visual-surface'].includes(section.layoutPreset??''))return ['title','content','mediaUrl','mediaAlt'];
+ if(isWideVisualEditorial(section))return ['subtitle','title','content','mediaUrl','mediaAlt'];
  if(isImageFlow(section))return ['title','content'];
  if(isPlanComparison(section))return ['subtitle','title','content','buttonText','buttonLink'];
  if(isFramedFaq(section))return ['subtitle','title','content'];

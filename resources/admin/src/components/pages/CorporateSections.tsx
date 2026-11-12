@@ -14,7 +14,7 @@ function brand(s:PageSection):React.CSSProperties{return {'--corp-blue':s.custom
 function Action({s,editing,secondary=false}:{s:PageSection;editing:boolean;secondary?:boolean}){
  const label=secondary?s.secondaryButtonText:s.buttonText,href=secondary?s.secondaryButtonLink:s.buttonLink;
  if(!label||!href)return null;
- return <a data-cms-action={secondary?'secondary':'button'} className={secondary?'corp-secondary':'corp-primary'} href={href} onClick={e=>saasAction(e,href,editing)}>{label}<span aria-hidden="true"> →</span></a>;
+ return <a data-cms-action={secondary?'secondary':'button'} className={secondary?'corp-secondary':'corp-primary'} style={secondary&&s.heroBannerPreset==='corporate-split-composite'?{color:s.surface==='contrast'?s.customColors?.titleColor:s.customColors?.secondaryBtnBg}:undefined} href={href} onClick={e=>saasAction(e,href,editing)}>{label}<span aria-hidden="true"> →</span></a>;
 }
 function Copy({s,hero=false}:{s:PageSection;hero?:boolean}){
  const H=hero?'h1':'h2';return <>{s.subtitle&&<p className="corp-eyebrow" data-cms-text="eyebrow" style={{color:s.customColors?.eyebrowColor,...typographyStyle(s,'eyebrow')}}>{s.subtitle}</p>}<H data-cms-text="title" style={{color:s.customColors?.titleColor,...typographyStyle(s,'title')}}>{s.title}</H>{s.content&&<p className="corp-body" data-cms-text="content" style={{color:s.customColors?.contentColor,...typographyStyle(s,'content')}}>{s.content}</p>}</>;

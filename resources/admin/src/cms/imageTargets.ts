@@ -8,7 +8,9 @@ import type {PageSection,SectionImageSlot} from '../types';
 export const imageControlKeys=['mediaAlt','imageRatio','imagePosition','imageFit','imageWidth','imageShape','imageOverlay','imageOverlayOpacity','imageForeground','imageForegroundColor','imageForegroundOpacity'] as const;
 export const imageSlotFamilies=['product_listing','promotion_highlights','shop_navigation','policy_content','chapter_block','cta_strip','hero_banner','hero_slider','split_hero','media_text_split','featured_deal','media_gallery','before_after','instagram_feed','testimonials_slider','logo_cloud','comparison_matrix'] as const;
 export interface ImageTarget {id:string;label:string;url:string;geometryLocked:boolean;itemId?:string;field:'mediaUrl'|'beforeImageUrl'|'afterImageUrl'|'imageUrl'|'authorAvatar'}
-export function imageTargets(section:PageSection):ImageTarget[] {
+function layoutImageTargets(section:PageSection):ImageTarget[] {
+ if(section.type==='media_text_split'&&section.layoutPreset==='wide-visual-centered')return [{id:'mediaUrl',field:'mediaUrl',label:'Visual',url:section.mediaUrl??'',geometryLocked:false}];
+ if(section.type==='media_text_split'&&['wide-visual-centered','wide-visual-editorial','inset-surface-panel','split-visual-surface'].includes(section.layoutPreset??''))return [{id:'mediaUrl',field:'mediaUrl',label:'Wide visual',url:section.mediaUrl??'',geometryLocked:false}];
  if(isImageFlow(section)||isKnowledgeTriptych(section))return fixedImageCardItems(section).map((item,index)=>({id:`item:${item.id}:imageUrl`,field:'imageUrl' as const,itemId:item.id,label:`Image ${index+1}`,url:item.imageUrl??'',geometryLocked:true}));
  if(isFocusedSteps(section))return (section.items??[]).map((item,index)=>({id:`item:${item.id}:imageUrl`,field:'imageUrl' as const,itemId:item.id,label:`Step image ${index+1}`,url:item.imageUrl??'',geometryLocked:true}));
  if(isConnectedRows(section))return connectedRowItems(section).map((item,index)=>({id:`item:${item.id}:imageUrl`,field:'imageUrl' as const,itemId:item.id,label:`Row image ${index+1}`,url:item.imageUrl??'',geometryLocked:true}));
@@ -30,6 +32,15 @@ export function imageTargets(section:PageSection):ImageTarget[] {
   const field=section.type==='testimonials_slider'?'authorAvatar':'imageUrl';
   return (section.items??[]).filter(item=>(section.type!=='hero_slider'||!item.videoUrl)&&(section.type!=='chapter_block'||!['delivery','policy'].includes(section.chapterPreset??'')||item.imageUrl!==undefined)&&(section.type!=='policy_content'||item.imageUrl!==undefined)).map((item,index)=>({id:`item:${item.id}:${field}`,field,itemId:item.id,label:`${section.type==='testimonials_slider'?'Reviewer':section.type==='hero_slider'?'Slide':section.type==='logo_cloud'?'Logo':'Image'} ${index+1}`,url:item[field]??'',geometryLocked:['corporate-connections','corporate-illustrated-steps','corporate-scenarios','photo-marquee','industrial-mosaic','album-browser'].includes(section.galleryPreset??'')||section.type==='promotion_highlights'||['hero_slider','testimonials_slider','logo_cloud'].includes(section.type)||section.type==='shop_navigation'&&['collection-banners','kids-banners','fashion-banners','market-hero','market-offers'].includes(section.shopNavigationPreset??'')}));
 }
+/** Artwork geometry is employee-owned; logos keep their dedicated height contract. */
+export function editableArtworkGeometry(section:PageSection):boolean {return section.type==='media_text_split'&&['corporate-feature','corporate-image-story','corporate-support','corporate-payments','corporate-courier','corporate-marketplace','corporate-builder-overview','corporate-section-story','image-highlights','team-story-overview','wide-visual-editorial','wide-visual-centered','inset-surface-panel','split-visual-surface'].includes(section.layoutPreset??'')
+  ||section.type==='media_gallery'&&['product-preview-tabs','corporate-scenarios','corporate-illustrated-steps','corporate-connections','image-cards-three','image-cards-four-mosaic','image-cards-contrast','image-cards-three-staggered','connected-feature-rows','image-flow','editorial-knowledge-triptych','scroll-stack-cards','focused-steps'].includes(section.galleryPreset??'')
+  ||section.type==='hero_banner'&&['corporate-split-composite','corporate-centered-composite'].includes(section.heroBannerPreset??'')
+  ||section.type==='cta_strip'&&['illustrated-panel','editorial-illustrated'].includes(section.ctaPreset??'');}
+export function imageTargets(section:PageSection):ImageTarget[] {
+ return layoutImageTargets(section).map(target=>editableArtworkGeometry(section)&&!target.label.toLowerCase().includes('logo')?{...target,geometryLocked:false}:target);
+}
+
 export function imageTargetSection(section:PageSection,target:ImageTarget):PageSection {
   const settings=section.imageSlots?.find(slot=>slot.target===target.id);
   return {id:section.id,type:section.type,title:section.title,isVisible:section.isVisible,

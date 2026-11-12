@@ -1,0 +1,4 @@
+/* Only explicitly edited artwork releases its preset frame geometry.
+   Unedited defaults and dedicated logo/banner contracts stay unchanged. */
+:where(div):has(> [data-image-frame][data-artwork-geometry="custom"]){height:auto!important;min-height:0!important;aspect-ratio:auto!important}
+[data-image-frame][data-artwork-geometry="custom"]{max-width:100%;flex-shrink:0}

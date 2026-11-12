@@ -131,3 +131,46 @@
 .corp-team-story-overview .corp-builder-labels li:nth-child(even) svg{color:var(--corp-violet)}
 .corp-team-story-overview .corp-builder-visual img{border-radius:0;width:100%;height:auto;object-fit:contain}
 @container(max-width:760px){.corp-team-story-overview{grid-template-columns:1fr;padding-block:40px;gap:32px}.corp-team-story-copy{grid-row:1}.corp-team-story-overview .corp-builder-heading h2{font-size:clamp(32px,7cqi,46px)}.corp-team-story-overview .corp-builder-labels li{padding:17px 0}.corp-team-story-overview .corp-builder-visual{max-width:520px;margin-inline:auto}}
+
+/* Open art exhibition: inherited text roles/surface, all image detail stays in replaceable assets. */
+.corp-image-cards-staggered .corp-connections-grid{gap:28px;align-items:start;padding-bottom:48px}
+.corp-image-cards-staggered .corp-connection-card{background:transparent;border:0;box-shadow:none;border-radius:0;overflow:visible}
+.corp-image-cards-staggered .corp-connection-art{aspect-ratio:1;min-height:0;height:auto;overflow:visible;background:transparent;padding:0}
+.corp-image-cards-staggered .corp-connection-copy{padding:24px 4px 0;text-align:center}
+.corp-image-cards-staggered .corp-connection-card:nth-child(2){margin-top:56px}
+.corp-image-cards-staggered .corp-connection-card:nth-child(3){margin-top:24px}
+@container(max-width:900px){.corp-image-cards-staggered .corp-connections-grid{grid-template-columns:1fr;gap:48px;padding-bottom:0}.corp-image-cards-staggered .corp-connection-card:nth-child(n){margin-top:0}.corp-image-cards-staggered .corp-connection-art{aspect-ratio:1;max-width:520px;margin-inline:auto}.corp-image-cards-staggered .corp-connection-copy{padding-top:12px}}
+
+/* Add-on references retain the authored charge string; no second price editor. */
+.corp-pricing-band-faq[data-pricing-kind=addon] .corp-pricing-band{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) auto;column-gap:28px;background:linear-gradient(125deg,color-mix(in srgb,var(--addon-main,currentColor) 7%,transparent),color-mix(in srgb,var(--addon-sub,currentColor) 8%,transparent));border:1px solid color-mix(in srgb,currentColor 12%,transparent)}
+.corp-addon-identity{display:flex;align-items:center;gap:24px;min-width:0}.corp-addon-identity>svg{width:48px;height:48px;flex-shrink:0;color:inherit}.corp-addon-label{font-size:12px;letter-spacing:.06em;text-transform:uppercase;margin:0 0 10px}.corp-addon-identity h3{font-size:22px;font-weight:700;margin:0 0 8px}.corp-addon-identity p:last-child{font-size:16px;line-height:1.5;margin-bottom:0}.corp-addon-price{font-size:clamp(24px,2.8cqi,38px)!important;white-space:pre-line;overflow-wrap:anywhere;border-left:1px solid color-mix(in srgb,currentColor 15%,transparent);padding-left:28px}
+.corp-pricing-band-faq[data-pricing-kind=addon] .corp-starter-answers{display:grid;grid-template-columns:minmax(0,.75fr) minmax(0,1.75fr);gap:48px}.corp-pricing-band-faq[data-pricing-kind=addon] .corp-pricing-faq-grid{grid-template-columns:1fr}.corp-pricing-band-faq[data-pricing-kind=addon] .corp-starter-terms{text-align:left;border-top:1px solid color-mix(in srgb,currentColor 12%,transparent);padding-top:18px}
+@container(max-width:850px){.corp-pricing-band-faq[data-pricing-kind=addon] .corp-pricing-band,.corp-pricing-band-faq[data-pricing-kind=addon] .corp-starter-answers{grid-template-columns:1fr;gap:24px}.corp-addon-price{border-left:0;padding-left:0}.corp-addon-identity{gap:16px}}
+
+.corp-pricing-band-faq[data-pricing-kind=addon] .corp-starter-answers details{background:color-mix(in srgb,var(--addon-main) 3%,var(--addon-paper));border-color:color-mix(in srgb,currentColor 15%,transparent)}
+.corp-pricing-band-faq[data-pricing-kind=addon] .corp-starter-answers details[open]{background:color-mix(in srgb,var(--addon-sub) 5%,var(--addon-paper))}
+.corp-pricing-band-faq[data-pricing-kind=addon] .corp-starter-terms{color:inherit}
+.corp-pricing-band-faq[data-pricing-kind=addon] .corp-faq-sign,.corp-pricing-band-faq[data-pricing-kind=addon] .corp-addon-label{color:var(--addon-sub)}
+.corp-pricing-band-faq[data-pricing-kind=addon] .corp-starter-card:before{background:color-mix(in srgb,var(--addon-paper) 25%,transparent)}
+.corp-pricing-band-faq[data-pricing-kind=addon] .corp-starter-card:after{background:linear-gradient(120deg,color-mix(in srgb,var(--addon-main) 8%,transparent),color-mix(in srgb,var(--addon-sub) 12%,transparent))}
+
+/* Opt-in contrasting artwork cards: paper outer surface, themed card bodies. */
+.corp[data-editorial-gallery="image-cards-contrast"] .corp-connection-card{overflow:hidden;border:1px solid color-mix(in srgb,var(--card-ink) 12%,transparent);border-radius:24px;background:var(--card-paper);box-shadow:0 16px 40px -24px color-mix(in srgb,var(--card-ink) 30%,transparent)}
+.corp[data-editorial-gallery="image-cards-contrast"] .corp-connection-art{background:color-mix(in srgb,var(--card-secondary) 4%,var(--card-paper))}
+.corp[data-editorial-gallery="image-cards-contrast"] .corp-connection-copy{--card-copy-ink:var(--card-ink);padding:28px;min-height:180px;background:color-mix(in srgb,var(--card-secondary) 5%,var(--card-paper))}
+.corp[data-editorial-gallery="image-cards-contrast"][data-card-surface="contrast"] .corp-connection-copy{--card-copy-ink:var(--card-paper);background:var(--card-ink)}
+.corp[data-editorial-gallery="image-cards-contrast"][data-card-surface="contrast"] article:nth-child(2) .corp-connection-copy{--card-copy-ink:var(--card-ink);background:color-mix(in srgb,var(--card-secondary) 12%,var(--card-paper))}
+.corp[data-editorial-gallery="image-cards-contrast"][data-card-surface="contrast"] article:nth-child(3) .corp-connection-copy{background:color-mix(in srgb,var(--card-secondary) 22%,var(--card-ink))}
+.corp[data-editorial-gallery="image-cards-contrast"] .corp-connection-copy p{opacity:.82}
+@container(max-width:700px){.corp[data-editorial-gallery="image-cards-contrast"] .corp-connection-copy{padding:24px;min-height:0}}
+
+[data-illustrated-surface] .corp-illustrated-panel{background:linear-gradient(125deg,color-mix(in srgb,var(--illustrated-main) 3%,var(--illustrated-paper)),color-mix(in srgb,var(--illustrated-secondary) 5%,var(--illustrated-paper)));border-color:color-mix(in srgb,var(--illustrated-secondary) 16%,var(--illustrated-paper));box-shadow:0 20px 42px -30px color-mix(in srgb,var(--illustrated-ink) 25%,transparent)}
+[data-illustrated-surface="contrast"] .corp-illustrated-panel{background:var(--illustrated-paper);border-color:color-mix(in srgb,currentColor 12%,transparent)}
+
+/* Pricing surfaces are contained: outside headings stay on page paper. */
+.corp-pricing-band-faq[data-pricing-surface="contrast"] .corp-pricing-band,
+.corp-pricing-band-faq[data-pricing-surface="contrast"] .corp-starter-answers details,
+.corp-pricing-band-faq[data-pricing-surface="contrast"] .corp-starter-answers details[open]{background:var(--pricing-card-paper);color:var(--pricing-card-ink)}
+.corp-pricing-band-faq[data-pricing-surface="contrast"] .corp-starter-terms,
+.corp-pricing-band-faq[data-pricing-surface="contrast"] .corp-starter-name{color:inherit}
+.corp-pricing-band-faq[data-pricing-surface="contrast"] .corp-faq-sign{color:var(--pricing-card-ink)}

@@ -4,7 +4,7 @@ import {isImageFlow} from './imageFlow';
 
 /** Bounded presentation family; other-layout data is retained, never expanded into extra visible cards. */
 export const imageCardsThreePassport={preset:'image-cards-three',slots:3,itemFields:['title','description','imageUrl'],contentFields:['title','content'],colors:['customBgColor','titleColor','contentColor']} as const;
-export function isThreeImageCards(s:PageSection|null|undefined):boolean{return s?.type==='media_gallery'&&s.galleryPreset===imageCardsThreePassport.preset;}
+export function isThreeImageCards(s:PageSection|null|undefined):boolean{return s?.type==='media_gallery'&&[imageCardsThreePassport.preset,'image-cards-contrast','image-cards-three-staggered'].includes(s.galleryPreset??'');}
 export const imageCardsFourMosaicPassport={...imageCardsThreePassport,preset:'image-cards-four-mosaic',slots:4} as const;
 export function isFourMosaicImageCards(s:PageSection|null|undefined):boolean{return s?.type==='media_gallery'&&s.galleryPreset===imageCardsFourMosaicPassport.preset;}
 export function isFixedImageCards(s:PageSection|null|undefined):boolean{return isKnowledgeTriptych(s)||isImageFlow(s)||isThreeImageCards(s)||isFourMosaicImageCards(s);}
@@ -22,3 +22,7 @@ export function threeImageCards(prefix:string):PageSection{
 export function fourMosaicImageCards(prefix:string):PageSection{
  return {...threeImageCards(prefix),id:prefix+'-four-mosaic',galleryPreset:'image-cards-four-mosaic',title:'Give every detail its own space.',content:'Present four highlights in a considered collection.',items:[1,2,3,4].map(n=>({id:prefix+'-card-'+n,title:'Highlight '+n,description:'Describe this highlight.',imageUrl:''}))};
 }
+
+export function staggeredImageCards(prefix:string):PageSection{const s=threeImageCards(prefix);delete s.customColors;delete s.backgroundColor;delete s.textColor;return {...s,galleryPreset:'image-cards-three-staggered',title:'Make room for different perspectives.'};}
+
+export function contrastImageCards(prefix:string):PageSection{return {...staggeredImageCards(prefix),galleryPreset:'image-cards-contrast',surface:'contrast',title:'Present three clear perspectives.'};}
