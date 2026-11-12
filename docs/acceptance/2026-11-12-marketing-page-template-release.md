@@ -17,3 +17,5 @@ Publisher rehearsed in isolated SQLite with current www documents/menus: preflig
 
 ## Verification boundaries
 Screenshot channel remains stopped at historical9; no screenshot repair/retry authorized here. Live DOM and HTTPS checks provide release evidence; do not claim fresh screenshots. Receipts/SHA/parity/preservation evidence stored in output/marketing-release locally and storage/app/releases/marketing-20261112 on www. Elapsed/token usage unavailable.
+
+Live acceptance found a local QA suffix in page metadata. A guarded metadata-only finalizer sets the public title to Marketing Studio, preserving all section data and rechecking the publication hash. No new UI changes.

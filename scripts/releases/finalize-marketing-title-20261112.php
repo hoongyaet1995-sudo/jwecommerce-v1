@@ -1,0 +1,13 @@
+<?php
+/** Metadata-only correction for the approved Marketing Studio publication. */
+require __DIR__.'/../../vendor/autoload.php';$app=require __DIR__.'/../../bootstrap/app.php';$app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+$rehearse=in_array('--rehearse',$argv,true)&&app()->environment('testing')&&Illuminate\Support\Facades\DB::connection()->getDriverName()==='sqlite';
+if(!$rehearse&&(parse_url(config('app.url'),PHP_URL_HOST)!=='www.jwaistudio.online'||basename(base_path())!=='jw-corporate'))throw new RuntimeException('Restricted corporate application.');
+$p=App\Models\PageDocument::where('stage','published')->where('slug','marketing-studio')->firstOrFail()->page;$p->load('draftDocument','publishedDocument');$before=$p->publishedDocument->document;$file=storage_path('app/releases/marketing-20261112/receipt.json');$receipt=json_decode(file_get_contents($file),true,512,JSON_THROW_ON_ERROR);
+if($p->draftDocument->content_hash!==$p->publishedDocument->content_hash||$p->publishedDocument->content_hash!==$receipt['featureHash'])throw new RuntimeException('Page changed since approved publication.');
+if(!in_array($before['title'],['Marketing Studio — Local Hero Review','Marketing Studio'],true))throw new RuntimeException('Unexpected page title.');
+$doc=$before;$doc['title']='Marketing Studio';app(App\Domain\Cms\PageDocumentContract::class)->validate($doc);
+if(in_array('--check',$argv,true)){echo json_encode(['status'=>'metadata-preflight-passed','onlyField'=>'title']);exit;}
+if($before['title']!==$doc['title']){$draft=app(App\Domain\Cms\PageDraftService::class)->save($p,$doc,$p->draftDocument->lock_version);$p=app(App\Domain\Cms\PagePublicationService::class)->publish($p,$draft->lock_version);}
+$git=base_path('.git');if(is_file($git))$git=trim(substr(file_get_contents($git),8));$head=trim(file_get_contents($git.'/HEAD'));if(str_starts_with($head,'ref: ')){$ref=substr($head,5);$head=is_file($git.'/'.$ref)?trim(file_get_contents($git.'/'.$ref)):'';if(!$head&&is_file($git.'/commondir')){$common=realpath($git.'/'.trim(file_get_contents($git.'/commondir')));$head=trim(file_get_contents($common.'/'.$ref));}}if(!preg_match('/^[a-f0-9]{40}$/',$head))throw new RuntimeException('Cannot resolve release commit.');
+$receipt['gitSha']=$head;$receipt['featureHash']=$p->publishedDocument->content_hash;$receipt['metadataTitle']='Marketing Studio';$temp=$file.'.metadata.tmp';file_put_contents($temp,json_encode($receipt,JSON_PRETTY_PRINT|JSON_THROW_ON_ERROR));rename($temp,$file);echo json_encode(['status'=>'metadata-finalized','title'=>$doc['title'],'hash'=>$receipt['featureHash'],'gitSha'=>$head],JSON_PRETTY_PRINT);
