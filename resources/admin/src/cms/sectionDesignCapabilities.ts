@@ -23,13 +23,13 @@ export function renderedColorFields(s:PageSection):readonly string[]|undefined {
  if(isTeamStoryOverview(s))return ['customBgColor','eyebrowColor','titleColor','contentColor'];
  if(isKnowledgeTriptych(s))return ['customBgColor','eyebrowColor','titleColor','contentColor'];
  if(isFixedImageCards(s))return imageCardsThreePassport.colors;
- if(s.type==='media_text_split'&&['wide-visual-centered','inset-surface-panel','split-visual-surface'].includes(s.layoutPreset??''))return ['customBgColor','titleColor','contentColor'];
- if(s.type==='media_text_split'&&s.layoutPreset==='wide-visual-editorial')return ['customBgColor','eyebrowColor','titleColor','contentColor'];
+ if(s.type==='media_text_split'&&['contained-wide-centered','wide-visual-centered','inset-surface-panel','split-visual-surface'].includes(s.layoutPreset??''))return ['customBgColor','titleColor','contentColor'];
+ if(s.type==='media_text_split'&&['wide-visual-editorial','contained-wide-editorial'].includes(s.layoutPreset??''))return ['customBgColor','eyebrowColor','titleColor','contentColor'];
  const text=['customBgColor','titleColor','contentColor'];
  if(s.type==='hero_banner'&&s.heroBannerPreset==='corporate-split-composite')return [...text,'eyebrowColor','primaryBtnBg','primaryBtnText','secondaryBtnBg','secondaryBtnText'];
  if(s.type==='media_text_split'&&['corporate-builder-overview','corporate-section-story'].includes(s.layoutPreset??''))return text;
  if(s.type==='media_gallery'&&['corporate-scenarios','corporate-illustrated-steps','corporate-connections'].includes(s.galleryPreset??''))return text;
- if(s.type==='faq_accordion'&&['corporate-starter-faq','pricing-band-faq'].includes(s.faqPreset??''))return text;
+ if(s.type==='faq_accordion'&&['pricing-card-faq','corporate-starter-faq','pricing-band-faq'].includes(s.faqPreset??''))return text;
  if(s.type==='cta_strip'&&s.ctaPreset==='gradient-panel')return [...text,'primaryBtnBg','primaryBtnText'];
 }
 export function supportsDesignField(s:PageSection,key:string):boolean {

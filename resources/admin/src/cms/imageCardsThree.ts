@@ -4,7 +4,7 @@ import {isImageFlow} from './imageFlow';
 
 /** Bounded presentation family; other-layout data is retained, never expanded into extra visible cards. */
 export const imageCardsThreePassport={preset:'image-cards-three',slots:3,itemFields:['title','description','imageUrl'],contentFields:['title','content'],colors:['customBgColor','titleColor','contentColor']} as const;
-export function isThreeImageCards(s:PageSection|null|undefined):boolean{return s?.type==='media_gallery'&&[imageCardsThreePassport.preset,'image-cards-contrast','image-cards-three-staggered'].includes(s.galleryPreset??'');}
+export function isThreeImageCards(s:PageSection|null|undefined):boolean{return s?.type==='media_gallery'&&[imageCardsThreePassport.preset,'image-cards-contrast','staggered-focus-cards','image-cards-three-staggered'].includes(s.galleryPreset??'');}
 export const imageCardsFourMosaicPassport={...imageCardsThreePassport,preset:'image-cards-four-mosaic',slots:4} as const;
 export function isFourMosaicImageCards(s:PageSection|null|undefined):boolean{return s?.type==='media_gallery'&&s.galleryPreset===imageCardsFourMosaicPassport.preset;}
 export function isFixedImageCards(s:PageSection|null|undefined):boolean{return isKnowledgeTriptych(s)||isImageFlow(s)||isThreeImageCards(s)||isFourMosaicImageCards(s);}
@@ -26,3 +26,5 @@ export function fourMosaicImageCards(prefix:string):PageSection{
 export function staggeredImageCards(prefix:string):PageSection{const s=threeImageCards(prefix);delete s.customColors;delete s.backgroundColor;delete s.textColor;return {...s,galleryPreset:'image-cards-three-staggered',title:'Make room for different perspectives.'};}
 
 export function contrastImageCards(prefix:string):PageSection{return {...staggeredImageCards(prefix),galleryPreset:'image-cards-contrast',surface:'contrast',title:'Present three clear perspectives.'};}
+
+export function focusImageCards(prefix:string):PageSection{return {...staggeredImageCards(prefix),galleryPreset:'staggered-focus-cards',surface:'contrast',textAlignment:'left',title:'Focus on what matters next.'};}

@@ -32,7 +32,7 @@ const fields:Record<PageSection['type'],readonly string[]>={
 };
 export const contentFieldKeys=new Set(Object.values(fields).flat().concat(['leadText','mapEmbedUrl','contactAddressIcon','buttonText','buttonLink']));
 export function sectionContentFields(section:PageSection):readonly string[]{
- if(section.type==='media_text_split'&&['wide-visual-centered','inset-surface-panel','split-visual-surface'].includes(section.layoutPreset??''))return ['title','content','mediaUrl','mediaAlt'];
+ if(section.type==='media_text_split'&&['contained-wide-centered','wide-visual-centered','inset-surface-panel','split-visual-surface'].includes(section.layoutPreset??''))return ['title','content','mediaUrl','mediaAlt'];
  if(isWideVisualEditorial(section))return ['subtitle','title','content','mediaUrl','mediaAlt'];
  if(isImageFlow(section))return ['title','content'];
  if(isPlanComparison(section))return ['subtitle','title','content','buttonText','buttonLink'];
@@ -47,7 +47,7 @@ export function sectionContentFields(section:PageSection):readonly string[]{
  if(isKnowledgeTriptych(section))return ['subtitle','title','content'];
  if(isFixedImageCards(section))return imageCardsThreePassport.contentFields;
  let result=[...fields[section.type]];
- if(section.type==='faq_accordion'&&['corporate-starter-faq','pricing-band-faq'].includes(section.faqPreset??''))return ['title','subtitle','content','buttonText','buttonLink'];
+ if(section.type==='faq_accordion'&&['pricing-card-faq','corporate-starter-faq','pricing-band-faq'].includes(section.faqPreset??''))return ['title','subtitle','content','buttonText','buttonLink'];
  if(section.type==='media_gallery'&&['corporate-connections','corporate-scenarios','corporate-illustrated-steps'].includes(section.galleryPreset??''))return ['title','content'];
  if(section.type==='media_text_split'&&['corporate-builder-overview','corporate-section-story'].includes(section.layoutPreset??''))return ['title','content','mediaUrl','mediaAlt'];
  if(section.type==='media_text_split'&&['corporate-payments','corporate-courier','corporate-marketplace'].includes(section.layoutPreset??''))return [...copy,...media,...primary];

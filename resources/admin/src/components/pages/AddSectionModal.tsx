@@ -1,14 +1,14 @@
-import {insetSurfacePanel,centeredWideVisual,splitVisualSurface,wideVisualEditorial} from '../../cms/wideVisualEditorial';
+import {containedWideCentered,containedWideEditorial,insetSurfacePanel,centeredWideVisual,splitVisualSurface,wideVisualEditorial} from '../../cms/wideVisualEditorial';
 import {planComparison,framedFaq} from '../../cms/planComparison';
 import {focusedSteps} from '../../cms/focusedSteps';
 import {scrollStackCards} from '../../cms/scrollStackCards';
 import {teamStoryOverview} from '../../cms/teamStoryOverview';
 import {knowledgeTriptych} from '../../cms/knowledgeTriptych';
-import {illustratedCta,editorialIllustratedCta} from '../../cms/illustratedCta';
-import {pricingBandFaq} from '../../cms/pricingBandFaq';
+import {illustratedCtaRight,illustratedCta,editorialIllustratedCta} from '../../cms/illustratedCta';
+import {pricingCardFaq,pricingBandFaq} from '../../cms/pricingBandFaq';
 import {connectedFeatureRows,isConnectedRows} from '../../cms/connectedFeatureRows';
 import {imageHighlights,isImageHighlights} from '../../cms/imageHighlights';
-import {contrastImageCards,staggeredImageCards,threeImageCards,fourMosaicImageCards,isFixedImageCards} from '../../cms/imageCardsThree';
+import {focusImageCards,contrastImageCards,staggeredImageCards,threeImageCards,fourMosaicImageCards,isFixedImageCards} from '../../cms/imageCardsThree';
 import solutionDetail from '../../cms/logisticsSolutionTemplate.json';
 import galleryDetail from '../../cms/logisticsGalleryTemplate.json';
 import {logisticsSections} from '../../cms/logisticsTemplates';
@@ -97,19 +97,24 @@ const SOURCE_SECTION_TEMPLATES: SectionTemplateOption[] = [
  {type:'media_gallery',title:'Image Cards — Four Mosaic',category:'Media & Visuals',description:'Four fixed images with editable titles and descriptions in a staggered mosaic.',icon:LayoutTemplate,defaultData:fourMosaicImageCards('four-mosaic-starter')},
  {type:'media_gallery',title:'Image Cards — Three',category:'Media & Visuals',description:'Three fixed images with editable titles and descriptions. No links or extra card controls.',icon:LayoutTemplate,defaultData:threeImageCards('image-cards-starter')},
  {type:'cta_strip',title:'Editorial Illustrated CTA',category:'Conversion & Leads',description:'An editorial callout with editable copy, one foreground artwork and one action.',icon:LayoutTemplate,defaultData:editorialIllustratedCta('editorial-cta')},
+ {type:'cta_strip',title:'Illustrated CTA Panel — Image Right',category:'Conversion & Leads',description:'Editable copy and action beside a replaceable illustration on the right.',icon:LayoutTemplate,defaultData:illustratedCtaRight('illustrated-right')},
  {type:'cta_strip',title:'Illustrated CTA Panel',category:'Conversion & Leads',description:'One foreground illustration beside editable heading, body and action. Add your own image and destination.',icon:LayoutTemplate,defaultData:illustratedCta('illustrated-cta')},
  {type:'cta_strip',title:'Gradient CTA Panel',category:'Conversion & Leads',description:'A gradient panel with editable heading, description and one button. Add your own destination.',icon:LayoutTemplate,defaultData:gradientClosing('gradient-cta')},
+ {type:'faq_accordion',title:'Pricing Card & FAQ',category:'Support & Contact',description:'External heading, a reusable pricing card and editable questions side by side.',icon:LayoutTemplate,defaultData:pricingCardFaq('pricing-card-faq')},
  {type:'faq_accordion',title:'Pricing Band & FAQ',category:'Support & Contact',description:'A horizontal pricing band above editable questions and answers. Enter your own plan or reference existing pricing.',icon:LayoutTemplate,defaultData:pricingBandFaq('pricing-band-faq')},
  {type:'faq_accordion',title:'Pricing Card & FAQ',category:'Support & Contact',description:'An editable pricing card beside FAQs. Enter your own pricing or reference an existing plan.',icon:LayoutTemplate,defaultData:pricingFaqSection('pricing-faq')},
  {type:'media_gallery',title:'Website Connected Features',category:'Benefits & Trust',description:'Independent illustrations, copy and feature-page buttons. Only buttons navigate.',icon:LayoutTemplate,defaultData:websiteBuilderConnections('website-connections-starter')},
  {type:'media_gallery',title:'Website Illustrated Steps',category:'Storytelling & Narrative',description:'Independent illustrations and editable step copy with automatic numbering and connecting arrows.',icon:LayoutTemplate,defaultData:websiteBuilderWorkflow('website-workflow-starter')},
  {type:'media_gallery',title:'Business Website Scenarios',category:'Media & Visuals',description:'Independent website preview images with editable icons and names, without links.',icon:LayoutTemplate,defaultData:websiteBuilderScenarios('website-scenarios-starter')},
  {type:'media_text_split',title:'Website Section Story',category:'Storytelling & Narrative',description:'Editable narrative and icon labels beside one transparent layered-section illustration.',icon:LayoutTemplate,defaultData:websiteBuilderStory('website-story-starter')},
+ {type:'media_gallery',title:'Staggered Focus Cards',category:'Media & Visuals',description:'Three editable image cards with an optional contrasting center card.',icon:LayoutTemplate,defaultData:focusImageCards('focus-cards')},
  {type:'media_gallery',title:'Contrast Image Cards',category:'Media & Visuals',description:'Three editable pictures with page-brand contrasting copy surfaces.',icon:LayoutTemplate,defaultData:contrastImageCards('contrast-cards')},
  {type:'media_text_split',title:'Inset Surface Panel',category:'Storytelling & Narrative',description:'Editable picture and copy in a rounded Light or Contrast panel.',icon:LayoutTemplate,defaultData:insetSurfacePanel('inset-panel')},
  {type:'media_gallery',title:'Three Images — Staggered',category:'Media & Visuals',description:'Three independent images with editable headings and descriptions. Open staggered presentation, no links.',icon:LayoutTemplate,defaultData:staggeredImageCards('staggered-starter')},
  {type:'media_text_split',title:'Wide Visual — Centered Header',category:'Storytelling & Narrative',description:'Editable centered headline and introduction above one image. No tabs, cards or actions.',icon:LayoutTemplate,defaultData:centeredWideVisual('centered-visual-starter')},
  {type:'media_text_split',title:'Split Visual — Surface Panel',category:'Storytelling & Narrative',description:'Editable title and description beside one image inside a page-brand surface panel. No cards or actions.',icon:LayoutTemplate,defaultData:splitVisualSurface('surface-panel-starter')},
+ {type:'media_text_split',title:'Wide Visual — Centered Media Panel',category:'Storytelling & Narrative',description:'Editable centered introduction above a rounded media-only Light or Contrast panel.',icon:LayoutTemplate,defaultData:containedWideCentered('centered-panel')},
+ {type:'media_text_split',title:'Wide Visual — Contained Media Panel',category:'Storytelling & Narrative',description:'Editable introduction above a rounded media-only Light or Contrast panel.',icon:LayoutTemplate,defaultData:containedWideEditorial('contained-visual')},
  {type:'media_text_split',title:'Wide Visual — Editorial Header',category:'Storytelling & Narrative',description:'Editable headline and introduction above one wide image or GIF. No cards or actions.',icon:LayoutTemplate,defaultData:wideVisualEditorial('wide-visual-starter')},
  {type:'media_text_split',title:'Website Builder Overview',category:'Storytelling & Narrative',description:'One editable builder illustration with independent icon labels. No tabs or actions.',icon:LayoutTemplate,defaultData:websiteBuilderOverview('website-builder-starter')},
  {type:'pricing_table',title:'Plan Comparison',category:'Conversion & Leads',description:'Compare editable plans or reference existing plan facts and terms.',icon:LayoutTemplate,defaultData:planComparison('comparison-starter')},

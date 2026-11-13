@@ -1,7 +1,7 @@
 import type {PageSection} from '../types';
 export function ctaPresetPatch(section:PageSection,preset:NonNullable<PageSection['ctaPreset']>):Partial<PageSection> {
- if(['illustrated-panel','editorial-illustrated'].includes(preset))return {ctaPreset:preset};
- if(preset==='gradient-panel'&&['illustrated-panel','editorial-illustrated'].includes(section.ctaPreset??''))return {ctaPreset:preset};
+ if(['illustrated-panel-right','illustrated-panel','editorial-illustrated'].includes(preset))return {ctaPreset:preset};
+ if(preset==='gradient-panel'&&['illustrated-panel-right','illustrated-panel','editorial-illustrated'].includes(section.ctaPreset??''))return {ctaPreset:preset};
  if(preset==='gradient-panel')return {ctaPreset:preset,customColors:{...section.customColors,titleColor:'#ffffff',contentColor:'#ffffff',primaryBtnBg:'#ffffff',primaryBtnText:'#171335'}};
  if(preset==='saas-closing')return {ctaPreset:preset};
  if(preset==='industrial-outline')return {ctaPreset:preset};

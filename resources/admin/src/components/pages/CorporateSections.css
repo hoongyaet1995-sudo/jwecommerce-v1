@@ -174,3 +174,29 @@
 .corp-pricing-band-faq[data-pricing-surface="contrast"] .corp-starter-terms,
 .corp-pricing-band-faq[data-pricing-surface="contrast"] .corp-starter-name{color:inherit}
 .corp-pricing-band-faq[data-pricing-surface="contrast"] .corp-faq-sign{color:var(--pricing-card-ink)}
+
+.corp[data-editorial-gallery="staggered-focus-cards"]>div:first-child{display:grid;grid-template-columns:1fr 1fr;gap:clamp(28px,5cqi,76px);text-align:left;align-items:center;margin-bottom:56px}
+.corp[data-editorial-gallery="staggered-focus-cards"]>div:first-child [data-cms-text="content"]{margin:0;max-width:none}
+.corp[data-editorial-gallery="staggered-focus-cards"] .corp-connection-card{--card-copy-ink:var(--card-ink);padding:28px;border-radius:28px;background:color-mix(in srgb,var(--card-secondary) 7%,var(--card-paper));border:1px solid color-mix(in srgb,var(--card-secondary) 16%,transparent);box-shadow:0 16px 36px -28px var(--card-ink)}
+.corp[data-editorial-gallery="staggered-focus-cards"] .corp-connection-art{aspect-ratio:1.2;display:flex;align-items:center;padding:0;background:transparent}
+.corp[data-editorial-gallery="staggered-focus-cards"] .corp-connection-copy{padding:28px 0 0;text-align:left}
+.corp[data-editorial-gallery="staggered-focus-cards"] .corp-connection-copy p{opacity:.85}
+.corp[data-editorial-gallery="staggered-focus-cards"] .corp-connection-card:nth-child(3){margin-top:0}
+.corp[data-editorial-gallery="staggered-focus-cards"][data-card-surface="contrast"] .corp-connection-card:nth-child(2){--card-copy-ink:var(--card-paper);background:linear-gradient(140deg,var(--card-ink),color-mix(in srgb,var(--card-secondary) 32%,var(--card-ink)))}
+@container(max-width:900px){.corp[data-editorial-gallery="staggered-focus-cards"]>div:first-child{grid-template-columns:1fr;gap:24px;margin-bottom:32px}.corp[data-editorial-gallery="staggered-focus-cards"] .corp-connection-card{padding:24px}.corp[data-editorial-gallery="staggered-focus-cards"] .corp-connection-art{aspect-ratio:1.2}}
+
+.corp-pricing-card-faq{display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.25fr);gap:clamp(28px,4cqi,64px);align-items:start}
+.corp-pricing-card-faq .corp-pricing-band-heading{grid-column:1/-1;margin:0 0 16px;text-align:center}
+.corp-pricing-card-faq[data-pricing-kind] .corp-pricing-band{display:flex;flex-direction:column;align-items:stretch;gap:28px;margin:0;padding:40px 32px;border-radius:28px}
+.corp-pricing-card-faq .corp-addon-identity{flex-direction:column;align-items:start;gap:20px}
+.corp-pricing-card-faq .corp-addon-price{border:0;padding:0;font-size:clamp(30px,3cqi,46px);overflow-wrap:break-word}
+.corp-pricing-card-faq[data-pricing-kind] .corp-starter-answers{display:block}
+.corp-pricing-card-faq .corp-pricing-faq-grid{grid-template-columns:1fr}
+.corp-pricing-card-faq .corp-primary{justify-content:center}
+.corp-pricing-card-faq[data-pricing-surface] .corp-starter-answers details,.corp-pricing-card-faq[data-pricing-surface] .corp-starter-answers details[open]{background:var(--addon-paper);color:inherit}
+.corp-pricing-card-faq .corp-starter-answers .corp-faq-sign{color:var(--addon-sub)}
+@container(max-width:850px){.corp-pricing-card-faq{grid-template-columns:1fr;gap:32px}.corp-pricing-card-faq[data-pricing-kind] .corp-pricing-band{padding:32px 24px}.corp-pricing-card-faq .corp-pricing-band-heading{margin-bottom:0}}
+.corp-pricing-card-faq .corp-pricing-band-heading h2{max-width:none}
+
+@container(min-width:701px){.corp-illustrated-right .corp-illustrated-visual{order:2}.corp-illustrated-right .corp-illustrated-copy{order:1}}
+.corp-pricing-card-faq .corp-pricing-band-heading{width:100%;max-width:none;min-width:0}.corp-pricing-card-faq .corp-pricing-band-heading h2{width:100%;max-width:none;margin-inline:auto;text-align:center}

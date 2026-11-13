@@ -709,7 +709,7 @@ export interface PageSection {
   imageForeground?: boolean;
   imageForegroundColor?: string;
   imageForegroundOpacity?: 0 | 10 | 20 | 30 | 40 | 50 | 60 | 70 | 80 | 90 | 100;
-  layoutPreset?: 'wide-visual-centered' | 'inset-surface-panel' | 'split-visual-surface' | 'wide-visual-editorial' | 'default' | 'editorial-hero' | 'editorial-story' | 'editorial-cover' | 'editorial-story-cards' | 'editorial-journal-rows' | 'story-with-steps' | 'flush-split' | 'producer-story' | 'tech-feature' | 'kids-discovery' | 'artisan-story' | 'saas-hero' | 'saas-showcase' | 'saas-analytics' | 'corporate-section-story' | 'image-highlights' | 'team-story-overview' | 'corporate-builder-overview' | 'corporate-feature' | 'corporate-support' | 'corporate-image-story' | 'corporate-payments' | 'corporate-courier' | 'corporate-marketplace';
+  layoutPreset?: 'contained-wide-centered' | 'wide-visual-centered' | 'inset-surface-panel' | 'split-visual-surface' | 'contained-wide-editorial' | 'wide-visual-editorial' | 'default' | 'editorial-hero' | 'editorial-story' | 'editorial-cover' | 'editorial-story-cards' | 'editorial-journal-rows' | 'story-with-steps' | 'flush-split' | 'producer-story' | 'tech-feature' | 'kids-discovery' | 'artisan-story' | 'saas-hero' | 'saas-showcase' | 'saas-analytics' | 'corporate-section-story' | 'image-highlights' | 'team-story-overview' | 'corporate-builder-overview' | 'corporate-feature' | 'corporate-support' | 'corporate-image-story' | 'corporate-payments' | 'corporate-courier' | 'corporate-marketplace';
   paymentLayout?: 'cards' | 'list';
   paymentNote?: string;
   deliverySource?: 'settings' | 'manual';
@@ -730,7 +730,7 @@ export interface PageSection {
   pricingSourceSectionId?: string;
   pricingSourceItemId?: string;
   pricingSourceTermsSectionId?: string;
-  faqPreset?: 'pricing-band-faq' | 'corporate-starter-faq' | 'default' | 'minimal' | 'industrial-split' | 'framed-faq' | 'saas-split';
+  faqPreset?: 'pricing-card-faq'| 'pricing-band-faq' | 'corporate-starter-faq' | 'default' | 'minimal' | 'industrial-split' | 'framed-faq' | 'saas-split';
   faqInitiallyOpen?: boolean;
   leadText?: string;
   policyPreset?: 'guidelines' | 'choices' | 'steps' | 'document' | 'directory' | 'process-flow' | 'timeline' | 'tabs' | 'columns';
@@ -744,7 +744,7 @@ export interface PageSection {
   containerMode?: 'page' | 'full-bleed';
   sectionBorder?: 'default' | 'none' | 'top' | 'bottom' | 'both';
   sectionBorderColor?: string;
-  ctaPreset?: 'editorial-illustrated' | 'illustrated-panel' | 'gradient-panel' | 'default' | 'image-banner' | 'editorial-band' | 'help-panel' | 'industrial-outline' | 'saas-closing';
+  ctaPreset?: 'illustrated-panel-right' | 'editorial-illustrated' | 'illustrated-panel' | 'gradient-panel' | 'default' | 'image-banner' | 'editorial-band' | 'help-panel' | 'industrial-outline' | 'saas-closing';
   ctaBannerHeight?: 'compact' | 'normal' | 'spacious';
   richTextPreset?: 'default' | 'manifesto' | 'industrial-split';
   featureCardsPreset?: 'default' | 'values-list' | 'editorial-columns' | 'numbered-process' | 'service-highlights' | 'industrial-cards' | 'industrial-process' | 'industrial-process-split' | 'saas-modules' | 'saas-addons';
@@ -756,7 +756,7 @@ export interface PageSection {
   marqueeSpeed?: number;
   marqueeDirection?: 'left' | 'right';
   marqueePauseOnHover?: boolean;
-  galleryPreset?: 'image-cards-three-staggered'|'focused-steps'|'scroll-stack-cards'|'editorial-knowledge-triptych'|'image-flow' | 'connected-feature-rows' | 'image-cards-four-mosaic' | 'image-cards-three' | 'corporate-connections' | 'corporate-illustrated-steps' | 'corporate-scenarios' | 'photo-marquee' | 'default' | 'editorial-montage' | 'editorial-cards' | 'editorial-triptych' | 'portfolio-cards' | 'routine-steps' | 'industrial-mosaic' | 'album-browser' | 'product-preview-tabs';
+  galleryPreset?: 'staggered-focus-cards'| 'image-cards-three-staggered'|'focused-steps'|'scroll-stack-cards'|'editorial-knowledge-triptych'|'image-flow' | 'connected-feature-rows' | 'image-cards-four-mosaic' | 'image-cards-three' | 'corporate-connections' | 'corporate-illustrated-steps' | 'corporate-scenarios' | 'photo-marquee' | 'default' | 'editorial-montage' | 'editorial-cards' | 'editorial-triptych' | 'portfolio-cards' | 'routine-steps' | 'industrial-mosaic' | 'album-browser' | 'product-preview-tabs';
   galleryFilters?: boolean;
   galleryLightbox?: boolean;
   galleryInitialCount?: number;

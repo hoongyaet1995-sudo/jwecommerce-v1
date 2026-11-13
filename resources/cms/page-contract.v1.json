@@ -653,6 +653,7 @@
       "enum": [
         "connected-feature-rows",
         "image-cards-four-mosaic",
+        "staggered-focus-cards",
         "image-cards-three-staggered",
         "image-cards-three",
         "focused-steps",
@@ -744,7 +745,7 @@
         "industrial-outline",
         "saas-closing",
         "gradient-panel",
-        "illustrated-panel"
+        "illustrated-panel-right", "illustrated-panel"
       ]
     },
     "ctaBannerHeight": {
@@ -799,8 +800,10 @@
         "corporate-section-story",
         "image-highlights",
         "team-story-overview",
+        "contained-wide-centered",
         "wide-visual-centered",
         "split-visual-surface",
+        "contained-wide-editorial",
         "wide-visual-editorial",
         "corporate-builder-overview",
         "corporate-feature",
@@ -1356,6 +1359,7 @@
         "industrial-split",
         "saas-split",
         "corporate-starter-faq",
+        "pricing-card-faq",
         "pricing-band-faq",
         "framed-faq"
       ]

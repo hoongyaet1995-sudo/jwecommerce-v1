@@ -2160,5 +2160,277 @@
         "surface": "light"
       }
     ]
+  },
+  "store-operations": {
+    "style": {
+      "colorSource": "custom",
+      "palette": {
+        "paper": "#ffffff",
+        "ink": "#0d1234",
+        "muted": "#626981",
+        "accent": "#2860ff",
+        "light": "#ffffff",
+        "secondary": "#8524ff",
+        "secondaryInk": "#ffffff",
+        "hover": "#2354e0"
+      },
+      "spacing": "spacious",
+      "buttonRadius": 6,
+      "buttonSize": "normal",
+      "typography": {
+        "eyebrow": {
+          "fontFamily": "sans",
+          "fontSize": 12,
+          "fontWeight": 700,
+          "lineHeight": 1.5,
+          "letterSpacing": 1.2,
+          "color": "#2860ff"
+        },
+        "title": {
+          "fontFamily": "sans",
+          "fontSize": 42,
+          "fontWeight": 700,
+          "lineHeight": 1.15,
+          "letterSpacing": -0.8
+        },
+        "content": {
+          "fontFamily": "sans",
+          "fontSize": 18,
+          "fontWeight": 400,
+          "lineHeight": 1.6
+        },
+        "lead": {
+          "fontFamily": "sans",
+          "fontSize": 18,
+          "fontWeight": 400,
+          "lineHeight": 1.6
+        },
+        "itemTitle": {
+          "fontFamily": "sans",
+          "fontSize": 22,
+          "fontWeight": 700,
+          "lineHeight": 1.3
+        },
+        "itemContent": {
+          "fontFamily": "sans",
+          "fontSize": 16,
+          "fontWeight": 400,
+          "lineHeight": 1.6
+        }
+      }
+    },
+    "sections": [
+      {
+        "id": "marketplace-s01-hero",
+        "type": "hero_banner",
+        "heroBannerPreset": "corporate-centered-composite",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "surface": "light",
+        "subtitle": "MARKETPLACE ORDER MANAGEMENT",
+        "title": "More marketplaces.\nOne clearer view.",
+        "content": "Bring marketplace orders, item details and delivery updates into one workspace—so your team can focus on what needs attention.",
+        "mediaUrl": "/images/cms/templates/connected/9050ca2b78d9f2a83d5f6a86.webp",
+        "imageSlots": [
+          {
+            "target": "mediaUrl",
+            "mediaAlt": "Illustrative marketplace order workspace with Shopee and Lazada source tiles, example order rows and an order details card. No customer data.",
+            "imageFit": "contain",
+            "imageRatio": "default"
+          }
+        ],
+        "buttonText": "Request a demo",
+        "buttonLink": "/pages/contact-jw-studio",
+        "secondaryButtonText": "Explore the workflow",
+        "secondaryButtonLink": "#section-marketplace-s03-find-orders"
+      },
+      {
+        "id": "marketplace-s02-stores",
+        "type": "media_text_split",
+        "layoutPreset": "corporate-image-story",
+        "mediaPosition": "left",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "title": "Bring your stores into the same conversation.",
+        "content": "Spend less time moving between store accounts. Review marketplace orders together, with the store behind every order kept clear.",
+        "mediaUrl": "/images/cms/templates/connected/bbc4dd6ecb56bbc886c951a8.webp",
+        "imageSlots": [
+          {
+            "target": "mediaUrl",
+            "mediaAlt": "Illustrative Shopee and Lazada store tiles connected to one order view. Fictional stores and sample orders.",
+            "imageFit": "contain",
+            "imageRatio": "default"
+          }
+        ],
+        "items": [],
+        "surface": "light"
+      },
+      {
+        "id": "marketplace-s03-find-orders",
+        "type": "media_text_split",
+        "layoutPreset": "contained-wide-editorial",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "title": "Find the orders that need you.",
+        "content": "Narrow the view by store, marketplace or order status—so your team can find what needs attention without searching every account.",
+        "mediaUrl": "/images/cms/templates/connected/77f0299f2a86805a8dc37988.webp",
+        "imageSlots": [
+          {
+            "target": "mediaUrl",
+            "mediaAlt": "Illustrative marketplace filters highlight in sequence while sample orders appear and light flows towards the filtered view.",
+            "imageFit": "contain"
+          }
+        ],
+        "surface": "light"
+      },
+      {
+        "id": "marketplace-s04-order-details",
+        "type": "media_text_split",
+        "layoutPreset": "corporate-image-story",
+        "mediaPosition": "right",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "title": "See the details behind the sale.",
+        "content": "Keep purchased items, quantities, SKU references and delivery information close at hand—so your team can review an order with a clearer understanding of what was sold.",
+        "mediaUrl": "/images/cms/templates/connected/22d9d426726d89e258b3d822.webp",
+        "imageSlots": [
+          {
+            "target": "mediaUrl",
+            "mediaAlt": "Illustrative order details with product highlights, quantities, SKU reference card and delivery context appearing in sequence. Fictional order data.",
+            "imageFit": "contain",
+            "imageWidth": "100",
+            "imageShape": "default"
+          }
+        ],
+        "items": [],
+        "surface": "light"
+      },
+      {
+        "id": "marketplace-s05-sku-mapping",
+        "type": "media_text_split",
+        "layoutPreset": "contained-wide-centered",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "title": "Match every order to the right product.",
+        "content": "Keep marketplace SKU references connected to your catalogue—so your team can clearly identify what was sold, even when each store uses a different code.",
+        "mediaUrl": "/images/cms/templates/connected/33d0ee7a5f1a00cfc529c080.webp",
+        "imageSlots": [
+          {
+            "target": "mediaUrl",
+            "mediaAlt": "Illustrative Shopee and Lazada SKU references linked to one internal catalogue product. Light flows towards the internal MUG-CRM reference.",
+            "imageFit": "contain"
+          }
+        ],
+        "surface": "light"
+      },
+      {
+        "id": "marketplace-s06-review",
+        "type": "media_gallery",
+        "galleryPreset": "staggered-focus-cards",
+        "title": "Stay clear on what needs another look.",
+        "content": "Keep order updates and tracking information in view, and revisit missing records—so your team knows where to look next.",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "textAlignment": "left",
+        "items": [
+          {
+            "id": "marketplace-s06-card-1",
+            "title": "Keep the order in view.",
+            "description": "Review updated order details before your team follows up.",
+            "imageUrl": "/images/cms/templates/connected/73b7a44482db99118be0997f.webp"
+          },
+          {
+            "id": "marketplace-s06-card-2",
+            "title": "Keep delivery context close.",
+            "description": "See courier and tracking references alongside the order.",
+            "imageUrl": "/images/cms/templates/connected/d8ff6d37710c18fe1311f64d.webp"
+          },
+          {
+            "id": "marketplace-s06-card-3",
+            "title": "Revisit the missing pieces.",
+            "description": "Recheck a selected period for orders that did not appear.",
+            "imageUrl": "/images/cms/templates/connected/7f6bdc7223c10f67d1cce6f7.webp"
+          }
+        ],
+        "surface": "contrast"
+      },
+      {
+        "id": "marketplace-s07-pricing",
+        "type": "faq_accordion",
+        "faqPreset": "pricing-card-faq",
+        "faqInitiallyOpen": true,
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "title": "Add a clearer way to manage your stores.",
+        "subtitle": "A few helpful answers.",
+        "buttonText": "Discuss your setup",
+        "buttonLink": "/pages/contact-jw-studio",
+        "planContentSource": "manual",
+        "items": [
+          {
+            "id": "marketplace-s07-faq-0",
+            "title": "Is Marketplace a standalone plan?",
+            "description": "Marketplace is an optional add-on to your selected plan. The fee is charged per store, per month."
+          },
+          {
+            "id": "marketplace-s07-faq-1",
+            "title": "Can I view orders from more than one store?",
+            "description": "Yes. Review orders from connected stores together, with each order retaining its store and marketplace reference."
+          },
+          {
+            "id": "marketplace-s07-faq-2",
+            "title": "What order information can my team review?",
+            "description": "Review purchased items, quantities, SKU references, order status and available courier and tracking information."
+          },
+          {
+            "id": "marketplace-s07-faq-3",
+            "title": "What if an order is missing or delayed?",
+            "description": "Review order updates and tracking references, or recheck a selected date range for missing orders. Availability depends on the connected platform and its updates."
+          }
+        ],
+        "surface": "contrast",
+        "planName": "Store operations",
+        "planPricingMode": "contact",
+        "planPriceLabel": "Contact us",
+        "planTerms": "Confirm usage and provider terms before activation.",
+        "planDescription": "Describe your connected store services."
+      },
+      {
+        "id": "marketplace-s08-closing",
+        "type": "cta_strip",
+        "ctaPreset": "illustrated-panel-right",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "title": "Make your next order easier to manage.",
+        "content": "Tell us where you sell and how your team handles orders. We’ll help you shape a setup around your stores and working routine.",
+        "mediaUrl": "/images/cms/templates/connected/80ca8ce9c57226bfab9a66c0.webp",
+        "imageSlots": [
+          {
+            "target": "mediaUrl",
+            "mediaAlt": "Illustrative shared order workspace linking Store A and Store B with a confirmation badge.",
+            "imageFit": "contain"
+          }
+        ],
+        "buttonText": "Request a demo",
+        "buttonLink": "/pages/contact-jw-studio",
+        "surface": "light"
+      }
+    ]
   }
 }

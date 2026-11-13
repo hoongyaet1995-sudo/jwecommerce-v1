@@ -6,7 +6,7 @@ use App\Models\Page;
 final class StarterPricingReference
 {
  public function forDocument(array $document,bool $preview):array {
-  $references=array_filter($document['sections']??[],fn($s)=>(($s['type']??'')==='faq_accordion'&&in_array($s['faqPreset']??'',['corporate-starter-faq','pricing-band-faq'],true)||($s['type']??'')==='pricing_table'&&($s['pricingPreset']??'')==='plan-comparison')&&($s['isVisible']??false));
+  $references=array_filter($document['sections']??[],fn($s)=>(($s['type']??'')==='faq_accordion'&&in_array($s['faqPreset']??'',['corporate-starter-faq','pricing-card-faq','pricing-band-faq'],true)||($s['type']??'')==='pricing_table'&&($s['pricingPreset']??'')==='plan-comparison')&&($s['isVisible']??false));
   if(!$references)return [];
   $linked=array_filter($references,fn($s)=>($s['planContentSource']??(isset($s['pricingSourcePageId'])?'reference':'manual'))==='reference');
   $ids=array_values(array_unique(array_filter(array_column($linked,'pricingSourcePageId'),fn($id)=>is_string($id)&&ctype_digit($id))));
