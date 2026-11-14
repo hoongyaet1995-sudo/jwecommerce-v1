@@ -501,7 +501,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
                   {section.cardTitle || 'Aurora Titanium Series X'}
                 </p>
                 <p className="text-[11px] text-neutral-400 truncate">
-                  {section.cardSubtitle || '50mm Beryllium • LDAC 24/96'}
+                  {section.cardSubtitle || '50mm Beryllium â€¢ LDAC 24/96'}
                 </p>
               </div>
               <div className="text-right shrink-0">
@@ -759,7 +759,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
 
     const items = section.items && section.items.length > 0 ? section.items : [
       { id: 'ann-1', title: 'COMPLIMENTARY DHL EXPRESS DELIVERY ON ORDERS OVER $200' },
-      { id: 'ann-2', title: 'HANDCRAFTED IN STOCKHOLM • 3-YEAR ACOUSTIC GUARANTEE' },
+      { id: 'ann-2', title: 'HANDCRAFTED IN STOCKHOLM â€¢ 3-YEAR ACOUSTIC GUARANTEE' },
       { id: 'ann-3', title: 'NEW TITANIUM DRIVER RELEASE NOW LIVE FOR PRE-ORDER' },
       { id: 'ann-4', title: 'CUSTOM LASER ENGRAVING AVAILABLE AT CHECKOUT' }
     ];
@@ -812,7 +812,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
           "{section.quote}"
           {section.authorName && (
             <footer className="mt-3 text-xs not-italic font-sans font-bold opacity-70">
-              — {section.authorName}{section.authorRole ? `, ${section.authorRole}` : ''}
+              â€” {section.authorName}{section.authorRole ? `, ${section.authorRole}` : ''}
             </footer>
           )}
         </blockquote></MotionItem>
@@ -2097,7 +2097,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
               </div>
               <div className="flex items-center gap-3">
                 <Phone data-cms-text="label" className="w-4 h-4 text-indigo-400 shrink-0" style={{...(getEyebrowStyle()),...typographyStyle(section,'label')}} />
-                <span>{section.contactPhone || '+46 8 123 4567 (Mon–Fri 09:00–18:00 CET)'}</span>
+                <span>{section.contactPhone || '+46 8 123 4567 (Monâ€“Fri 09:00â€“18:00 CET)'}</span>
               </div>
               {section.contactAddress && (
                 <div className="flex items-center gap-3">
@@ -2150,7 +2150,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
                         required
                         value={contactName}
                         onChange={e => setContactName(e.target.value)}
-                        placeholder="e.g. Søren Lindqvist"
+                        placeholder="e.g. SÃ¸ren Lindqvist"
                         className="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/15 text-white placeholder-neutral-500 focus:ring-2 focus:ring-indigo-500"
                       />
                     </div>
@@ -2633,7 +2633,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
   };
 
   const renderSectionContent = () => {
-    if(isConnectedFamily(section))return <ConnectedFamilySection section={section} authoredSection={rawSection} editing={isEditingMode} palette={section.brandPalette??runtime.page.document.style?.palette??runtime.context.themePalette}/>;
+    if(isConnectedFamily(section))return <ConnectedFamilySection section={section} authoredSection={rawSection} editing={isEditingMode} palette={section.brandPalette??runtime.page.document.style?.palette??runtime.context.themePalette} links={runtime.links}/>;
     switch (section.type) {
       case 'hero_banner': if(['corporate-centered','corporate-split-composite','corporate-centered-composite'].includes(section.heroBannerPreset??''))return <CorporateHero section={section} editing={isEditingMode}/>; return renderHeroBanner();
       case 'split_hero': return renderSplitHero();

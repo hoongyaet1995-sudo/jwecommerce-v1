@@ -6,5 +6,8 @@
   "tests/Feature/Cms/ConnectedStarterDraftsTest.php": "7d1b2c74e948c11fbdfb24164c6562e317c4a7832b4122a08a1ee9d1165752de",
   "scripts/cms/export-connected-starters-20261115.mjs": "3ff041cd906fc8c4d73482938ebd4d49c303a91e0e68bb7493578ef986c095b9",
   "scripts/releases/install-connected-starter-drafts-20261115.php": "8a8897ce4702c809758d608d2cd9e74a76c74fcecc7f27e9ad2dcfecb6a7de76",
-  "resources/cms/releases/20261115-connected-starters.json": "89440d07f95b3b9077511e21829e90049b9b9b9805ad3656010faa7e168850af"
+  "resources/cms/releases/20261115-connected-starters.json": "89440d07f95b3b9077511e21829e90049b9b9b9805ad3656010faa7e168850af",
+  "resources/admin/src/components/pages/ConnectedFamilySection.tsx": "1378b629ddb4acb79c70b1e75dfe68af9dea9a072489decaecb6e703ff5d7fbc",
+  "resources/admin/src/components/pages/SectionRenderer.tsx": "ed3a00e1993c453dd434f1fda9784f47f5e2bbaa9f56bcb82668dfbe0ba58caa",
+  "resources/admin/src/components/pages/ConnectedPreviewLinks.test.tsx": "b47d3d1d089feda5b7ed4b376e605748b875da3b67ab04f2f05aca83f511e6e9"
 }
