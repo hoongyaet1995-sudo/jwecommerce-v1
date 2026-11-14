@@ -10,12 +10,12 @@ export function isFourMosaicImageCards(s:PageSection|null|undefined):boolean{ret
 export function isFixedImageCards(s:PageSection|null|undefined):boolean{return isKnowledgeTriptych(s)||isImageFlow(s)||isThreeImageCards(s)||isFourMosaicImageCards(s);}
 export function fixedImageCardCount(s:PageSection):number{return isFourMosaicImageCards(s)?4:3;}
 export function normalizeThreeImageCards<T extends PageSection|null|undefined>(s:T):T{
- if(!s||!isFixedImageCards(s))return s;
+ if(!s||!isFixedImageCards(s)||s.itemLayoutMode==='flow')return s;
  const items=[...(s.items??[])];
  for(let i=items.length;i<fixedImageCardCount(s);i++)items.push({id:`${s.id}-slot-${i+1}`,title:'',description:'',imageUrl:''});
  return {...s,items} as T;
 }
-export function fixedImageCardItems(s:PageSection):SectionItem[]{return normalizeThreeImageCards(s).items!.slice(0,fixedImageCardCount(s));}
+export function fixedImageCardItems(s:PageSection):SectionItem[]{return s.itemLayoutMode==='flow'?(s.items??[]):normalizeThreeImageCards(s).items!.slice(0,fixedImageCardCount(s));}
 export function threeImageCards(prefix:string):PageSection{
  return {id:prefix+'-three-cards',type:'media_gallery',galleryPreset:'image-cards-three',isVisible:true,containerMode:'page',motionPreset:'subtle-lift',sectionBorder:'none',paddingY:'normal',backgroundColor:'custom',textColor:'dark',textAlignment:'center',customColors:{customBgColor:'#ffffff',titleColor:'#0d1234',contentColor:'#626981'},title:'Tell your story in three parts.',content:'Introduce three highlights for your audience.',items:[1,2,3].map(n=>({id:prefix+'-card-'+n,title:'Highlight '+n,description:'Describe this highlight.',imageUrl:''}))};
 }

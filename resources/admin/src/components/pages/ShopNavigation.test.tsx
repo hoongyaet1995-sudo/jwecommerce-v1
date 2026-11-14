@@ -10,11 +10,11 @@ import {collectionBannerDefaults} from '../../cms/collectionBanners';
 const catalog={products:[],categories:[{id:'51',type:'category' as const,slug:'living-room',label:'Living Room',image:'/images/living.jpg'}],collections:[]};
 describe('Shop Navigation',()=>{
  it('centers headings and applies spacious padding in both layouts',()=>{
-  for(const shopNavigationPreset of ['image-cards','collection-banners'] as const){
+  for(const shopNavigationPreset of ['cards','collection-banners'] as const){
    const section:PageSection={id:'nav',type:'shop_navigation',title:'Rooms',isVisible:true,textAlignment:'center',paddingY:'spacious',showSectionHeading:true,shopNavigationPreset,items:[]};
    const html=renderToStaticMarkup(<ShopNavigation section={section} catalog={catalog}/>);
    expect(html).toContain('text-align:center');expect(html).toContain('py-20');
-   if(shopNavigationPreset==='image-cards')expect(html).toContain('flex-col items-center');
+   if(shopNavigationPreset==='cards')expect(html).toContain('flex-col items-center');
   }
  });
  it('switches a cropped card into owned banner geometry without losing its image or destination',()=>{

@@ -1,0 +1,2522 @@
+{
+  "families": [
+    {
+      "id": "hero",
+      "name": "Hero / 主视觉",
+      "type": "hero_banner",
+      "candidates": [
+        "Centered Composite Hero",
+        "Split Image Hero"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Centered Composite Hero",
+          "type": "hero_banner",
+          "presets": {
+            "heroBannerPreset": "corporate-centered-composite"
+          }
+        },
+        {
+          "name": "Split Image Hero",
+          "type": "hero_banner",
+          "presets": {
+            "heroBannerPreset": "corporate-split-composite"
+          }
+        }
+      ],
+      "decision": "扩展",
+      "extension": "同一 Hero 家族；居中/分栏布局；保留原生组合示意、标签、双 CTA、底部 proof strip。",
+      "occurrences": 8,
+      "pages": [
+        "commerce",
+        "connected-operations",
+        "custom-workflows",
+        "home",
+        "inventory-fulfilment",
+        "marketing-studio",
+        "marketplace",
+        "website-builder"
+      ]
+    },
+    {
+      "id": "cards",
+      "name": "Feature Cards / 功能卡片",
+      "type": "feature_cards",
+      "candidates": [
+        "Value Proposition & Feature Cards",
+        "Industrial Service Cards"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Industrial Service Cards",
+          "type": "feature_cards",
+          "presets": {
+            "featureCardsPreset": "industrial-cards"
+          }
+        },
+        {
+          "name": "Value Proposition & Feature Cards",
+          "type": "feature_cards",
+          "presets": {}
+        }
+      ],
+      "decision": "扩展",
+      "extension": "共用条目模型；grid/bento/compact 为布局；每条目 surface role 和有界原生示意为扩展。",
+      "occurrences": 18,
+      "pages": [
+        "commerce",
+        "connected-operations",
+        "custom-workflows",
+        "inventory-fulfilment",
+        "marketing-studio",
+        "marketplace",
+        "website-builder"
+      ]
+    },
+    {
+      "id": "story",
+      "name": "Media Story / 图文叙事",
+      "type": "media_gallery",
+      "candidates": [
+        "Connected Feature Rows",
+        "Image & Highlights"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Connected Feature Rows",
+          "type": "media_gallery",
+          "presets": {
+            "galleryPreset": "connected-feature-rows"
+          }
+        },
+        {
+          "name": "Image & Highlights",
+          "type": "media_text_split",
+          "presets": {
+            "layoutPreset": "image-highlights"
+          }
+        }
+      ],
+      "decision": "扩展",
+      "extension": "交替多行共用 Connected Feature Rows；单行复用 media_text_split。原生示意保留专用展示契约。",
+      "occurrences": 7,
+      "pages": [
+        "connected-operations",
+        "custom-workflows",
+        "inventory-fulfilment",
+        "marketing-studio",
+        "marketplace",
+        "website-builder"
+      ]
+    },
+    {
+      "id": "process",
+      "name": "Process / 流程步骤",
+      "type": "feature_cards",
+      "candidates": [
+        "Numbered Process",
+        "Focused Steps",
+        "Website Illustrated Steps"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Numbered Process",
+          "type": "feature_cards",
+          "presets": {
+            "featureCardsPreset": "numbered-process"
+          }
+        },
+        {
+          "name": "Website Illustrated Steps",
+          "type": "media_gallery",
+          "presets": {
+            "galleryPreset": "corporate-illustrated-steps"
+          }
+        },
+        {
+          "name": "Focused Steps",
+          "type": "media_gallery",
+          "presets": {
+            "galleryPreset": "focused-steps"
+          }
+        }
+      ],
+      "decision": "扩展",
+      "extension": "共享步骤数据；卡片/图文/orbit 为有界布局；轨道示意和局部 motion 需扩展。",
+      "occurrences": 7,
+      "pages": [
+        "connected-operations",
+        "custom-workflows",
+        "home",
+        "inventory-fulfilment",
+        "marketing-studio",
+        "marketplace",
+        "website-builder"
+      ]
+    },
+    {
+      "id": "tabs",
+      "name": "Tabbed Preview / 标签预览",
+      "type": "media_gallery",
+      "candidates": [
+        "Product Preview Tabs"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Product Preview Tabs",
+          "type": "media_gallery",
+          "presets": {
+            "galleryPreset": "product-preview-tabs"
+          }
+        }
+      ],
+      "decision": "复用并补齐",
+      "extension": "复用 tabs 与重复条目；补齐开场叙述、语义颜色和 native illustration slot。",
+      "occurrences": 1,
+      "pages": [
+        "home"
+      ]
+    },
+    {
+      "id": "metrics",
+      "name": "Metrics / 指标",
+      "type": "stats_counter",
+      "candidates": [
+        "Impact Numbers & Metric Counters"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Impact Numbers & Metric Counters",
+          "type": "stats_counter",
+          "presets": {}
+        }
+      ],
+      "decision": "扩展",
+      "extension": "共享指标条目；row/bento 两种布局。数字来源与后缀独立；手填示例不充当实时业务数据。",
+      "occurrences": 2,
+      "pages": [
+        "home"
+      ]
+    },
+    {
+      "id": "stack",
+      "name": "Scroll Stack / 堆叠叙事",
+      "type": "media_gallery",
+      "candidates": [
+        "Scroll Stack Cards"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Scroll Stack Cards",
+          "type": "media_gallery",
+          "presets": {
+            "galleryPreset": "scroll-stack-cards"
+          }
+        }
+      ],
+      "decision": "复用并补齐",
+      "extension": "保留 sticky stack 内在交互；补齐卡片语义配色；不叠加外层 transform。",
+      "occurrences": 1,
+      "pages": [
+        "home"
+      ]
+    },
+    {
+      "id": "comparison",
+      "name": "Comparison / 对比",
+      "type": "comparison_matrix",
+      "candidates": [
+        "Device Comparison"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Device Comparison",
+          "type": "comparison_matrix",
+          "presets": {
+            "comparisonPreset": "device-table"
+          }
+        }
+      ],
+      "decision": "扩展",
+      "extension": "共用对比条目语义；两列叙述需布局变体，不照搬设备表格。",
+      "occurrences": 1,
+      "pages": [
+        "home"
+      ]
+    },
+    {
+      "id": "logos",
+      "name": "Logo Cloud / 品牌连接",
+      "type": "logo_cloud",
+      "candidates": [
+        "Partner Logos"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Partner Logos",
+          "type": "logo_cloud",
+          "presets": {
+            "logoPreset": "partners"
+          }
+        }
+      ],
+      "decision": "复用并补齐",
+      "extension": "标题、Logo、alt、链接；补齐 marquee 与暂停/减弱动态；Logo 图片不被调色。",
+      "occurrences": 1,
+      "pages": [
+        "home"
+      ]
+    },
+    {
+      "id": "pricing",
+      "name": "Pricing / 套餐",
+      "type": "pricing_table",
+      "candidates": [
+        "Tiered Pricing & Plan Comparison",
+        "Plan Comparison"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Plan Comparison",
+          "type": "pricing_table",
+          "presets": {
+            "pricingPreset": "plan-comparison"
+          }
+        },
+        {
+          "name": "Tiered Pricing & Plan Comparison",
+          "type": "pricing_table",
+          "presets": {}
+        }
+      ],
+      "decision": "扩展",
+      "extension": "卡片和分组能力矩阵共享计划 ID、价格与 billing state；矩阵需有界行/列/单元格模型与手机计划选择。",
+      "occurrences": 2,
+      "pages": [
+        "commerce"
+      ]
+    },
+    {
+      "id": "faq",
+      "name": "FAQ / 常见问题",
+      "type": "faq_accordion",
+      "candidates": [
+        "Minimal FAQ",
+        "FAQ & Accordion List"
+      ],
+      "candidateContracts": [
+        {
+          "name": "FAQ & Accordion List",
+          "type": "faq_accordion",
+          "presets": {}
+        },
+        {
+          "name": "Minimal FAQ",
+          "type": "faq_accordion",
+          "presets": {
+            "faqPreset": "minimal"
+          }
+        }
+      ],
+      "decision": "复用并补齐",
+      "extension": "统一问答数组、增删排序；标题区/分栏为布局能力；保留手动编辑。",
+      "occurrences": 7,
+      "pages": [
+        "commerce",
+        "connected-operations",
+        "custom-workflows",
+        "inventory-fulfilment",
+        "marketing-studio",
+        "marketplace",
+        "website-builder"
+      ]
+    },
+    {
+      "id": "cta",
+      "name": "CTA / 行动引导",
+      "type": "cta_strip",
+      "candidates": [
+        "Call to Action & Banner",
+        "SaaS Closing CTA"
+      ],
+      "candidateContracts": [
+        {
+          "name": "SaaS Closing CTA",
+          "type": "cta_strip",
+          "presets": {
+            "ctaPreset": "saas-closing"
+          }
+        },
+        {
+          "name": "Call to Action & Banner",
+          "type": "cta_strip",
+          "presets": {}
+        }
+      ],
+      "decision": "复用并补齐",
+      "extension": "统一标题、说明和动作；全站 Footer 从该区域独立出来，不能作为 CTA 内文复制。",
+      "occurrences": 8,
+      "pages": [
+        "commerce",
+        "connected-operations",
+        "custom-workflows",
+        "home",
+        "inventory-fulfilment",
+        "marketing-studio",
+        "marketplace",
+        "website-builder"
+      ]
+    }
+  ],
+  "regions": [
+    {
+      "page": "home",
+      "region": 1,
+      "sectionId": "home-1",
+      "title": "Your business. Connected.",
+      "family": "hero",
+      "type": "hero_banner",
+      "candidates": [
+        "Centered Composite Hero",
+        "Split Image Hero"
+      ],
+      "decision": "扩展",
+      "extension": "同一 Hero 家族；居中/分栏布局；保留原生组合示意、标签、双 CTA、底部 proof strip。",
+      "fieldCount": 12,
+      "sourceClasses": [
+        "hero",
+        "section-pad"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Centered Composite Hero",
+          "type": "hero_banner",
+          "presets": {
+            "heroBannerPreset": "corporate-centered-composite"
+          }
+        },
+        {
+          "name": "Split Image Hero",
+          "type": "hero_banner",
+          "presets": {
+            "heroBannerPreset": "corporate-split-composite"
+          }
+        }
+      ]
+    },
+    {
+      "page": "home",
+      "region": 2,
+      "sectionId": "home-2",
+      "title": "Your website, commerce and customer conversations should work together. Create a clearer path from first visit to the next order.",
+      "family": "tabs",
+      "type": "media_gallery",
+      "candidates": [
+        "Product Preview Tabs"
+      ],
+      "decision": "复用并补齐",
+      "extension": "复用 tabs 与重复条目；补齐开场叙述、语义颜色和 native illustration slot。",
+      "fieldCount": 8,
+      "sourceClasses": [
+        "platform",
+        "section-pad"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Product Preview Tabs",
+          "type": "media_gallery",
+          "presets": {
+            "galleryPreset": "product-preview-tabs"
+          }
+        }
+      ]
+    },
+    {
+      "page": "home",
+      "region": 3,
+      "sectionId": "home-3",
+      "title": "Make room for your next stage.",
+      "family": "metrics",
+      "type": "stats_counter",
+      "candidates": [
+        "Impact Numbers & Metric Counters"
+      ],
+      "decision": "扩展",
+      "extension": "共享指标条目；row/bento 两种布局。数字来源与后缀独立；手填示例不充当实时业务数据。",
+      "fieldCount": 8,
+      "sourceClasses": [
+        "outcomes",
+        "section-pad",
+        "reveal"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Impact Numbers & Metric Counters",
+          "type": "stats_counter",
+          "presets": {}
+        }
+      ]
+    },
+    {
+      "page": "home",
+      "region": 4,
+      "sectionId": "home-4",
+      "title": "Built around the way you work.",
+      "family": "stack",
+      "type": "media_gallery",
+      "candidates": [
+        "Scroll Stack Cards"
+      ],
+      "decision": "复用并补齐",
+      "extension": "保留 sticky stack 内在交互；补齐卡片语义配色；不叠加外层 transform。",
+      "fieldCount": 19,
+      "sourceClasses": [
+        "solutions",
+        "section-pad"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Scroll Stack Cards",
+          "type": "media_gallery",
+          "presets": {
+            "galleryPreset": "scroll-stack-cards"
+          }
+        }
+      ]
+    },
+    {
+      "page": "home",
+      "region": 5,
+      "sectionId": "home-5",
+      "title": "Metrics",
+      "family": "metrics",
+      "type": "stats_counter",
+      "candidates": [
+        "Impact Numbers & Metric Counters"
+      ],
+      "decision": "扩展",
+      "extension": "共享指标条目；row/bento 两种布局。数字来源与后缀独立；手填示例不充当实时业务数据。",
+      "fieldCount": 7,
+      "sourceClasses": [
+        "numbers",
+        "section-pad",
+        "reveal"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Impact Numbers & Metric Counters",
+          "type": "stats_counter",
+          "presets": {}
+        }
+      ]
+    },
+    {
+      "page": "home",
+      "region": 6,
+      "sectionId": "home-6",
+      "title": "From your first idea to everyday use.",
+      "family": "process",
+      "type": "feature_cards",
+      "candidates": [
+        "Numbered Process",
+        "Focused Steps",
+        "Website Illustrated Steps"
+      ],
+      "decision": "扩展",
+      "extension": "共享步骤数据；卡片/图文/orbit 为有界布局；轨道示意和局部 motion 需扩展。",
+      "fieldCount": 10,
+      "sourceClasses": [
+        "process",
+        "section-pad"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Numbered Process",
+          "type": "feature_cards",
+          "presets": {
+            "featureCardsPreset": "numbered-process"
+          }
+        },
+        {
+          "name": "Website Illustrated Steps",
+          "type": "media_gallery",
+          "presets": {
+            "galleryPreset": "corporate-illustrated-steps"
+          }
+        },
+        {
+          "name": "Focused Steps",
+          "type": "media_gallery",
+          "presets": {
+            "galleryPreset": "focused-steps"
+          }
+        }
+      ]
+    },
+    {
+      "page": "home",
+      "region": 7,
+      "sectionId": "home-7",
+      "title": "One business. A clearer way to work.",
+      "family": "comparison",
+      "type": "comparison_matrix",
+      "candidates": [
+        "Device Comparison"
+      ],
+      "decision": "扩展",
+      "extension": "共用对比条目语义；两列叙述需布局变体，不照搬设备表格。",
+      "fieldCount": 15,
+      "sourceClasses": [
+        "comparison",
+        "section-pad"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Device Comparison",
+          "type": "comparison_matrix",
+          "presets": {
+            "comparisonPreset": "device-table"
+          }
+        }
+      ]
+    },
+    {
+      "page": "home",
+      "region": 8,
+      "sectionId": "home-8",
+      "title": "Plan the connections you need.",
+      "family": "logos",
+      "type": "logo_cloud",
+      "candidates": [
+        "Partner Logos"
+      ],
+      "decision": "复用并补齐",
+      "extension": "标题、Logo、alt、链接；补齐 marquee 与暂停/减弱动态；Logo 图片不被调色。",
+      "fieldCount": 38,
+      "sourceClasses": [
+        "integrations",
+        "section-pad",
+        "reveal"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Partner Logos",
+          "type": "logo_cloud",
+          "presets": {
+            "logoPreset": "partners"
+          }
+        }
+      ]
+    },
+    {
+      "page": "home",
+      "region": 9,
+      "sectionId": "home-9",
+      "title": "Ready to connect your business?",
+      "family": "cta",
+      "type": "cta_strip",
+      "candidates": [
+        "Call to Action & Banner",
+        "SaaS Closing CTA"
+      ],
+      "decision": "复用并补齐",
+      "extension": "统一标题、说明和动作；全站 Footer 从该区域独立出来，不能作为 CTA 内文复制。",
+      "fieldCount": 3,
+      "sourceClasses": [
+        "final-cta",
+        "section-pad"
+      ],
+      "candidateContracts": [
+        {
+          "name": "SaaS Closing CTA",
+          "type": "cta_strip",
+          "presets": {
+            "ctaPreset": "saas-closing"
+          }
+        },
+        {
+          "name": "Call to Action & Banner",
+          "type": "cta_strip",
+          "presets": {}
+        }
+      ]
+    },
+    {
+      "page": "commerce",
+      "region": 1,
+      "sectionId": "commerce-1",
+      "title": "A stronger presence. A clearer path to purchase.",
+      "family": "hero",
+      "type": "hero_banner",
+      "candidates": [
+        "Centered Composite Hero",
+        "Split Image Hero"
+      ],
+      "decision": "扩展",
+      "extension": "同一 Hero 家族；居中/分栏布局；保留原生组合示意、标签、双 CTA、底部 proof strip。",
+      "fieldCount": 6,
+      "sourceClasses": [
+        "subpage-hero",
+        "section-pad"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Centered Composite Hero",
+          "type": "hero_banner",
+          "presets": {
+            "heroBannerPreset": "corporate-centered-composite"
+          }
+        },
+        {
+          "name": "Split Image Hero",
+          "type": "hero_banner",
+          "presets": {
+            "heroBannerPreset": "corporate-split-composite"
+          }
+        }
+      ]
+    },
+    {
+      "page": "commerce",
+      "region": 2,
+      "sectionId": "commerce-2",
+      "title": "Everything starts with your business.",
+      "family": "cards",
+      "type": "feature_cards",
+      "candidates": [
+        "Value Proposition & Feature Cards",
+        "Industrial Service Cards"
+      ],
+      "decision": "扩展",
+      "extension": "共用条目模型；grid/bento/compact 为布局；每条目 surface role 和有界原生示意为扩展。",
+      "fieldCount": 15,
+      "sourceClasses": [
+        "page-section",
+        "section-pad"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Industrial Service Cards",
+          "type": "feature_cards",
+          "presets": {
+            "featureCardsPreset": "industrial-cards"
+          }
+        },
+        {
+          "name": "Value Proposition & Feature Cards",
+          "type": "feature_cards",
+          "presets": {}
+        }
+      ]
+    },
+    {
+      "page": "commerce",
+      "region": 3,
+      "sectionId": "commerce-3",
+      "title": "Room to start. Freedom to grow.",
+      "family": "pricing",
+      "type": "pricing_table",
+      "candidates": [
+        "Tiered Pricing & Plan Comparison",
+        "Plan Comparison"
+      ],
+      "decision": "扩展",
+      "extension": "卡片和分组能力矩阵共享计划 ID、价格与 billing state；矩阵需有界行/列/单元格模型与手机计划选择。",
+      "fieldCount": 39,
+      "sourceClasses": [
+        "plans-section",
+        "section-pad"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Plan Comparison",
+          "type": "pricing_table",
+          "presets": {
+            "pricingPreset": "plan-comparison"
+          }
+        },
+        {
+          "name": "Tiered Pricing & Plan Comparison",
+          "type": "pricing_table",
+          "presets": {}
+        }
+      ]
+    },
+    {
+      "page": "commerce",
+      "region": 4,
+      "sectionId": "commerce-4",
+      "title": "Compare plans and project scope.",
+      "family": "pricing",
+      "type": "pricing_table",
+      "candidates": [
+        "Tiered Pricing & Plan Comparison",
+        "Plan Comparison"
+      ],
+      "decision": "扩展",
+      "extension": "卡片和分组能力矩阵共享计划 ID、价格与 billing state；矩阵需有界行/列/单元格模型与手机计划选择。",
+      "fieldCount": 80,
+      "sourceClasses": [
+        "plan-overview",
+        "section-pad"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Plan Comparison",
+          "type": "pricing_table",
+          "presets": {
+            "pricingPreset": "plan-comparison"
+          }
+        },
+        {
+          "name": "Tiered Pricing & Plan Comparison",
+          "type": "pricing_table",
+          "presets": {}
+        }
+      ]
+    },
+    {
+      "page": "commerce",
+      "region": 5,
+      "sectionId": "commerce-5",
+      "title": "A few things before you begin.",
+      "family": "faq",
+      "type": "faq_accordion",
+      "candidates": [
+        "Minimal FAQ",
+        "FAQ & Accordion List"
+      ],
+      "decision": "复用并补齐",
+      "extension": "统一问答数组、增删排序；标题区/分栏为布局能力；保留手动编辑。",
+      "fieldCount": 19,
+      "sourceClasses": [
+        "faq-section",
+        "section-pad"
+      ],
+      "candidateContracts": [
+        {
+          "name": "FAQ & Accordion List",
+          "type": "faq_accordion",
+          "presets": {}
+        },
+        {
+          "name": "Minimal FAQ",
+          "type": "faq_accordion",
+          "presets": {
+            "faqPreset": "minimal"
+          }
+        }
+      ]
+    },
+    {
+      "page": "commerce",
+      "region": 6,
+      "sectionId": "commerce-6",
+      "title": "Ready to connect your business?",
+      "family": "cta",
+      "type": "cta_strip",
+      "candidates": [
+        "Call to Action & Banner",
+        "SaaS Closing CTA"
+      ],
+      "decision": "复用并补齐",
+      "extension": "统一标题、说明和动作；全站 Footer 从该区域独立出来，不能作为 CTA 内文复制。",
+      "fieldCount": 3,
+      "sourceClasses": [
+        "final-cta",
+        "section-pad"
+      ],
+      "candidateContracts": [
+        {
+          "name": "SaaS Closing CTA",
+          "type": "cta_strip",
+          "presets": {
+            "ctaPreset": "saas-closing"
+          }
+        },
+        {
+          "name": "Call to Action & Banner",
+          "type": "cta_strip",
+          "presets": {}
+        }
+      ]
+    },
+    {
+      "page": "connected-operations",
+      "region": 1,
+      "sectionId": "connected-operations-1",
+      "title": "Your business data. Working together.",
+      "family": "hero",
+      "type": "hero_banner",
+      "candidates": [
+        "Centered Composite Hero",
+        "Split Image Hero"
+      ],
+      "decision": "扩展",
+      "extension": "同一 Hero 家族；居中/分栏布局；保留原生组合示意、标签、双 CTA、底部 proof strip。",
+      "fieldCount": 6,
+      "sourceClasses": [
+        "subpage-hero",
+        "section-pad"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Centered Composite Hero",
+          "type": "hero_banner",
+          "presets": {
+            "heroBannerPreset": "corporate-centered-composite"
+          }
+        },
+        {
+          "name": "Split Image Hero",
+          "type": "hero_banner",
+          "presets": {
+            "heroBannerPreset": "corporate-split-composite"
+          }
+        }
+      ]
+    },
+    {
+      "page": "connected-operations",
+      "region": 2,
+      "sectionId": "connected-operations-2",
+      "title": "Connect the records your team depends on.",
+      "family": "cards",
+      "type": "feature_cards",
+      "candidates": [
+        "Value Proposition & Feature Cards",
+        "Industrial Service Cards"
+      ],
+      "decision": "扩展",
+      "extension": "共用条目模型；grid/bento/compact 为布局；每条目 surface role 和有界原生示意为扩展。",
+      "fieldCount": 11,
+      "sourceClasses": [
+        "page-section",
+        "section-pad"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Industrial Service Cards",
+          "type": "feature_cards",
+          "presets": {
+            "featureCardsPreset": "industrial-cards"
+          }
+        },
+        {
+          "name": "Value Proposition & Feature Cards",
+          "type": "feature_cards",
+          "presets": {}
+        }
+      ]
+    },
+    {
+      "page": "connected-operations",
+      "region": 3,
+      "sectionId": "connected-operations-3",
+      "title": "Keep stock and product information connected.",
+      "family": "story",
+      "type": "media_gallery",
+      "candidates": [
+        "Connected Feature Rows",
+        "Image & Highlights"
+      ],
+      "decision": "扩展",
+      "extension": "交替多行共用 Connected Feature Rows；单行复用 media_text_split。原生示意保留专用展示契约。",
+      "fieldCount": 26,
+      "sourceClasses": [
+        "page-section",
+        "section-pad",
+        "service-story-section"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Connected Feature Rows",
+          "type": "media_gallery",
+          "presets": {
+            "galleryPreset": "connected-feature-rows"
+          }
+        },
+        {
+          "name": "Image & Highlights",
+          "type": "media_text_split",
+          "presets": {
+            "layoutPreset": "image-highlights"
+          }
+        }
+      ]
+    },
+    {
+      "page": "connected-operations",
+      "region": 4,
+      "sectionId": "connected-operations-4",
+      "title": "Connect one business workflow at a time.",
+      "family": "process",
+      "type": "feature_cards",
+      "candidates": [
+        "Numbered Process",
+        "Focused Steps",
+        "Website Illustrated Steps"
+      ],
+      "decision": "扩展",
+      "extension": "共享步骤数据；卡片/图文/orbit 为有界布局；轨道示意和局部 motion 需扩展。",
+      "fieldCount": 11,
+      "sourceClasses": [
+        "page-section",
+        "section-pad"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Numbered Process",
+          "type": "feature_cards",
+          "presets": {
+            "featureCardsPreset": "numbered-process"
+          }
+        },
+        {
+          "name": "Website Illustrated Steps",
+          "type": "media_gallery",
+          "presets": {
+            "galleryPreset": "corporate-illustrated-steps"
+          }
+        },
+        {
+          "name": "Focused Steps",
+          "type": "media_gallery",
+          "presets": {
+            "galleryPreset": "focused-steps"
+          }
+        }
+      ]
+    },
+    {
+      "page": "connected-operations",
+      "region": 5,
+      "sectionId": "connected-operations-5",
+      "title": "A shared foundation for everyday work.",
+      "family": "cards",
+      "type": "feature_cards",
+      "candidates": [
+        "Value Proposition & Feature Cards",
+        "Industrial Service Cards"
+      ],
+      "decision": "扩展",
+      "extension": "共用条目模型；grid/bento/compact 为布局；每条目 surface role 和有界原生示意为扩展。",
+      "fieldCount": 14,
+      "sourceClasses": [
+        "page-section",
+        "section-pad"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Industrial Service Cards",
+          "type": "feature_cards",
+          "presets": {
+            "featureCardsPreset": "industrial-cards"
+          }
+        },
+        {
+          "name": "Value Proposition & Feature Cards",
+          "type": "feature_cards",
+          "presets": {}
+        }
+      ]
+    },
+    {
+      "page": "connected-operations",
+      "region": 6,
+      "sectionId": "connected-operations-6",
+      "title": "Connected operations, explained.",
+      "family": "faq",
+      "type": "faq_accordion",
+      "candidates": [
+        "Minimal FAQ",
+        "FAQ & Accordion List"
+      ],
+      "decision": "复用并补齐",
+      "extension": "统一问答数组、增删排序；标题区/分栏为布局能力；保留手动编辑。",
+      "fieldCount": 13,
+      "sourceClasses": [
+        "faq-section",
+        "section-pad"
+      ],
+      "candidateContracts": [
+        {
+          "name": "FAQ & Accordion List",
+          "type": "faq_accordion",
+          "presets": {}
+        },
+        {
+          "name": "Minimal FAQ",
+          "type": "faq_accordion",
+          "presets": {
+            "faqPreset": "minimal"
+          }
+        }
+      ]
+    },
+    {
+      "page": "connected-operations",
+      "region": 7,
+      "sectionId": "connected-operations-7",
+      "title": "Ready to connect your business?",
+      "family": "cta",
+      "type": "cta_strip",
+      "candidates": [
+        "Call to Action & Banner",
+        "SaaS Closing CTA"
+      ],
+      "decision": "复用并补齐",
+      "extension": "统一标题、说明和动作；全站 Footer 从该区域独立出来，不能作为 CTA 内文复制。",
+      "fieldCount": 3,
+      "sourceClasses": [
+        "final-cta",
+        "section-pad"
+      ],
+      "candidateContracts": [
+        {
+          "name": "SaaS Closing CTA",
+          "type": "cta_strip",
+          "presets": {
+            "ctaPreset": "saas-closing"
+          }
+        },
+        {
+          "name": "Call to Action & Banner",
+          "type": "cta_strip",
+          "presets": {}
+        }
+      ]
+    },
+    {
+      "page": "custom-workflows",
+      "region": 1,
+      "sectionId": "custom-workflows-1",
+      "title": "Software that fits the way you work.",
+      "family": "hero",
+      "type": "hero_banner",
+      "candidates": [
+        "Centered Composite Hero",
+        "Split Image Hero"
+      ],
+      "decision": "扩展",
+      "extension": "同一 Hero 家族；居中/分栏布局；保留原生组合示意、标签、双 CTA、底部 proof strip。",
+      "fieldCount": 6,
+      "sourceClasses": [
+        "subpage-hero",
+        "section-pad"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Centered Composite Hero",
+          "type": "hero_banner",
+          "presets": {
+            "heroBannerPreset": "corporate-centered-composite"
+          }
+        },
+        {
+          "name": "Split Image Hero",
+          "type": "hero_banner",
+          "presets": {
+            "heroBannerPreset": "corporate-split-composite"
+          }
+        }
+      ]
+    },
+    {
+      "page": "custom-workflows",
+      "region": 2,
+      "sectionId": "custom-workflows-2",
+      "title": "Turn a business need into a clear workflow.",
+      "family": "cards",
+      "type": "feature_cards",
+      "candidates": [
+        "Value Proposition & Feature Cards",
+        "Industrial Service Cards"
+      ],
+      "decision": "扩展",
+      "extension": "共用条目模型；grid/bento/compact 为布局；每条目 surface role 和有界原生示意为扩展。",
+      "fieldCount": 11,
+      "sourceClasses": [
+        "page-section",
+        "section-pad"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Industrial Service Cards",
+          "type": "feature_cards",
+          "presets": {
+            "featureCardsPreset": "industrial-cards"
+          }
+        },
+        {
+          "name": "Value Proposition & Feature Cards",
+          "type": "feature_cards",
+          "presets": {}
+        }
+      ]
+    },
+    {
+      "page": "custom-workflows",
+      "region": 3,
+      "sectionId": "custom-workflows-3",
+      "title": "Start with the people who use the process.",
+      "family": "story",
+      "type": "media_gallery",
+      "candidates": [
+        "Connected Feature Rows",
+        "Image & Highlights"
+      ],
+      "decision": "扩展",
+      "extension": "交替多行共用 Connected Feature Rows；单行复用 media_text_split。原生示意保留专用展示契约。",
+      "fieldCount": 21,
+      "sourceClasses": [
+        "page-section",
+        "section-pad",
+        "service-story-section"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Connected Feature Rows",
+          "type": "media_gallery",
+          "presets": {
+            "galleryPreset": "connected-feature-rows"
+          }
+        },
+        {
+          "name": "Image & Highlights",
+          "type": "media_text_split",
+          "presets": {
+            "layoutPreset": "image-highlights"
+          }
+        }
+      ]
+    },
+    {
+      "page": "custom-workflows",
+      "region": 4,
+      "sectionId": "custom-workflows-4",
+      "title": "From a business problem to a tested workflow.",
+      "family": "process",
+      "type": "feature_cards",
+      "candidates": [
+        "Numbered Process",
+        "Focused Steps",
+        "Website Illustrated Steps"
+      ],
+      "decision": "扩展",
+      "extension": "共享步骤数据；卡片/图文/orbit 为有界布局；轨道示意和局部 motion 需扩展。",
+      "fieldCount": 11,
+      "sourceClasses": [
+        "page-section",
+        "section-pad"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Numbered Process",
+          "type": "feature_cards",
+          "presets": {
+            "featureCardsPreset": "numbered-process"
+          }
+        },
+        {
+          "name": "Website Illustrated Steps",
+          "type": "media_gallery",
+          "presets": {
+            "galleryPreset": "corporate-illustrated-steps"
+          }
+        },
+        {
+          "name": "Focused Steps",
+          "type": "media_gallery",
+          "presets": {
+            "galleryPreset": "focused-steps"
+          }
+        }
+      ]
+    },
+    {
+      "page": "custom-workflows",
+      "region": 5,
+      "sectionId": "custom-workflows-5",
+      "title": "A practical scope for your custom project.",
+      "family": "cards",
+      "type": "feature_cards",
+      "candidates": [
+        "Value Proposition & Feature Cards",
+        "Industrial Service Cards"
+      ],
+      "decision": "扩展",
+      "extension": "共用条目模型；grid/bento/compact 为布局；每条目 surface role 和有界原生示意为扩展。",
+      "fieldCount": 14,
+      "sourceClasses": [
+        "page-section",
+        "section-pad"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Industrial Service Cards",
+          "type": "feature_cards",
+          "presets": {
+            "featureCardsPreset": "industrial-cards"
+          }
+        },
+        {
+          "name": "Value Proposition & Feature Cards",
+          "type": "feature_cards",
+          "presets": {}
+        }
+      ]
+    },
+    {
+      "page": "custom-workflows",
+      "region": 6,
+      "sectionId": "custom-workflows-6",
+      "title": "Custom workflows, explained.",
+      "family": "faq",
+      "type": "faq_accordion",
+      "candidates": [
+        "Minimal FAQ",
+        "FAQ & Accordion List"
+      ],
+      "decision": "复用并补齐",
+      "extension": "统一问答数组、增删排序；标题区/分栏为布局能力；保留手动编辑。",
+      "fieldCount": 13,
+      "sourceClasses": [
+        "faq-section",
+        "section-pad"
+      ],
+      "candidateContracts": [
+        {
+          "name": "FAQ & Accordion List",
+          "type": "faq_accordion",
+          "presets": {}
+        },
+        {
+          "name": "Minimal FAQ",
+          "type": "faq_accordion",
+          "presets": {
+            "faqPreset": "minimal"
+          }
+        }
+      ]
+    },
+    {
+      "page": "custom-workflows",
+      "region": 7,
+      "sectionId": "custom-workflows-7",
+      "title": "Ready to connect your business?",
+      "family": "cta",
+      "type": "cta_strip",
+      "candidates": [
+        "Call to Action & Banner",
+        "SaaS Closing CTA"
+      ],
+      "decision": "复用并补齐",
+      "extension": "统一标题、说明和动作；全站 Footer 从该区域独立出来，不能作为 CTA 内文复制。",
+      "fieldCount": 3,
+      "sourceClasses": [
+        "final-cta",
+        "section-pad"
+      ],
+      "candidateContracts": [
+        {
+          "name": "SaaS Closing CTA",
+          "type": "cta_strip",
+          "presets": {
+            "ctaPreset": "saas-closing"
+          }
+        },
+        {
+          "name": "Call to Action & Banner",
+          "type": "cta_strip",
+          "presets": {}
+        }
+      ]
+    },
+    {
+      "page": "inventory-fulfilment",
+      "region": 1,
+      "sectionId": "inventory-fulfilment-1",
+      "title": "From stock on hand to the next delivery.",
+      "family": "hero",
+      "type": "hero_banner",
+      "candidates": [
+        "Centered Composite Hero",
+        "Split Image Hero"
+      ],
+      "decision": "扩展",
+      "extension": "同一 Hero 家族；居中/分栏布局；保留原生组合示意、标签、双 CTA、底部 proof strip。",
+      "fieldCount": 6,
+      "sourceClasses": [
+        "subpage-hero",
+        "section-pad"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Centered Composite Hero",
+          "type": "hero_banner",
+          "presets": {
+            "heroBannerPreset": "corporate-centered-composite"
+          }
+        },
+        {
+          "name": "Split Image Hero",
+          "type": "hero_banner",
+          "presets": {
+            "heroBannerPreset": "corporate-split-composite"
+          }
+        }
+      ]
+    },
+    {
+      "page": "inventory-fulfilment",
+      "region": 2,
+      "sectionId": "inventory-fulfilment-2",
+      "title": "A clearer view of stock and fulfilment.",
+      "family": "cards",
+      "type": "feature_cards",
+      "candidates": [
+        "Value Proposition & Feature Cards",
+        "Industrial Service Cards"
+      ],
+      "decision": "扩展",
+      "extension": "共用条目模型；grid/bento/compact 为布局；每条目 surface role 和有界原生示意为扩展。",
+      "fieldCount": 11,
+      "sourceClasses": [
+        "page-section",
+        "section-pad"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Industrial Service Cards",
+          "type": "feature_cards",
+          "presets": {
+            "featureCardsPreset": "industrial-cards"
+          }
+        },
+        {
+          "name": "Value Proposition & Feature Cards",
+          "type": "feature_cards",
+          "presets": {}
+        }
+      ]
+    },
+    {
+      "page": "inventory-fulfilment",
+      "region": 3,
+      "sectionId": "inventory-fulfilment-3",
+      "title": "Know what is available before you promise it.",
+      "family": "story",
+      "type": "media_gallery",
+      "candidates": [
+        "Connected Feature Rows",
+        "Image & Highlights"
+      ],
+      "decision": "扩展",
+      "extension": "交替多行共用 Connected Feature Rows；单行复用 media_text_split。原生示意保留专用展示契约。",
+      "fieldCount": 21,
+      "sourceClasses": [
+        "page-section",
+        "section-pad",
+        "service-story-section"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Connected Feature Rows",
+          "type": "media_gallery",
+          "presets": {
+            "galleryPreset": "connected-feature-rows"
+          }
+        },
+        {
+          "name": "Image & Highlights",
+          "type": "media_text_split",
+          "presets": {
+            "layoutPreset": "image-highlights"
+          }
+        }
+      ]
+    },
+    {
+      "page": "inventory-fulfilment",
+      "region": 4,
+      "sectionId": "inventory-fulfilment-4",
+      "title": "From incoming stock to a completed handover.",
+      "family": "process",
+      "type": "feature_cards",
+      "candidates": [
+        "Numbered Process",
+        "Focused Steps",
+        "Website Illustrated Steps"
+      ],
+      "decision": "扩展",
+      "extension": "共享步骤数据；卡片/图文/orbit 为有界布局；轨道示意和局部 motion 需扩展。",
+      "fieldCount": 11,
+      "sourceClasses": [
+        "page-section",
+        "section-pad"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Numbered Process",
+          "type": "feature_cards",
+          "presets": {
+            "featureCardsPreset": "numbered-process"
+          }
+        },
+        {
+          "name": "Website Illustrated Steps",
+          "type": "media_gallery",
+          "presets": {
+            "galleryPreset": "corporate-illustrated-steps"
+          }
+        },
+        {
+          "name": "Focused Steps",
+          "type": "media_gallery",
+          "presets": {
+            "galleryPreset": "focused-steps"
+          }
+        }
+      ]
+    },
+    {
+      "page": "inventory-fulfilment",
+      "region": 5,
+      "sectionId": "inventory-fulfilment-5",
+      "title": "Built around your inventory workflow.",
+      "family": "cards",
+      "type": "feature_cards",
+      "candidates": [
+        "Value Proposition & Feature Cards",
+        "Industrial Service Cards"
+      ],
+      "decision": "扩展",
+      "extension": "共用条目模型；grid/bento/compact 为布局；每条目 surface role 和有界原生示意为扩展。",
+      "fieldCount": 14,
+      "sourceClasses": [
+        "page-section",
+        "section-pad"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Industrial Service Cards",
+          "type": "feature_cards",
+          "presets": {
+            "featureCardsPreset": "industrial-cards"
+          }
+        },
+        {
+          "name": "Value Proposition & Feature Cards",
+          "type": "feature_cards",
+          "presets": {}
+        }
+      ]
+    },
+    {
+      "page": "inventory-fulfilment",
+      "region": 6,
+      "sectionId": "inventory-fulfilment-6",
+      "title": "Inventory and fulfilment, explained.",
+      "family": "faq",
+      "type": "faq_accordion",
+      "candidates": [
+        "Minimal FAQ",
+        "FAQ & Accordion List"
+      ],
+      "decision": "复用并补齐",
+      "extension": "统一问答数组、增删排序；标题区/分栏为布局能力；保留手动编辑。",
+      "fieldCount": 13,
+      "sourceClasses": [
+        "faq-section",
+        "section-pad"
+      ],
+      "candidateContracts": [
+        {
+          "name": "FAQ & Accordion List",
+          "type": "faq_accordion",
+          "presets": {}
+        },
+        {
+          "name": "Minimal FAQ",
+          "type": "faq_accordion",
+          "presets": {
+            "faqPreset": "minimal"
+          }
+        }
+      ]
+    },
+    {
+      "page": "inventory-fulfilment",
+      "region": 7,
+      "sectionId": "inventory-fulfilment-7",
+      "title": "Ready to connect your business?",
+      "family": "cta",
+      "type": "cta_strip",
+      "candidates": [
+        "Call to Action & Banner",
+        "SaaS Closing CTA"
+      ],
+      "decision": "复用并补齐",
+      "extension": "统一标题、说明和动作；全站 Footer 从该区域独立出来，不能作为 CTA 内文复制。",
+      "fieldCount": 3,
+      "sourceClasses": [
+        "final-cta",
+        "section-pad"
+      ],
+      "candidateContracts": [
+        {
+          "name": "SaaS Closing CTA",
+          "type": "cta_strip",
+          "presets": {
+            "ctaPreset": "saas-closing"
+          }
+        },
+        {
+          "name": "Call to Action & Banner",
+          "type": "cta_strip",
+          "presets": {}
+        }
+      ]
+    },
+    {
+      "page": "marketing-studio",
+      "region": 1,
+      "sectionId": "marketing-studio-1",
+      "title": "Your brand. Ready for what comes next.",
+      "family": "hero",
+      "type": "hero_banner",
+      "candidates": [
+        "Centered Composite Hero",
+        "Split Image Hero"
+      ],
+      "decision": "扩展",
+      "extension": "同一 Hero 家族；居中/分栏布局；保留原生组合示意、标签、双 CTA、底部 proof strip。",
+      "fieldCount": 6,
+      "sourceClasses": [
+        "subpage-hero",
+        "live-page-hero",
+        "section-pad"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Centered Composite Hero",
+          "type": "hero_banner",
+          "presets": {
+            "heroBannerPreset": "corporate-centered-composite"
+          }
+        },
+        {
+          "name": "Split Image Hero",
+          "type": "hero_banner",
+          "presets": {
+            "heroBannerPreset": "corporate-split-composite"
+          }
+        }
+      ]
+    },
+    {
+      "page": "marketing-studio",
+      "region": 2,
+      "sectionId": "marketing-studio-2",
+      "title": "Turn business knowledge into content worth sharing.",
+      "family": "cards",
+      "type": "feature_cards",
+      "candidates": [
+        "Value Proposition & Feature Cards",
+        "Industrial Service Cards"
+      ],
+      "decision": "扩展",
+      "extension": "共用条目模型；grid/bento/compact 为布局；每条目 surface role 和有界原生示意为扩展。",
+      "fieldCount": 9,
+      "sourceClasses": [
+        "page-section",
+        "section-pad"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Industrial Service Cards",
+          "type": "feature_cards",
+          "presets": {
+            "featureCardsPreset": "industrial-cards"
+          }
+        },
+        {
+          "name": "Value Proposition & Feature Cards",
+          "type": "feature_cards",
+          "presets": {}
+        }
+      ]
+    },
+    {
+      "page": "marketing-studio",
+      "region": 3,
+      "sectionId": "marketing-studio-3",
+      "title": "From a business brief to a reviewed campaign.",
+      "family": "process",
+      "type": "feature_cards",
+      "candidates": [
+        "Numbered Process",
+        "Focused Steps",
+        "Website Illustrated Steps"
+      ],
+      "decision": "扩展",
+      "extension": "共享步骤数据；卡片/图文/orbit 为有界布局；轨道示意和局部 motion 需扩展。",
+      "fieldCount": 11,
+      "sourceClasses": [
+        "page-section",
+        "section-pad"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Numbered Process",
+          "type": "feature_cards",
+          "presets": {
+            "featureCardsPreset": "numbered-process"
+          }
+        },
+        {
+          "name": "Website Illustrated Steps",
+          "type": "media_gallery",
+          "presets": {
+            "galleryPreset": "corporate-illustrated-steps"
+          }
+        },
+        {
+          "name": "Focused Steps",
+          "type": "media_gallery",
+          "presets": {
+            "galleryPreset": "focused-steps"
+          }
+        }
+      ]
+    },
+    {
+      "page": "marketing-studio",
+      "region": 4,
+      "sectionId": "marketing-studio-4",
+      "title": "Content that starts with your own business.",
+      "family": "story",
+      "type": "media_gallery",
+      "candidates": [
+        "Connected Feature Rows",
+        "Image & Highlights"
+      ],
+      "decision": "扩展",
+      "extension": "交替多行共用 Connected Feature Rows；单行复用 media_text_split。原生示意保留专用展示契约。",
+      "fieldCount": 9,
+      "sourceClasses": [
+        "page-section",
+        "section-pad"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Connected Feature Rows",
+          "type": "media_gallery",
+          "presets": {
+            "galleryPreset": "connected-feature-rows"
+          }
+        },
+        {
+          "name": "Image & Highlights",
+          "type": "media_text_split",
+          "presets": {
+            "layoutPreset": "image-highlights"
+          }
+        }
+      ]
+    },
+    {
+      "page": "marketing-studio",
+      "region": 5,
+      "sectionId": "marketing-studio-5",
+      "title": "Give each product a clearer story.",
+      "family": "cards",
+      "type": "feature_cards",
+      "candidates": [
+        "Value Proposition & Feature Cards",
+        "Industrial Service Cards"
+      ],
+      "decision": "扩展",
+      "extension": "共用条目模型；grid/bento/compact 为布局；每条目 surface role 和有界原生示意为扩展。",
+      "fieldCount": 14,
+      "sourceClasses": [
+        "page-section",
+        "section-pad",
+        "live-commerce-section"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Industrial Service Cards",
+          "type": "feature_cards",
+          "presets": {
+            "featureCardsPreset": "industrial-cards"
+          }
+        },
+        {
+          "name": "Value Proposition & Feature Cards",
+          "type": "feature_cards",
+          "presets": {}
+        }
+      ]
+    },
+    {
+      "page": "marketing-studio",
+      "region": 6,
+      "sectionId": "marketing-studio-6",
+      "title": "Keep creative work in one workspace.",
+      "family": "cards",
+      "type": "feature_cards",
+      "candidates": [
+        "Value Proposition & Feature Cards",
+        "Industrial Service Cards"
+      ],
+      "decision": "扩展",
+      "extension": "共用条目模型；grid/bento/compact 为布局；每条目 surface role 和有界原生示意为扩展。",
+      "fieldCount": 6,
+      "sourceClasses": [
+        "page-section",
+        "section-pad"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Industrial Service Cards",
+          "type": "feature_cards",
+          "presets": {
+            "featureCardsPreset": "industrial-cards"
+          }
+        },
+        {
+          "name": "Value Proposition & Feature Cards",
+          "type": "feature_cards",
+          "presets": {}
+        }
+      ]
+    },
+    {
+      "page": "marketing-studio",
+      "region": 7,
+      "sectionId": "marketing-studio-7",
+      "title": "Keep your team in the creative loop.",
+      "family": "cards",
+      "type": "feature_cards",
+      "candidates": [
+        "Value Proposition & Feature Cards",
+        "Industrial Service Cards"
+      ],
+      "decision": "扩展",
+      "extension": "共用条目模型；grid/bento/compact 为布局；每条目 surface role 和有界原生示意为扩展。",
+      "fieldCount": 9,
+      "sourceClasses": [
+        "page-section",
+        "section-pad"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Industrial Service Cards",
+          "type": "feature_cards",
+          "presets": {
+            "featureCardsPreset": "industrial-cards"
+          }
+        },
+        {
+          "name": "Value Proposition & Feature Cards",
+          "type": "feature_cards",
+          "presets": {}
+        }
+      ]
+    },
+    {
+      "page": "marketing-studio",
+      "region": 8,
+      "sectionId": "marketing-studio-8",
+      "title": "Understand what your campaign needs next.",
+      "family": "story",
+      "type": "media_gallery",
+      "candidates": [
+        "Connected Feature Rows",
+        "Image & Highlights"
+      ],
+      "decision": "扩展",
+      "extension": "交替多行共用 Connected Feature Rows；单行复用 media_text_split。原生示意保留专用展示契约。",
+      "fieldCount": 7,
+      "sourceClasses": [
+        "page-section",
+        "section-pad"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Connected Feature Rows",
+          "type": "media_gallery",
+          "presets": {
+            "galleryPreset": "connected-feature-rows"
+          }
+        },
+        {
+          "name": "Image & Highlights",
+          "type": "media_text_split",
+          "presets": {
+            "layoutPreset": "image-highlights"
+          }
+        }
+      ]
+    },
+    {
+      "page": "marketing-studio",
+      "region": 9,
+      "sectionId": "marketing-studio-9",
+      "title": "Connect content work with your business workflow.",
+      "family": "cards",
+      "type": "feature_cards",
+      "candidates": [
+        "Value Proposition & Feature Cards",
+        "Industrial Service Cards"
+      ],
+      "decision": "扩展",
+      "extension": "共用条目模型；grid/bento/compact 为布局；每条目 surface role 和有界原生示意为扩展。",
+      "fieldCount": 8,
+      "sourceClasses": [
+        "page-section",
+        "section-pad"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Industrial Service Cards",
+          "type": "feature_cards",
+          "presets": {
+            "featureCardsPreset": "industrial-cards"
+          }
+        },
+        {
+          "name": "Value Proposition & Feature Cards",
+          "type": "feature_cards",
+          "presets": {}
+        }
+      ]
+    },
+    {
+      "page": "marketing-studio",
+      "region": 10,
+      "sectionId": "marketing-studio-10",
+      "title": "Marketing Studio, explained.",
+      "family": "faq",
+      "type": "faq_accordion",
+      "candidates": [
+        "Minimal FAQ",
+        "FAQ & Accordion List"
+      ],
+      "decision": "复用并补齐",
+      "extension": "统一问答数组、增删排序；标题区/分栏为布局能力；保留手动编辑。",
+      "fieldCount": 13,
+      "sourceClasses": [
+        "faq-section",
+        "section-pad"
+      ],
+      "candidateContracts": [
+        {
+          "name": "FAQ & Accordion List",
+          "type": "faq_accordion",
+          "presets": {}
+        },
+        {
+          "name": "Minimal FAQ",
+          "type": "faq_accordion",
+          "presets": {
+            "faqPreset": "minimal"
+          }
+        }
+      ]
+    },
+    {
+      "page": "marketing-studio",
+      "region": 11,
+      "sectionId": "marketing-studio-11",
+      "title": "Ready to connect your business?",
+      "family": "cta",
+      "type": "cta_strip",
+      "candidates": [
+        "Call to Action & Banner",
+        "SaaS Closing CTA"
+      ],
+      "decision": "复用并补齐",
+      "extension": "统一标题、说明和动作；全站 Footer 从该区域独立出来，不能作为 CTA 内文复制。",
+      "fieldCount": 3,
+      "sourceClasses": [
+        "final-cta",
+        "section-pad"
+      ],
+      "candidateContracts": [
+        {
+          "name": "SaaS Closing CTA",
+          "type": "cta_strip",
+          "presets": {
+            "ctaPreset": "saas-closing"
+          }
+        },
+        {
+          "name": "Call to Action & Banner",
+          "type": "cta_strip",
+          "presets": {}
+        }
+      ]
+    },
+    {
+      "page": "marketplace",
+      "region": 1,
+      "sectionId": "marketplace-1",
+      "title": "Different storefronts. One operational view.",
+      "family": "hero",
+      "type": "hero_banner",
+      "candidates": [
+        "Centered Composite Hero",
+        "Split Image Hero"
+      ],
+      "decision": "扩展",
+      "extension": "同一 Hero 家族；居中/分栏布局；保留原生组合示意、标签、双 CTA、底部 proof strip。",
+      "fieldCount": 11,
+      "sourceClasses": [
+        "subpage-hero",
+        "section-pad"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Centered Composite Hero",
+          "type": "hero_banner",
+          "presets": {
+            "heroBannerPreset": "corporate-centered-composite"
+          }
+        },
+        {
+          "name": "Split Image Hero",
+          "type": "hero_banner",
+          "presets": {
+            "heroBannerPreset": "corporate-split-composite"
+          }
+        }
+      ]
+    },
+    {
+      "page": "marketplace",
+      "region": 2,
+      "sectionId": "marketplace-2",
+      "title": "Bring marketplace work into a clearer workflow.",
+      "family": "cards",
+      "type": "feature_cards",
+      "candidates": [
+        "Value Proposition & Feature Cards",
+        "Industrial Service Cards"
+      ],
+      "decision": "扩展",
+      "extension": "共用条目模型；grid/bento/compact 为布局；每条目 surface role 和有界原生示意为扩展。",
+      "fieldCount": 11,
+      "sourceClasses": [
+        "page-section",
+        "section-pad"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Industrial Service Cards",
+          "type": "feature_cards",
+          "presets": {
+            "featureCardsPreset": "industrial-cards"
+          }
+        },
+        {
+          "name": "Value Proposition & Feature Cards",
+          "type": "feature_cards",
+          "presets": {}
+        }
+      ]
+    },
+    {
+      "page": "marketplace",
+      "region": 3,
+      "sectionId": "marketplace-3",
+      "title": "Start with clear stock and SKU relationships.",
+      "family": "story",
+      "type": "media_gallery",
+      "candidates": [
+        "Connected Feature Rows",
+        "Image & Highlights"
+      ],
+      "decision": "扩展",
+      "extension": "交替多行共用 Connected Feature Rows；单行复用 media_text_split。原生示意保留专用展示契约。",
+      "fieldCount": 21,
+      "sourceClasses": [
+        "page-section",
+        "section-pad",
+        "multi-operation-section"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Connected Feature Rows",
+          "type": "media_gallery",
+          "presets": {
+            "galleryPreset": "connected-feature-rows"
+          }
+        },
+        {
+          "name": "Image & Highlights",
+          "type": "media_text_split",
+          "presets": {
+            "layoutPreset": "image-highlights"
+          }
+        }
+      ]
+    },
+    {
+      "page": "marketplace",
+      "region": 4,
+      "sectionId": "marketplace-4",
+      "title": "Connect the right records before automating the flow.",
+      "family": "process",
+      "type": "feature_cards",
+      "candidates": [
+        "Numbered Process",
+        "Focused Steps",
+        "Website Illustrated Steps"
+      ],
+      "decision": "扩展",
+      "extension": "共享步骤数据；卡片/图文/orbit 为有界布局；轨道示意和局部 motion 需扩展。",
+      "fieldCount": 23,
+      "sourceClasses": [
+        "page-section",
+        "section-pad"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Numbered Process",
+          "type": "feature_cards",
+          "presets": {
+            "featureCardsPreset": "numbered-process"
+          }
+        },
+        {
+          "name": "Website Illustrated Steps",
+          "type": "media_gallery",
+          "presets": {
+            "galleryPreset": "corporate-illustrated-steps"
+          }
+        },
+        {
+          "name": "Focused Steps",
+          "type": "media_gallery",
+          "presets": {
+            "galleryPreset": "focused-steps"
+          }
+        }
+      ]
+    },
+    {
+      "page": "marketplace",
+      "region": 5,
+      "sectionId": "marketplace-5",
+      "title": "Make order and shipment work easier to follow.",
+      "family": "cards",
+      "type": "feature_cards",
+      "candidates": [
+        "Value Proposition & Feature Cards",
+        "Industrial Service Cards"
+      ],
+      "decision": "扩展",
+      "extension": "共用条目模型；grid/bento/compact 为布局；每条目 surface role 和有界原生示意为扩展。",
+      "fieldCount": 8,
+      "sourceClasses": [
+        "page-section",
+        "section-pad"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Industrial Service Cards",
+          "type": "feature_cards",
+          "presets": {
+            "featureCardsPreset": "industrial-cards"
+          }
+        },
+        {
+          "name": "Value Proposition & Feature Cards",
+          "type": "feature_cards",
+          "presets": {}
+        }
+      ]
+    },
+    {
+      "page": "marketplace",
+      "region": 6,
+      "sectionId": "marketplace-6",
+      "title": "Build your channel setup around real operations.",
+      "family": "cards",
+      "type": "feature_cards",
+      "candidates": [
+        "Value Proposition & Feature Cards",
+        "Industrial Service Cards"
+      ],
+      "decision": "扩展",
+      "extension": "共用条目模型；grid/bento/compact 为布局；每条目 surface role 和有界原生示意为扩展。",
+      "fieldCount": 4,
+      "sourceClasses": [
+        "page-section",
+        "section-pad"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Industrial Service Cards",
+          "type": "feature_cards",
+          "presets": {
+            "featureCardsPreset": "industrial-cards"
+          }
+        },
+        {
+          "name": "Value Proposition & Feature Cards",
+          "type": "feature_cards",
+          "presets": {}
+        }
+      ]
+    },
+    {
+      "page": "marketplace",
+      "region": 7,
+      "sectionId": "marketplace-7",
+      "title": "Plan each marketplace connection.",
+      "family": "cards",
+      "type": "feature_cards",
+      "candidates": [
+        "Value Proposition & Feature Cards",
+        "Industrial Service Cards"
+      ],
+      "decision": "扩展",
+      "extension": "共用条目模型；grid/bento/compact 为布局；每条目 surface role 和有界原生示意为扩展。",
+      "fieldCount": 20,
+      "sourceClasses": [
+        "page-section",
+        "section-pad"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Industrial Service Cards",
+          "type": "feature_cards",
+          "presets": {
+            "featureCardsPreset": "industrial-cards"
+          }
+        },
+        {
+          "name": "Value Proposition & Feature Cards",
+          "type": "feature_cards",
+          "presets": {}
+        }
+      ]
+    },
+    {
+      "page": "marketplace",
+      "region": 8,
+      "sectionId": "marketplace-8",
+      "title": "Marketplace operations, explained.",
+      "family": "faq",
+      "type": "faq_accordion",
+      "candidates": [
+        "Minimal FAQ",
+        "FAQ & Accordion List"
+      ],
+      "decision": "复用并补齐",
+      "extension": "统一问答数组、增删排序；标题区/分栏为布局能力；保留手动编辑。",
+      "fieldCount": 13,
+      "sourceClasses": [
+        "faq-section",
+        "section-pad"
+      ],
+      "candidateContracts": [
+        {
+          "name": "FAQ & Accordion List",
+          "type": "faq_accordion",
+          "presets": {}
+        },
+        {
+          "name": "Minimal FAQ",
+          "type": "faq_accordion",
+          "presets": {
+            "faqPreset": "minimal"
+          }
+        }
+      ]
+    },
+    {
+      "page": "marketplace",
+      "region": 9,
+      "sectionId": "marketplace-9",
+      "title": "Ready to connect your business?",
+      "family": "cta",
+      "type": "cta_strip",
+      "candidates": [
+        "Call to Action & Banner",
+        "SaaS Closing CTA"
+      ],
+      "decision": "复用并补齐",
+      "extension": "统一标题、说明和动作；全站 Footer 从该区域独立出来，不能作为 CTA 内文复制。",
+      "fieldCount": 3,
+      "sourceClasses": [
+        "final-cta",
+        "section-pad"
+      ],
+      "candidateContracts": [
+        {
+          "name": "SaaS Closing CTA",
+          "type": "cta_strip",
+          "presets": {
+            "ctaPreset": "saas-closing"
+          }
+        },
+        {
+          "name": "Call to Action & Banner",
+          "type": "cta_strip",
+          "presets": {}
+        }
+      ]
+    },
+    {
+      "page": "website-builder",
+      "region": 1,
+      "sectionId": "website-builder-1",
+      "title": "Your business. Beautifully presented.",
+      "family": "hero",
+      "type": "hero_banner",
+      "candidates": [
+        "Centered Composite Hero",
+        "Split Image Hero"
+      ],
+      "decision": "扩展",
+      "extension": "同一 Hero 家族；居中/分栏布局；保留原生组合示意、标签、双 CTA、底部 proof strip。",
+      "fieldCount": 6,
+      "sourceClasses": [
+        "subpage-hero",
+        "section-pad"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Centered Composite Hero",
+          "type": "hero_banner",
+          "presets": {
+            "heroBannerPreset": "corporate-centered-composite"
+          }
+        },
+        {
+          "name": "Split Image Hero",
+          "type": "hero_banner",
+          "presets": {
+            "heroBannerPreset": "corporate-split-composite"
+          }
+        }
+      ]
+    },
+    {
+      "page": "website-builder",
+      "region": 2,
+      "sectionId": "website-builder-2",
+      "title": "Build a page that tells your story.",
+      "family": "cards",
+      "type": "feature_cards",
+      "candidates": [
+        "Value Proposition & Feature Cards",
+        "Industrial Service Cards"
+      ],
+      "decision": "扩展",
+      "extension": "共用条目模型；grid/bento/compact 为布局；每条目 surface role 和有界原生示意为扩展。",
+      "fieldCount": 11,
+      "sourceClasses": [
+        "page-section",
+        "section-pad"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Industrial Service Cards",
+          "type": "feature_cards",
+          "presets": {
+            "featureCardsPreset": "industrial-cards"
+          }
+        },
+        {
+          "name": "Value Proposition & Feature Cards",
+          "type": "feature_cards",
+          "presets": {}
+        }
+      ]
+    },
+    {
+      "page": "website-builder",
+      "region": 3,
+      "sectionId": "website-builder-3",
+      "title": "Make changes. See them take shape.",
+      "family": "story",
+      "type": "media_gallery",
+      "candidates": [
+        "Connected Feature Rows",
+        "Image & Highlights"
+      ],
+      "decision": "扩展",
+      "extension": "交替多行共用 Connected Feature Rows；单行复用 media_text_split。原生示意保留专用展示契约。",
+      "fieldCount": 21,
+      "sourceClasses": [
+        "page-section",
+        "section-pad",
+        "service-story-section"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Connected Feature Rows",
+          "type": "media_gallery",
+          "presets": {
+            "galleryPreset": "connected-feature-rows"
+          }
+        },
+        {
+          "name": "Image & Highlights",
+          "type": "media_text_split",
+          "presets": {
+            "layoutPreset": "image-highlights"
+          }
+        }
+      ]
+    },
+    {
+      "page": "website-builder",
+      "region": 4,
+      "sectionId": "website-builder-4",
+      "title": "From the first draft to your next update.",
+      "family": "process",
+      "type": "feature_cards",
+      "candidates": [
+        "Numbered Process",
+        "Focused Steps",
+        "Website Illustrated Steps"
+      ],
+      "decision": "扩展",
+      "extension": "共享步骤数据；卡片/图文/orbit 为有界布局；轨道示意和局部 motion 需扩展。",
+      "fieldCount": 11,
+      "sourceClasses": [
+        "page-section",
+        "section-pad"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Numbered Process",
+          "type": "feature_cards",
+          "presets": {
+            "featureCardsPreset": "numbered-process"
+          }
+        },
+        {
+          "name": "Website Illustrated Steps",
+          "type": "media_gallery",
+          "presets": {
+            "galleryPreset": "corporate-illustrated-steps"
+          }
+        },
+        {
+          "name": "Focused Steps",
+          "type": "media_gallery",
+          "presets": {
+            "galleryPreset": "focused-steps"
+          }
+        }
+      ]
+    },
+    {
+      "page": "website-builder",
+      "region": 5,
+      "sectionId": "website-builder-5",
+      "title": "A website that grows with your business.",
+      "family": "cards",
+      "type": "feature_cards",
+      "candidates": [
+        "Value Proposition & Feature Cards",
+        "Industrial Service Cards"
+      ],
+      "decision": "扩展",
+      "extension": "共用条目模型；grid/bento/compact 为布局；每条目 surface role 和有界原生示意为扩展。",
+      "fieldCount": 14,
+      "sourceClasses": [
+        "page-section",
+        "section-pad"
+      ],
+      "candidateContracts": [
+        {
+          "name": "Industrial Service Cards",
+          "type": "feature_cards",
+          "presets": {
+            "featureCardsPreset": "industrial-cards"
+          }
+        },
+        {
+          "name": "Value Proposition & Feature Cards",
+          "type": "feature_cards",
+          "presets": {}
+        }
+      ]
+    },
+    {
+      "page": "website-builder",
+      "region": 6,
+      "sectionId": "website-builder-6",
+      "title": "Website Builder, explained.",
+      "family": "faq",
+      "type": "faq_accordion",
+      "candidates": [
+        "Minimal FAQ",
+        "FAQ & Accordion List"
+      ],
+      "decision": "复用并补齐",
+      "extension": "统一问答数组、增删排序；标题区/分栏为布局能力；保留手动编辑。",
+      "fieldCount": 13,
+      "sourceClasses": [
+        "faq-section",
+        "section-pad"
+      ],
+      "candidateContracts": [
+        {
+          "name": "FAQ & Accordion List",
+          "type": "faq_accordion",
+          "presets": {}
+        },
+        {
+          "name": "Minimal FAQ",
+          "type": "faq_accordion",
+          "presets": {
+            "faqPreset": "minimal"
+          }
+        }
+      ]
+    },
+    {
+      "page": "website-builder",
+      "region": 7,
+      "sectionId": "website-builder-7",
+      "title": "Ready to connect your business?",
+      "family": "cta",
+      "type": "cta_strip",
+      "candidates": [
+        "Call to Action & Banner",
+        "SaaS Closing CTA"
+      ],
+      "decision": "复用并补齐",
+      "extension": "统一标题、说明和动作；全站 Footer 从该区域独立出来，不能作为 CTA 内文复制。",
+      "fieldCount": 3,
+      "sourceClasses": [
+        "final-cta",
+        "section-pad"
+      ],
+      "candidateContracts": [
+        {
+          "name": "SaaS Closing CTA",
+          "type": "cta_strip",
+          "presets": {
+            "ctaPreset": "saas-closing"
+          }
+        },
+        {
+          "name": "Call to Action & Banner",
+          "type": "cta_strip",
+          "presets": {}
+        }
+      ]
+    }
+  ]
+}

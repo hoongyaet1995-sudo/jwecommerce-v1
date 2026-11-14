@@ -200,3 +200,9 @@
 
 @container(min-width:701px){.corp-illustrated-right .corp-illustrated-visual{order:2}.corp-illustrated-right .corp-illustrated-copy{order:1}}
 .corp-pricing-card-faq .corp-pricing-band-heading{width:100%;max-width:none;min-width:0}.corp-pricing-card-faq .corp-pricing-band-heading h2{width:100%;max-width:none;margin-inline:auto;text-align:center}
+
+/* Explicitly authored count changes reflow; legacy default compositions remain untouched. */
+.corp-image-cards-four-mosaic[data-item-layout="flow"]:not([data-item-count="4"]) .corp-connections-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))}
+.corp-image-cards-four-mosaic[data-item-layout="flow"]:not([data-item-count="4"]) .corp-connection-card{grid-column:auto}
+.corp-connected-feature-rows[data-item-layout="flow"] .corp-connection-card:nth-child(2n) .corp-connection-art{order:2}
+@container(max-width:700px){.corp-connected-feature-rows[data-item-layout="flow"] .corp-connection-card:nth-child(2n) .corp-connection-art{order:0}}

@@ -1,3 +1,4 @@
+import {isConnectedPage,connectedPageSections,connectedPageStyle} from './connectedPageTemplates';
 import {isConnectedShowcase,connectedShowcaseStyle,connectedShowcaseSections} from './connectedShowcaseTemplates';
 import {saasSections,saasStyle} from './saasTemplates';
 import {logisticsDetailSections} from './logisticsDetailTemplates';
@@ -36,6 +37,7 @@ import {aboutChaptersSections} from './aboutChaptersTemplate';
 import {aboutStudioSections} from './aboutStudioTemplate';
 
 export interface PageTemplateContext {
+  connectedPageDestinations?: Record<string,string>;
   products?: Product[];
   categories?: Category[];
   collections?: Collection[];
@@ -49,11 +51,12 @@ export interface PageTemplateContext {
   }>;
 }
 
-export function createPageTemplateStyle(id:string):PageStyle|undefined {if(isConnectedShowcase(id))return connectedShowcaseStyle(id);return id==='saas-connected'?structuredClone(saasStyle): ['logistics-solution-detail','logistics-media-gallery'].includes(id)?structuredClone(logisticsTemplate.style) as PageStyle:id==='logistics-containers'?structuredClone(logisticsTemplate.style) as PageStyle:id==='wedding-photography'?structuredClone(weddingTemplate.style) as PageStyle:id==='jewelry-gifts'?structuredClone(jewelryTemplate.style) as PageStyle:id==='baby-kids'?structuredClone(kidsTemplate.style) as PageStyle:id==='tech-electronics'?structuredClone(techTemplate.style) as PageStyle:id==='food-beverage'?structuredClone(foodTemplate.style) as PageStyle:id==='beauty-skincare'?structuredClone(beautyTemplate.style) as PageStyle:id==='everyday-market'?structuredClone(marketTemplate.style) as PageStyle:id==='fashion-design'?structuredClone(fashionTemplate.style) as PageStyle:id==='home-deco'?structuredClone(homeDecoTemplate.style) as PageStyle:undefined;}
+export function createPageTemplateStyle(id:string):PageStyle|undefined {if(isConnectedPage(id))return connectedPageStyle();if(isConnectedShowcase(id))return connectedShowcaseStyle(id);return id==='saas-connected'?structuredClone(saasStyle): ['logistics-solution-detail','logistics-media-gallery'].includes(id)?structuredClone(logisticsTemplate.style) as PageStyle:id==='logistics-containers'?structuredClone(logisticsTemplate.style) as PageStyle:id==='wedding-photography'?structuredClone(weddingTemplate.style) as PageStyle:id==='jewelry-gifts'?structuredClone(jewelryTemplate.style) as PageStyle:id==='baby-kids'?structuredClone(kidsTemplate.style) as PageStyle:id==='tech-electronics'?structuredClone(techTemplate.style) as PageStyle:id==='food-beverage'?structuredClone(foodTemplate.style) as PageStyle:id==='beauty-skincare'?structuredClone(beautyTemplate.style) as PageStyle:id==='everyday-market'?structuredClone(marketTemplate.style) as PageStyle:id==='fashion-design'?structuredClone(fashionTemplate.style) as PageStyle:id==='home-deco'?structuredClone(homeDecoTemplate.style) as PageStyle:undefined;}
 
 // These are editable draft snapshots. Checkout remains the authority for live rates.
 // Photographs illustrate the starter layout; they do not depict the merchant's team.
 export function createPageTemplateSections(templateId: string, context: PageTemplateContext, prefix: string): PageSection[] {
+  if(isConnectedPage(templateId))return connectedPageSections(templateId,context,prefix);
   if(isConnectedShowcase(templateId))return connectedShowcaseSections(templateId,context,prefix);
   if(templateId==='saas-connected')return saasSections(prefix);
   if(['logistics-solution-detail','logistics-media-gallery'].includes(templateId))return logisticsDetailSections(templateId,context,prefix);

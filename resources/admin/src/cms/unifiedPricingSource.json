@@ -1,0 +1,1869 @@
+{
+  "currency": "RM",
+  "plans": [
+    {
+      "id": "plan-1",
+      "title": "Starter",
+      "description": "Website, commerce and customer support",
+      "price": 299,
+      "pricingMode": "amount",
+      "pricingLabel": "On request",
+      "billingLabel": "/ month",
+      "features": [
+        "Editable business website",
+        "Product and service catalogue",
+        "Purchase and quotation paths",
+        "Customer support workspace",
+        "Agreed usage allowances"
+      ],
+      "buttonText": "Ask for Plan",
+      "linkUrl": "mailto:sales@jwaistudio.online",
+      "isHighlighted": false,
+      "highlightLabel": "Most popular",
+      "monthlyNote": "Monthly plan · scope and usage agreed",
+      "annualNote": "Annual terms and scope by quotation",
+      "planSurface": "paper"
+    },
+    {
+      "id": "plan-2",
+      "title": "Growth",
+      "description": "Starter, plus AI assistance",
+      "price": 399,
+      "pricingMode": "amount",
+      "pricingLabel": "On request",
+      "billingLabel": "/ month",
+      "features": [
+        "Everything in Starter",
+        "Business-aware AI assistance",
+        "Human takeover controls",
+        "Supported authorized channels",
+        "Agreed AI usage"
+      ],
+      "buttonText": "Ask for Plan",
+      "linkUrl": "mailto:sales@jwaistudio.online",
+      "isHighlighted": false,
+      "highlightLabel": "Most popular",
+      "monthlyNote": "Monthly plan · scope and usage agreed",
+      "annualNote": "Annual terms and scope by quotation",
+      "includesLabel": "Built around your next stage",
+      "planSurface": "paper"
+    },
+    {
+      "id": "plan-3",
+      "title": "Enterprise",
+      "description": "More stores, teams and modules",
+      "pricingMode": "contact",
+      "pricingLabel": "Let’s talk",
+      "billingLabel": "/ month",
+      "features": [
+        "Deployment scope review",
+        "Additional teams and stores",
+        "Module planning",
+        "Provider permissions",
+        "Agreed usage allowances",
+        "Deployment scope review"
+      ],
+      "buttonText": "Ask for Plan",
+      "linkUrl": "mailto:sales@jwaistudio.online",
+      "isHighlighted": true,
+      "highlightLabel": "Most popular",
+      "monthlyNote": "A project scope built around you",
+      "annualNote": "Annual terms and scope by quotation",
+      "includesLabel": "Built around your next stage",
+      "planSurface": "paper"
+    },
+    {
+      "id": "plan-4",
+      "title": "Custom",
+      "description": "A workflow built around your business",
+      "pricingMode": "contact",
+      "pricingLabel": "By scope",
+      "billingLabel": "/ month",
+      "features": [
+        "Workflow discovery",
+        "Business rules and permissions",
+        "Integration planning",
+        "A bounded first phase",
+        "Review before rollout"
+      ],
+      "buttonText": "Ask for Plan",
+      "linkUrl": "mailto:sales@jwaistudio.online",
+      "isHighlighted": false,
+      "highlightLabel": "Most popular",
+      "monthlyNote": "A project scope built around you",
+      "annualNote": "Annual terms and scope by quotation",
+      "includesLabel": "Built around your next stage",
+      "planSurface": "contrast"
+    }
+  ],
+  "groups": [
+    {
+      "id": "group-1",
+      "title": "Plan features",
+      "rows": [
+        {
+          "id": "row-1",
+          "title": "Monthly plan",
+          "source": "price",
+          "cells": {
+            "plan-1": {
+              "type": "text",
+              "value": "RM299"
+            },
+            "plan-2": {
+              "type": "text",
+              "value": "RM399"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "Let’s talk"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-2",
+          "title": "Renewal terms",
+          "source": "renewal",
+          "cells": {
+            "plan-1": {
+              "type": "text",
+              "value": "RM299"
+            },
+            "plan-2": {
+              "type": "text",
+              "value": "RM399"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "Let’s talk"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-3",
+          "title": "AI Support (Point of Sale)",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "group-2",
+      "title": "Marketing Studio",
+      "rows": [
+        {
+          "id": "row-4",
+          "title": "Marketing Studio module",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-5",
+          "title": "Monthly Payment",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-6",
+          "title": "AI usage allowance",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-7",
+          "title": "Team access",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-8",
+          "title": "Provider usage scope",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "group-3",
+      "title": "Marketplace sync",
+      "rows": [
+        {
+          "id": "row-9",
+          "title": "TikTok Shop, Shopee and Lazada integration",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-10",
+          "title": "Multi-seller account",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-11",
+          "title": "Product and inventory sync",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-12",
+          "title": "Order sync and AWB download",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "group-4",
+      "title": "Payment gateway",
+      "rows": [
+        {
+          "id": "row-13",
+          "title": "Payment gateway integration",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-14",
+          "title": "Buy Now, Pay Later integration",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-15",
+          "title": "Cash deposit with payment-proof upload",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "group-5",
+      "title": "Shipping and courier",
+      "rows": [
+        {
+          "id": "row-16",
+          "title": "Shipping integration Connected directly to your courier account",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-17",
+          "title": "Express delivery integration Connected directly to your delivery account",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-18",
+          "title": "Shipping charge settings Flat rate, weight-based and quantity-based",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-19",
+          "title": "Store pickup",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "group-6",
+      "title": "Online store features",
+      "rows": [
+        {
+          "id": "row-20",
+          "title": "Professional customized design",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-21",
+          "title": "Mobile-responsive layout",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-22",
+          "title": "Product categories",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-23",
+          "title": "Product upload Plan can be upgraded when the limit is reached",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-24",
+          "title": "Multiple product images",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-25",
+          "title": "Product variations For example: size and colour",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-26",
+          "title": "Product search suggestions",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-27",
+          "title": "Additional product features Discount pricing, recommendations, reviews, grouping, styling, sharing, YouTube embeds, tags and more",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-28",
+          "title": "Registered or guest quick checkout",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-29",
+          "title": "Newsletter subscribers",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-30",
+          "title": "Multiple currencies",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "group-7",
+      "title": "Marketing features",
+      "rows": [
+        {
+          "id": "row-31",
+          "title": "Voucher discounts",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-32",
+          "title": "Combo discounts",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-33",
+          "title": "Discount countdown",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-34",
+          "title": "Quantity bulk discounts",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-35",
+          "title": "Gift-wrap option",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-36",
+          "title": "Free-shipping spending bar",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-37",
+          "title": "Recent-purchase popup message",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-38",
+          "title": "Promotion countdown",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-39",
+          "title": "Reward points Collect, redeem and registration rewards",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-40",
+          "title": "Store credit Including credit issued for refunds",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-41",
+          "title": "Group price settings Different selling prices for multiple customer groups",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-42",
+          "title": "Pre-order settings",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-43",
+          "title": "Abandoned-cart tools",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-44",
+          "title": "Free-gift offers",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-45",
+          "title": "Stock reminders",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-46",
+          "title": "Product video playback",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-47",
+          "title": "Shopping-cart product suggestions",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-48",
+          "title": "Add-on and cross-sell sets Family sets and group sets",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-49",
+          "title": "Minimum-cart purchase discount",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-50",
+          "title": "Purchase-with-purchase promotions Percentage discounts and buy-one-free-one offers",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-51",
+          "title": "Bundle group purchases Special pricing for selected product combinations",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "group-8",
+      "title": "Landing page features",
+      "rows": [
+        {
+          "id": "row-52",
+          "title": "Dynamic content pages",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-53",
+          "title": "Banner uploads Main, subpage and category banners",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-54",
+          "title": "Popup banners",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-55",
+          "title": "Mobile-view banners",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-56",
+          "title": "Promotional sticky banners",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-57",
+          "title": "Blog",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-58",
+          "title": "Store locator",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-59",
+          "title": "TikTok and Facebook Pixel / Conversion API",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-60",
+          "title": "Facebook catalogue",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-61",
+          "title": "Newsletter integration Mailchimp, GetResponse, AWeber and others",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-62",
+          "title": "Live chat integration WhatsApp Chat, Zendesk, LiveChat and others",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-63",
+          "title": "GA4 ecommerce tracking",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-64",
+          "title": "Google Tag Manager",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "group-9",
+      "title": "SEO features",
+      "rows": [
+        {
+          "id": "row-65",
+          "title": "Search-friendly URL settings",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-66",
+          "title": "Meta title and description settings",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-67",
+          "title": "AI SEO generator",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "group-10",
+      "title": "Domain and hosting services",
+      "rows": [
+        {
+          "id": "row-68",
+          "title": "Free domain .com or .com.my",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-69",
+          "title": "Storage",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-70",
+          "title": "Monthly bandwidth",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-71",
+          "title": "SSL certificate",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "group-11",
+      "title": "Training and support",
+      "rows": [
+        {
+          "id": "row-72",
+          "title": "Training and Q&A",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-73",
+          "title": "Email and phone support",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        },
+        {
+          "id": "row-74",
+          "title": "Emergency support",
+          "source": "cells",
+          "cells": {
+            "plan-1": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-2": {
+              "type": "unavailable",
+              "value": "By scope"
+            },
+            "plan-3": {
+              "type": "text",
+              "value": "By scope"
+            },
+            "plan-4": {
+              "type": "text",
+              "value": "By scope"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

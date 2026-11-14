@@ -78,7 +78,7 @@ export const NotificationDrawer: React.FC = () => {
             {supportAlertError && <p role="alert" className="text-xs text-rose-600">{supportAlertError}</p>}
             {!supportAlertError && notifications.length === 0 && <p className="text-xs text-neutral-500">No support notifications yet.</p>}
             {notifications.map((n) => {
-              let Icon = Bell;
+              let Icon: React.ElementType<{ className?: string }> = Bell;
               let iconBg = 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400';
               if (n.channel === 'facebook') {
                 Icon = MessengerIcon;

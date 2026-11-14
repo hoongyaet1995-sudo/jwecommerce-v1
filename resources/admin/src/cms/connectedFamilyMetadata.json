@@ -1,0 +1,4186 @@
+{
+  "hero-composition-1": {
+    "family": "hero",
+    "layout": "hero-centered",
+    "type": "hero_banner",
+    "groups": [
+      {
+        "id": "c0",
+        "label": "Review notes",
+        "kind": "comment",
+        "fields": [
+          "description"
+        ],
+        "min": 0,
+        "max": 24
+      },
+      {
+        "id": "c1",
+        "label": "Visual panels",
+        "kind": "panel",
+        "fields": [
+          "title",
+          "value"
+        ],
+        "min": 0,
+        "max": 24
+      }
+    ],
+    "details": [
+      {
+        "slot": "hero-composition-1-label-0",
+        "label": "AN",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-1-label-1",
+        "label": "ML",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-1-label-2",
+        "label": "SR",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-1-label-3",
+        "label": "DK",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-1-label-4",
+        "label": "Your website, catalogue, support and marketing. Connected.",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-1-label-5",
+        "label": "Core workspaces",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-1-label-6",
+        "label": "Connected workspace",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-1-label-7",
+        "label": "Built around you",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-1-label-8",
+        "label": "Start with the workflows you need",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-1-label-9",
+        "label": "Online Store",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-1-label-10",
+        "label": "Marketing Studio",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-1-label-11",
+        "label": "AI Support",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-1-label-12",
+        "label": "Stock workflows",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-1-label-13",
+        "label": "Order visibility",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-1-label-14",
+        "label": "Customer context",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-1-label-15",
+        "label": "Website Builder",
+        "field": "description",
+        "role": "itemContent"
+      }
+    ],
+    "textRoles": [
+      "content",
+      "eyebrow",
+      "itemContent",
+      "itemTitle",
+      "number",
+      "title"
+    ],
+    "sectionFields": [
+      "buttonText",
+      "content",
+      "eyebrow",
+      "mediaUrl",
+      "secondaryButtonText",
+      "title",
+      "mediaAlt",
+      "buttonLink",
+      "secondaryButtonLink"
+    ],
+    "actions": {
+      "primary": {
+        "button": true,
+        "link": false
+      },
+      "secondary": {
+        "button": true,
+        "link": false
+      }
+    }
+  },
+  "tabs-composition-1": {
+    "family": "tabs",
+    "layout": "preview-tabs",
+    "type": "media_gallery",
+    "groups": [
+      {
+        "id": "tabs",
+        "label": "Preview tabs",
+        "kind": "tab",
+        "fields": [
+          "title",
+          "description",
+          "imageUrl",
+          "mediaAlt",
+          "buttonText",
+          "linkUrl"
+        ],
+        "min": 0,
+        "max": 24
+      }
+    ],
+    "details": [
+      {
+        "slot": "tabs-composition-1-field-0",
+        "label": "Item description",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "tabs-composition-1-field-1",
+        "label": "Item title",
+        "field": "title",
+        "role": "itemTitle"
+      },
+      {
+        "slot": "tabs-composition-1-field-2",
+        "label": "Description",
+        "field": "description",
+        "role": "content"
+      },
+      {
+        "slot": "tabs-composition-1-label-0",
+        "label": "EC",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "tabs-composition-1-label-1",
+        "label": "POS",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "tabs-composition-1-label-2",
+        "label": "APP",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "tabs-composition-1-label-3",
+        "label": "01",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "tabs-composition-1-label-4",
+        "label": "Commerce",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "tabs-composition-1-label-5",
+        "label": "02",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "tabs-composition-1-label-6",
+        "label": "Marketing Studio",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "tabs-composition-1-label-7",
+        "label": "03",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "tabs-composition-1-label-8",
+        "label": "AI Support",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "tabs-composition-1-label-9",
+        "label": "04",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "tabs-composition-1-label-10",
+        "label": "Marketplace",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "tabs-composition-1-label-11",
+        "label": "Payments",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "tabs-composition-1-label-12",
+        "label": "✦",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "tabs-composition-1-label-13",
+        "label": "Shipping",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "tabs-composition-1-label-14",
+        "label": "✦",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "tabs-composition-1-label-15",
+        "label": "Marketplaces",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "tabs-composition-1-label-16",
+        "label": "✦",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "tabs-composition-1-label-17",
+        "label": "Analytics",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "tabs-composition-1-label-18",
+        "label": "✦",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "tabs-composition-1-label-19",
+        "label": "Membership",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "tabs-composition-1-label-20",
+        "label": "✦",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "tabs-composition-1-label-21",
+        "label": "Marketing Studio",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "tabs-composition-1-label-22",
+        "label": "✦",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "tabs-composition-1-label-23",
+        "label": "Payments",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "tabs-composition-1-label-24",
+        "label": "✦",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "tabs-composition-1-label-25",
+        "label": "Shipping",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "tabs-composition-1-label-26",
+        "label": "✦",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "tabs-composition-1-label-27",
+        "label": "Marketplaces",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "tabs-composition-1-label-28",
+        "label": "✦",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "tabs-composition-1-label-29",
+        "label": "Analytics",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "tabs-composition-1-label-30",
+        "label": "✦",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "tabs-composition-1-label-31",
+        "label": "Membership",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "tabs-composition-1-label-32",
+        "label": "✦",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "tabs-composition-1-label-33",
+        "label": "Marketing Studio",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "tabs-composition-1-label-34",
+        "label": "✦",
+        "field": "description",
+        "role": "itemContent"
+      }
+    ],
+    "textRoles": [
+      "content",
+      "eyebrow",
+      "itemContent",
+      "itemTitle",
+      "title"
+    ],
+    "sectionFields": [
+      "buttonText",
+      "content",
+      "eyebrow",
+      "mediaUrl",
+      "title",
+      "mediaAlt",
+      "buttonLink"
+    ],
+    "actions": {
+      "primary": {
+        "button": false,
+        "link": true
+      },
+      "secondary": {
+        "button": false,
+        "link": false
+      }
+    }
+  },
+  "metrics-composition-1": {
+    "family": "metrics",
+    "layout": "metrics-bento",
+    "type": "stats_counter",
+    "groups": [
+      {
+        "id": "c0",
+        "label": "Metrics",
+        "kind": "metric",
+        "fields": [
+          "buttonText",
+          "description",
+          "imageUrl",
+          "linkUrl",
+          "mediaAlt",
+          "title",
+          "value"
+        ],
+        "min": 0,
+        "max": 24
+      }
+    ],
+    "details": [],
+    "textRoles": [
+      "content",
+      "eyebrow",
+      "itemContent",
+      "itemTitle",
+      "number",
+      "title"
+    ],
+    "sectionFields": [
+      "content",
+      "eyebrow",
+      "title"
+    ],
+    "actions": {
+      "primary": {
+        "button": false,
+        "link": true
+      },
+      "secondary": {
+        "button": false,
+        "link": false
+      }
+    }
+  },
+  "stack-composition-1": {
+    "family": "stack",
+    "layout": "sticky-stack",
+    "type": "media_gallery",
+    "groups": [
+      {
+        "id": "c0",
+        "label": "Item cards",
+        "kind": "stack",
+        "fields": [
+          "buttonText",
+          "description",
+          "imageUrl",
+          "linkUrl",
+          "mediaAlt",
+          "title"
+        ],
+        "min": 0,
+        "max": 24
+      }
+    ],
+    "details": [
+      {
+        "slot": "stack-composition-1-label-0",
+        "label": "AI-assisted drafts",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "stack-composition-1-label-1",
+        "label": "Your approval",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "stack-composition-1-label-2",
+        "label": "Catalogue",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "stack-composition-1-label-3",
+        "label": "Purchase and quotation",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "stack-composition-1-label-4",
+        "label": "AI Support",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "stack-composition-1-label-5",
+        "label": "Human takeover",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "stack-composition-1-label-6",
+        "label": "Visual builder",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "stack-composition-1-label-7",
+        "label": "Responsive previews",
+        "field": "description",
+        "role": "itemContent"
+      }
+    ],
+    "textRoles": [
+      "eyebrow",
+      "itemContent",
+      "itemTitle",
+      "title"
+    ],
+    "sectionFields": [
+      "buttonText",
+      "eyebrow",
+      "title",
+      "buttonLink"
+    ],
+    "actions": {
+      "primary": {
+        "button": true,
+        "link": true
+      },
+      "secondary": {
+        "button": false,
+        "link": false
+      }
+    }
+  },
+  "metrics-composition-2": {
+    "family": "metrics",
+    "layout": "metrics-row",
+    "type": "stats_counter",
+    "groups": [
+      {
+        "id": "c0",
+        "label": "Metrics",
+        "kind": "metric",
+        "fields": [
+          "title",
+          "value"
+        ],
+        "min": 0,
+        "max": 24
+      }
+    ],
+    "details": [
+      {
+        "slot": "metrics-composition-2-field-0",
+        "label": "Item description",
+        "field": "description",
+        "role": "itemContent"
+      }
+    ],
+    "textRoles": [
+      "itemContent",
+      "itemTitle",
+      "number"
+    ],
+    "sectionFields": [],
+    "actions": {
+      "primary": {
+        "button": false,
+        "link": false
+      },
+      "secondary": {
+        "button": false,
+        "link": false
+      }
+    }
+  },
+  "process-composition-1": {
+    "family": "process",
+    "layout": "process-orbit",
+    "type": "feature_cards",
+    "groups": [
+      {
+        "id": "c0",
+        "label": "Steps",
+        "kind": "orbit",
+        "fields": [
+          "description",
+          "title"
+        ],
+        "min": 0,
+        "max": 24
+      }
+    ],
+    "details": [
+      {
+        "slot": "process-composition-1-label-0",
+        "label": "Steps from discovery to review",
+        "field": "description",
+        "role": "itemContent"
+      }
+    ],
+    "textRoles": [
+      "content",
+      "eyebrow",
+      "itemContent",
+      "itemTitle",
+      "title"
+    ],
+    "sectionFields": [
+      "content",
+      "eyebrow",
+      "title"
+    ],
+    "actions": {
+      "primary": {
+        "button": false,
+        "link": false
+      },
+      "secondary": {
+        "button": false,
+        "link": false
+      }
+    }
+  },
+  "comparison-composition-1": {
+    "family": "comparison",
+    "layout": "comparison-narrative",
+    "type": "comparison_matrix",
+    "groups": [],
+    "details": [
+      {
+        "slot": "comparison-composition-1-field-0",
+        "label": "Item title",
+        "field": "title",
+        "role": "itemTitle"
+      },
+      {
+        "slot": "comparison-composition-1-field-1",
+        "label": "Description",
+        "field": "description",
+        "role": "content"
+      },
+      {
+        "slot": "comparison-composition-1-field-2",
+        "label": "Description",
+        "field": "description",
+        "role": "content"
+      },
+      {
+        "slot": "comparison-composition-1-field-3",
+        "label": "Description",
+        "field": "description",
+        "role": "content"
+      },
+      {
+        "slot": "comparison-composition-1-field-4",
+        "label": "Item title",
+        "field": "title",
+        "role": "itemTitle"
+      },
+      {
+        "slot": "comparison-composition-1-field-5",
+        "label": "Description",
+        "field": "description",
+        "role": "content"
+      },
+      {
+        "slot": "comparison-composition-1-field-6",
+        "label": "Description",
+        "field": "description",
+        "role": "content"
+      },
+      {
+        "slot": "comparison-composition-1-field-7",
+        "label": "Description",
+        "field": "description",
+        "role": "content"
+      },
+      {
+        "slot": "comparison-composition-1-field-8",
+        "label": "Description",
+        "field": "description",
+        "role": "content"
+      },
+      {
+        "slot": "comparison-composition-1-field-9",
+        "label": "Description",
+        "field": "description",
+        "role": "content"
+      },
+      {
+        "slot": "comparison-composition-1-field-10",
+        "label": "Description",
+        "field": "description",
+        "role": "content"
+      },
+      {
+        "slot": "comparison-composition-1-field-11",
+        "label": "Description",
+        "field": "description",
+        "role": "content"
+      },
+      {
+        "slot": "comparison-composition-1-label-0",
+        "label": "VS",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "comparison-composition-1-label-1",
+        "label": "One connected commerce foundation.",
+        "field": "description",
+        "role": "itemContent"
+      }
+    ],
+    "textRoles": [
+      "content",
+      "eyebrow",
+      "itemTitle",
+      "title"
+    ],
+    "sectionFields": [
+      "content",
+      "eyebrow",
+      "title"
+    ],
+    "actions": {
+      "primary": {
+        "button": false,
+        "link": false
+      },
+      "secondary": {
+        "button": false,
+        "link": false
+      }
+    }
+  },
+  "logos-composition-1": {
+    "family": "logos",
+    "layout": "logo-marquee",
+    "type": "logo_cloud",
+    "groups": [
+      {
+        "id": "c0",
+        "label": "Logos",
+        "kind": "logo",
+        "fields": [
+          "imageUrl",
+          "mediaAlt"
+        ],
+        "min": 0,
+        "max": 50
+      }
+    ],
+    "details": [],
+    "textRoles": [
+      "content",
+      "eyebrow",
+      "title"
+    ],
+    "sectionFields": [
+      "content",
+      "eyebrow",
+      "title"
+    ],
+    "actions": {
+      "primary": {
+        "button": false,
+        "link": false
+      },
+      "secondary": {
+        "button": false,
+        "link": false
+      }
+    }
+  },
+  "cta-composition-1": {
+    "family": "cta",
+    "layout": "closing-cta",
+    "type": "cta_strip",
+    "groups": [],
+    "details": [],
+    "textRoles": [
+      "eyebrow",
+      "title"
+    ],
+    "sectionFields": [
+      "buttonText",
+      "eyebrow",
+      "title",
+      "buttonLink"
+    ],
+    "actions": {
+      "primary": {
+        "button": true,
+        "link": false
+      },
+      "secondary": {
+        "button": false,
+        "link": false
+      }
+    }
+  },
+  "hero-composition-2": {
+    "family": "hero",
+    "layout": "hero-split",
+    "type": "hero_banner",
+    "groups": [],
+    "details": [
+      {
+        "slot": "hero-composition-2-label-0",
+        "label": "Bring Your Store to Wherever Your Customers Browse",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-2-label-1",
+        "label": "Online store",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-2-label-2",
+        "label": "Marketing Studio",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-2-label-3",
+        "label": "Marketplace sync",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-2-label-4",
+        "label": "AI Support",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-2-label-5",
+        "label": "Payment & delivery",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-2-label-6",
+        "label": "Marketing tools",
+        "field": "description",
+        "role": "itemContent"
+      }
+    ],
+    "textRoles": [
+      "content",
+      "eyebrow",
+      "title"
+    ],
+    "sectionFields": [
+      "buttonText",
+      "content",
+      "eyebrow",
+      "mediaUrl",
+      "secondaryButtonText",
+      "title",
+      "mediaAlt",
+      "buttonLink",
+      "secondaryButtonLink"
+    ],
+    "actions": {
+      "primary": {
+        "button": true,
+        "link": false
+      },
+      "secondary": {
+        "button": true,
+        "link": false
+      }
+    }
+  },
+  "cards-composition-1": {
+    "family": "cards",
+    "layout": "cards-bento",
+    "type": "feature_cards",
+    "groups": [
+      {
+        "id": "c0",
+        "label": "Item cards",
+        "kind": "card",
+        "fields": [
+          "description",
+          "title"
+        ],
+        "min": 0,
+        "max": 24
+      }
+    ],
+    "details": [
+      {
+        "slot": "cards-composition-1-label-0",
+        "label": "01",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-1-label-1",
+        "label": "Designed around your brand and customer journey.",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-1-label-2",
+        "label": "02",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-1-label-3",
+        "label": "03",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-1-label-4",
+        "label": "04",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-1-label-5",
+        "label": "05",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-1-label-6",
+        "label": "06",
+        "field": "description",
+        "role": "itemContent"
+      }
+    ],
+    "textRoles": [
+      "content",
+      "eyebrow",
+      "itemContent",
+      "itemTitle",
+      "title"
+    ],
+    "sectionFields": [
+      "content",
+      "eyebrow",
+      "title"
+    ],
+    "actions": {
+      "primary": {
+        "button": false,
+        "link": false
+      },
+      "secondary": {
+        "button": false,
+        "link": false
+      }
+    }
+  },
+  "faq-composition-1": {
+    "family": "faq",
+    "layout": "faq-list",
+    "type": "faq_accordion",
+    "groups": [
+      {
+        "id": "c0",
+        "label": "Questions",
+        "kind": "question",
+        "fields": [
+          "description",
+          "title"
+        ],
+        "min": 0,
+        "max": 24
+      }
+    ],
+    "details": [],
+    "textRoles": [
+      "content",
+      "eyebrow",
+      "itemContent",
+      "itemTitle",
+      "title"
+    ],
+    "sectionFields": [
+      "content",
+      "eyebrow",
+      "title"
+    ],
+    "actions": {
+      "primary": {
+        "button": false,
+        "link": false
+      },
+      "secondary": {
+        "button": false,
+        "link": false
+      }
+    }
+  },
+  "hero-composition-3": {
+    "family": "hero",
+    "layout": "hero-split",
+    "type": "hero_banner",
+    "groups": [],
+    "details": [
+      {
+        "slot": "hero-composition-3-label-0",
+        "label": "One connected platform across online, marketplace and retail channels.",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-3-label-1",
+        "label": "Online store",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-3-label-2",
+        "label": "Marketplaces",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-3-label-3",
+        "label": "AI Support",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-3-label-4",
+        "label": "Shared customers",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-3-label-5",
+        "label": "Connected loyalty",
+        "field": "description",
+        "role": "itemContent"
+      }
+    ],
+    "textRoles": [
+      "content",
+      "eyebrow",
+      "title"
+    ],
+    "sectionFields": [
+      "buttonText",
+      "content",
+      "eyebrow",
+      "mediaUrl",
+      "secondaryButtonText",
+      "title",
+      "mediaAlt",
+      "buttonLink",
+      "secondaryButtonLink"
+    ],
+    "actions": {
+      "primary": {
+        "button": true,
+        "link": false
+      },
+      "secondary": {
+        "button": true,
+        "link": false
+      }
+    }
+  },
+  "cards-composition-2": {
+    "family": "cards",
+    "layout": "cards-grid",
+    "type": "feature_cards",
+    "groups": [
+      {
+        "id": "c0",
+        "label": "Item cards",
+        "kind": "card",
+        "fields": [
+          "description",
+          "title"
+        ],
+        "min": 0,
+        "max": 24
+      }
+    ],
+    "details": [
+      {
+        "slot": "cards-composition-2-label-0",
+        "label": "01",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-2-label-1",
+        "label": "02",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-2-label-2",
+        "label": "03",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-2-label-3",
+        "label": "04",
+        "field": "description",
+        "role": "itemContent"
+      }
+    ],
+    "textRoles": [
+      "content",
+      "eyebrow",
+      "itemContent",
+      "itemTitle",
+      "title"
+    ],
+    "sectionFields": [
+      "content",
+      "eyebrow",
+      "title"
+    ],
+    "actions": {
+      "primary": {
+        "button": false,
+        "link": false
+      },
+      "secondary": {
+        "button": false,
+        "link": false
+      }
+    }
+  },
+  "story-composition-1": {
+    "family": "story",
+    "layout": "story-rows",
+    "type": "media_gallery",
+    "groups": [
+      {
+        "id": "c0",
+        "label": "Item cards",
+        "kind": "story",
+        "fields": [
+          "description",
+          "imageUrl",
+          "mediaAlt",
+          "title"
+        ],
+        "min": 0,
+        "max": 12
+      }
+    ],
+    "details": [
+      {
+        "slot": "story-composition-1-entry-0-slots-image1",
+        "label": "Keep stock and product information connected. — image",
+        "field": "imageUrl",
+        "role": "image"
+      },
+      {
+        "slot": "story-composition-1-entry-0-slots-image2",
+        "label": "Keep stock and product information connected. — image",
+        "field": "imageUrl",
+        "role": "image"
+      },
+      {
+        "slot": "story-composition-1-entry-0-slots-image3",
+        "label": "Keep stock and product information connected. — image",
+        "field": "imageUrl",
+        "role": "image"
+      },
+      {
+        "slot": "story-composition-1-entry-0-slots-image4",
+        "label": "Keep stock and product information connected. — image",
+        "field": "imageUrl",
+        "role": "image"
+      },
+      {
+        "slot": "story-composition-1-entry-0-slots-image5",
+        "label": "Keep stock and product information connected. — image",
+        "field": "imageUrl",
+        "role": "image"
+      },
+      {
+        "slot": "story-composition-1-entry-0-slots-eyebrow1",
+        "label": "Keep stock and product information connected. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-1-entry-0-slots-itemContent1",
+        "label": "Keep stock and product information connected. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-1-entry-0-slots-itemContent2",
+        "label": "Keep stock and product information connected. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-1-entry-0-slots-itemContent3",
+        "label": "Keep stock and product information connected. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-1-entry-1-slots-eyebrow1",
+        "label": "Give conversations the context they need. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-1-entry-1-slots-itemContent1",
+        "label": "Give conversations the context they need. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-1-entry-1-slots-itemContent2",
+        "label": "Give conversations the context they need. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-1-entry-1-slots-itemContent3",
+        "label": "Give conversations the context they need. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-1-entry-2-slots-eyebrow1",
+        "label": "Guide customers through a clearer journey. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-1-entry-2-slots-itemContent1",
+        "label": "Guide customers through a clearer journey. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-1-entry-2-slots-itemContent2",
+        "label": "Guide customers through a clearer journey. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-1-entry-2-slots-itemContent3",
+        "label": "Guide customers through a clearer journey. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-1-label-0",
+        "label": "Shared retail inventory",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-1-label-1",
+        "label": "Online store",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-1-label-2",
+        "label": "W",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-1-label-3",
+        "label": "Marketplaces",
+        "field": "description",
+        "role": "itemContent"
+      }
+    ],
+    "textRoles": [
+      "itemContent",
+      "itemTitle"
+    ],
+    "sectionFields": [],
+    "actions": {
+      "primary": {
+        "button": false,
+        "link": false
+      },
+      "secondary": {
+        "button": false,
+        "link": false
+      }
+    }
+  },
+  "process-composition-2": {
+    "family": "process",
+    "layout": "process-cards",
+    "type": "feature_cards",
+    "groups": [
+      {
+        "id": "c0",
+        "label": "Steps",
+        "kind": "step",
+        "fields": [
+          "description",
+          "title"
+        ],
+        "min": 0,
+        "max": 24
+      }
+    ],
+    "details": [
+      {
+        "slot": "process-composition-2-label-0",
+        "label": "1",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "process-composition-2-label-1",
+        "label": "2",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "process-composition-2-label-2",
+        "label": "3",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "process-composition-2-label-3",
+        "label": "4",
+        "field": "description",
+        "role": "itemContent"
+      }
+    ],
+    "textRoles": [
+      "content",
+      "eyebrow",
+      "itemContent",
+      "itemTitle",
+      "title"
+    ],
+    "sectionFields": [
+      "content",
+      "eyebrow",
+      "title"
+    ],
+    "actions": {
+      "primary": {
+        "button": false,
+        "link": false
+      },
+      "secondary": {
+        "button": false,
+        "link": false
+      }
+    }
+  },
+  "cards-composition-3": {
+    "family": "cards",
+    "layout": "cards-compact",
+    "type": "feature_cards",
+    "groups": [
+      {
+        "id": "c0",
+        "label": "Item cards",
+        "kind": "card",
+        "fields": [
+          "description",
+          "title"
+        ],
+        "min": 0,
+        "max": 24
+      }
+    ],
+    "details": [
+      {
+        "slot": "cards-composition-3-label-0",
+        "label": "01",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-3-label-1",
+        "label": "02",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-3-label-2",
+        "label": "03",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-3-label-3",
+        "label": "04",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-3-label-4",
+        "label": "05",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-3-label-5",
+        "label": "06",
+        "field": "description",
+        "role": "itemContent"
+      }
+    ],
+    "textRoles": [
+      "eyebrow",
+      "itemContent",
+      "itemTitle",
+      "title"
+    ],
+    "sectionFields": [
+      "eyebrow",
+      "title"
+    ],
+    "actions": {
+      "primary": {
+        "button": false,
+        "link": false
+      },
+      "secondary": {
+        "button": false,
+        "link": false
+      }
+    }
+  },
+  "faq-composition-2": {
+    "family": "faq",
+    "layout": "faq-list",
+    "type": "faq_accordion",
+    "groups": [
+      {
+        "id": "c0",
+        "label": "Questions",
+        "kind": "question",
+        "fields": [
+          "description",
+          "title"
+        ],
+        "min": 0,
+        "max": 24
+      }
+    ],
+    "details": [],
+    "textRoles": [
+      "content",
+      "eyebrow",
+      "itemContent",
+      "itemTitle",
+      "title"
+    ],
+    "sectionFields": [
+      "content",
+      "eyebrow",
+      "title"
+    ],
+    "actions": {
+      "primary": {
+        "button": false,
+        "link": false
+      },
+      "secondary": {
+        "button": false,
+        "link": false
+      }
+    }
+  },
+  "hero-composition-4": {
+    "family": "hero",
+    "layout": "hero-split",
+    "type": "hero_banner",
+    "groups": [],
+    "details": [
+      {
+        "slot": "hero-composition-4-label-0",
+        "label": "Agent accounts",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-4-label-1",
+        "label": "Sales attribution",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-4-label-2",
+        "label": "Commission rules",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-4-label-3",
+        "label": "Order tracking",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-4-label-4",
+        "label": "Performance reports",
+        "field": "description",
+        "role": "itemContent"
+      }
+    ],
+    "textRoles": [
+      "content",
+      "eyebrow",
+      "title"
+    ],
+    "sectionFields": [
+      "buttonText",
+      "content",
+      "eyebrow",
+      "mediaUrl",
+      "secondaryButtonText",
+      "title",
+      "mediaAlt",
+      "buttonLink",
+      "secondaryButtonLink"
+    ],
+    "actions": {
+      "primary": {
+        "button": true,
+        "link": false
+      },
+      "secondary": {
+        "button": true,
+        "link": false
+      }
+    }
+  },
+  "cards-composition-4": {
+    "family": "cards",
+    "layout": "cards-grid",
+    "type": "feature_cards",
+    "groups": [
+      {
+        "id": "c0",
+        "label": "Item cards",
+        "kind": "card",
+        "fields": [
+          "description",
+          "title"
+        ],
+        "min": 0,
+        "max": 24
+      }
+    ],
+    "details": [
+      {
+        "slot": "cards-composition-4-label-0",
+        "label": "01",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-4-label-1",
+        "label": "02",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-4-label-2",
+        "label": "03",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-4-label-3",
+        "label": "04",
+        "field": "description",
+        "role": "itemContent"
+      }
+    ],
+    "textRoles": [
+      "content",
+      "eyebrow",
+      "itemContent",
+      "itemTitle",
+      "title"
+    ],
+    "sectionFields": [
+      "content",
+      "eyebrow",
+      "title"
+    ],
+    "actions": {
+      "primary": {
+        "button": false,
+        "link": false
+      },
+      "secondary": {
+        "button": false,
+        "link": false
+      }
+    }
+  },
+  "story-composition-2": {
+    "family": "story",
+    "layout": "story-rows",
+    "type": "media_gallery",
+    "groups": [
+      {
+        "id": "c0",
+        "label": "Item cards",
+        "kind": "story",
+        "fields": [
+          "description",
+          "imageUrl",
+          "mediaAlt",
+          "title"
+        ],
+        "min": 0,
+        "max": 12
+      }
+    ],
+    "details": [
+      {
+        "slot": "story-composition-2-entry-0-slots-eyebrow1",
+        "label": "Start with the people who use the process. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-2-entry-0-slots-itemContent1",
+        "label": "Start with the people who use the process. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-2-entry-0-slots-itemContent2",
+        "label": "Start with the people who use the process. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-2-entry-0-slots-itemContent3",
+        "label": "Start with the people who use the process. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-2-entry-1-slots-eyebrow1",
+        "label": "Agree the rules before automating the work. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-2-entry-1-slots-itemContent1",
+        "label": "Agree the rules before automating the work. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-2-entry-1-slots-itemContent2",
+        "label": "Agree the rules before automating the work. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-2-entry-1-slots-itemContent3",
+        "label": "Agree the rules before automating the work. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-2-entry-2-slots-eyebrow1",
+        "label": "Keep the important decisions reviewable. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-2-entry-2-slots-itemContent1",
+        "label": "Keep the important decisions reviewable. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-2-entry-2-slots-itemContent2",
+        "label": "Keep the important decisions reviewable. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-2-entry-2-slots-itemContent3",
+        "label": "Keep the important decisions reviewable. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      }
+    ],
+    "textRoles": [
+      "itemContent",
+      "itemTitle"
+    ],
+    "sectionFields": [],
+    "actions": {
+      "primary": {
+        "button": false,
+        "link": false
+      },
+      "secondary": {
+        "button": false,
+        "link": false
+      }
+    }
+  },
+  "story-composition-3": {
+    "family": "story",
+    "layout": "story-rows",
+    "type": "media_gallery",
+    "groups": [
+      {
+        "id": "c0",
+        "label": "Item cards",
+        "kind": "story",
+        "fields": [
+          "description",
+          "imageUrl",
+          "mediaAlt",
+          "title"
+        ],
+        "min": 0,
+        "max": 12
+      }
+    ],
+    "details": [
+      {
+        "slot": "story-composition-3-entry-0-slots-eyebrow1",
+        "label": "Know what is available before you promise it. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-3-entry-0-slots-itemContent1",
+        "label": "Know what is available before you promise it. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-3-entry-0-slots-itemContent2",
+        "label": "Know what is available before you promise it. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-3-entry-0-slots-itemContent3",
+        "label": "Know what is available before you promise it. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-3-entry-1-slots-eyebrow1",
+        "label": "Prepare the right items for each order. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-3-entry-1-slots-itemContent1",
+        "label": "Prepare the right items for each order. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-3-entry-1-slots-itemContent2",
+        "label": "Prepare the right items for each order. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-3-entry-1-slots-itemContent3",
+        "label": "Prepare the right items for each order. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-3-entry-2-slots-eyebrow1",
+        "label": "Keep shipping work connected to the order. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-3-entry-2-slots-itemContent1",
+        "label": "Keep shipping work connected to the order. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-3-entry-2-slots-itemContent2",
+        "label": "Keep shipping work connected to the order. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-3-entry-2-slots-itemContent3",
+        "label": "Keep shipping work connected to the order. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      }
+    ],
+    "textRoles": [
+      "itemContent",
+      "itemTitle"
+    ],
+    "sectionFields": [],
+    "actions": {
+      "primary": {
+        "button": false,
+        "link": false
+      },
+      "secondary": {
+        "button": false,
+        "link": false
+      }
+    }
+  },
+  "hero-composition-5": {
+    "family": "hero",
+    "layout": "hero-split",
+    "type": "hero_banner",
+    "groups": [],
+    "details": [
+      {
+        "slot": "hero-composition-5-label-0",
+        "label": "DRAFT",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-5-label-1",
+        "label": "128 viewers",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-5-label-2",
+        "label": "Review sources",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-5-label-3",
+        "label": "Team notes",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-5-label-4",
+        "label": "Mobile creative workspace",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-5-label-5",
+        "label": "Shoppable video",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-5-label-6",
+        "label": "Live comments",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-5-label-7",
+        "label": "Product control",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-5-label-8",
+        "label": "Campaign reports",
+        "field": "description",
+        "role": "itemContent"
+      }
+    ],
+    "textRoles": [
+      "content",
+      "eyebrow",
+      "title"
+    ],
+    "sectionFields": [
+      "buttonText",
+      "content",
+      "eyebrow",
+      "mediaUrl",
+      "secondaryButtonText",
+      "title",
+      "mediaAlt",
+      "buttonLink",
+      "secondaryButtonLink"
+    ],
+    "actions": {
+      "primary": {
+        "button": true,
+        "link": false
+      },
+      "secondary": {
+        "button": true,
+        "link": false
+      }
+    }
+  },
+  "cards-composition-5": {
+    "family": "cards",
+    "layout": "cards-grid",
+    "type": "feature_cards",
+    "groups": [
+      {
+        "id": "c0",
+        "label": "Item cards",
+        "kind": "card",
+        "fields": [
+          "description",
+          "title"
+        ],
+        "min": 0,
+        "max": 24
+      }
+    ],
+    "details": [
+      {
+        "slot": "cards-composition-5-entry-1-slots-content1",
+        "label": "Review every draft — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-5-entry-2-slots-content1",
+        "label": "Publish when you are ready — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-5-label-0",
+        "label": "01",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-5-label-1",
+        "label": "Featured product",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-5-label-2",
+        "label": "RM129.00",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-5-label-3",
+        "label": "DRAFT",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-5-label-4",
+        "label": "Show product",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-5-label-5",
+        "label": "02",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-5-label-6",
+        "label": "A",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-5-label-7",
+        "label": "J",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-5-label-8",
+        "label": "Ready for your review.",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-5-label-9",
+        "label": "M",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-5-label-10",
+        "label": "Ready for your review.",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-5-label-11",
+        "label": "03",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-5-label-12",
+        "label": "✓",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-5-label-13",
+        "label": "Approve draft",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-5-label-14",
+        "label": "→",
+        "field": "description",
+        "role": "itemContent"
+      }
+    ],
+    "textRoles": [
+      "content",
+      "eyebrow",
+      "itemContent",
+      "itemTitle",
+      "title"
+    ],
+    "sectionFields": [
+      "content",
+      "eyebrow",
+      "title"
+    ],
+    "actions": {
+      "primary": {
+        "button": false,
+        "link": false
+      },
+      "secondary": {
+        "button": false,
+        "link": false
+      }
+    }
+  },
+  "process-composition-3": {
+    "family": "process",
+    "layout": "process-cards",
+    "type": "feature_cards",
+    "groups": [
+      {
+        "id": "c0",
+        "label": "Steps",
+        "kind": "step",
+        "fields": [
+          "description",
+          "title"
+        ],
+        "min": 0,
+        "max": 24
+      }
+    ],
+    "details": [
+      {
+        "slot": "process-composition-3-label-0",
+        "label": "1",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "process-composition-3-label-1",
+        "label": "2",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "process-composition-3-label-2",
+        "label": "3",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "process-composition-3-label-3",
+        "label": "4",
+        "field": "description",
+        "role": "itemContent"
+      }
+    ],
+    "textRoles": [
+      "content",
+      "eyebrow",
+      "itemContent",
+      "itemTitle",
+      "title"
+    ],
+    "sectionFields": [
+      "content",
+      "eyebrow",
+      "title"
+    ],
+    "actions": {
+      "primary": {
+        "button": false,
+        "link": false
+      },
+      "secondary": {
+        "button": false,
+        "link": false
+      }
+    }
+  },
+  "story-composition-4": {
+    "family": "story",
+    "layout": "story-split",
+    "type": "media_gallery",
+    "groups": [],
+    "details": [
+      {
+        "slot": "story-composition-4-field-0",
+        "label": "Description",
+        "field": "description",
+        "role": "content"
+      },
+      {
+        "slot": "story-composition-4-field-1",
+        "label": "Description",
+        "field": "description",
+        "role": "content"
+      },
+      {
+        "slot": "story-composition-4-field-2",
+        "label": "Description",
+        "field": "description",
+        "role": "content"
+      },
+      {
+        "slot": "story-composition-4-field-3",
+        "label": "Description",
+        "field": "description",
+        "role": "content"
+      },
+      {
+        "slot": "story-composition-4-field-4",
+        "label": "Description",
+        "field": "description",
+        "role": "content"
+      },
+      {
+        "slot": "story-composition-4-label-0",
+        "label": "DRAFT",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-4-label-1",
+        "label": "◉ 128",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-4-label-2",
+        "label": "My Cart",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-4-label-3",
+        "label": "Comment",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-4-label-4",
+        "label": "A",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-4-label-5",
+        "label": "Ready for your review.",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-4-label-6",
+        "label": "J",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-4-label-7",
+        "label": "Ready for your review.",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-4-label-8",
+        "label": "M",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-4-label-9",
+        "label": "Ready for your review.",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-4-label-10",
+        "label": "S",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-4-label-11",
+        "label": "Ready for your review.",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-4-label-12",
+        "label": "DRAFT",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-4-label-13",
+        "label": "Denim Statement Jacket",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-4-label-14",
+        "label": "RM129.00",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-4-label-15",
+        "label": "RM189.00",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-4-label-16",
+        "label": "Review draft",
+        "field": "description",
+        "role": "itemContent"
+      }
+    ],
+    "textRoles": [
+      "content",
+      "eyebrow",
+      "title"
+    ],
+    "sectionFields": [
+      "content",
+      "eyebrow",
+      "mediaUrl",
+      "title",
+      "mediaAlt"
+    ],
+    "actions": {
+      "primary": {
+        "button": false,
+        "link": false
+      },
+      "secondary": {
+        "button": false,
+        "link": false
+      }
+    }
+  },
+  "cards-composition-6": {
+    "family": "cards",
+    "layout": "cards-bento",
+    "type": "feature_cards",
+    "groups": [
+      {
+        "id": "c0",
+        "label": "Item cards",
+        "kind": "card",
+        "fields": [
+          "description",
+          "title"
+        ],
+        "min": 0,
+        "max": 24
+      }
+    ],
+    "details": [
+      {
+        "slot": "cards-composition-6-label-0",
+        "label": "01",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-6-label-1",
+        "label": "Control featured products directly from the creative workspace.",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-6-label-2",
+        "label": "02",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-6-label-3",
+        "label": "03",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-6-label-4",
+        "label": "04",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-6-label-5",
+        "label": "05",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-6-label-6",
+        "label": "06",
+        "field": "description",
+        "role": "itemContent"
+      }
+    ],
+    "textRoles": [
+      "eyebrow",
+      "itemContent",
+      "itemTitle",
+      "title"
+    ],
+    "sectionFields": [
+      "eyebrow",
+      "title"
+    ],
+    "actions": {
+      "primary": {
+        "button": false,
+        "link": false
+      },
+      "secondary": {
+        "button": false,
+        "link": false
+      }
+    }
+  },
+  "cards-composition-7": {
+    "family": "cards",
+    "layout": "cards-bento",
+    "type": "feature_cards",
+    "groups": [],
+    "details": [
+      {
+        "slot": "cards-composition-7-field-0",
+        "label": "Description",
+        "field": "description",
+        "role": "content"
+      },
+      {
+        "slot": "cards-composition-7-field-1",
+        "label": "Description",
+        "field": "description",
+        "role": "content"
+      },
+      {
+        "slot": "cards-composition-7-field-2",
+        "label": "Description",
+        "field": "description",
+        "role": "content"
+      },
+      {
+        "slot": "cards-composition-7-label-0",
+        "label": "Camera preview and switching",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-7-label-1",
+        "label": "Microphone mute control",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-7-label-2",
+        "label": "Real-time viewer count",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-7-label-3",
+        "label": "Product show and remove controls",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-7-label-4",
+        "label": "Branded standby screen",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-7-label-5",
+        "label": "Comment and announcement tools",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-7-label-6",
+        "label": "DRAFT",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-7-label-7",
+        "label": "◉ 128",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-7-label-8",
+        "label": "J",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-7-label-9",
+        "label": "A",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-7-label-10",
+        "label": "Mic",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-7-label-11",
+        "label": "Camera",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-7-label-12",
+        "label": "Switch",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-7-label-13",
+        "label": "More",
+        "field": "description",
+        "role": "itemContent"
+      }
+    ],
+    "textRoles": [
+      "content",
+      "eyebrow",
+      "title"
+    ],
+    "sectionFields": [
+      "content",
+      "eyebrow",
+      "title"
+    ],
+    "actions": {
+      "primary": {
+        "button": false,
+        "link": false
+      },
+      "secondary": {
+        "button": false,
+        "link": false
+      }
+    }
+  },
+  "cards-composition-8": {
+    "family": "cards",
+    "layout": "cards-compact",
+    "type": "feature_cards",
+    "groups": [
+      {
+        "id": "c0",
+        "label": "Item cards",
+        "kind": "card",
+        "fields": [
+          "description",
+          "title"
+        ],
+        "min": 0,
+        "max": 24
+      }
+    ],
+    "details": [
+      {
+        "slot": "cards-composition-8-entry-0-slots-content1",
+        "label": "Useful review notes — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-8-entry-1-slots-content1",
+        "label": "Clear approval steps — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-8-entry-2-slots-content1",
+        "label": "Human control — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-8-label-0",
+        "label": "Comments",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-8-label-1",
+        "label": "A",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-8-label-2",
+        "label": "H",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-8-label-3",
+        "label": "Your business sources. Your team’s approval.",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-8-label-4",
+        "label": "Announcements",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-8-label-5",
+        "label": "PINNED",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-8-label-6",
+        "label": "Announcement",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-8-label-7",
+        "label": "Moderation",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-8-label-8",
+        "label": "N",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-8-label-9",
+        "label": "K",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-8-label-10",
+        "label": "Ready for your review.",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-8-label-11",
+        "label": "G",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-8-label-12",
+        "label": "Ready for your review.",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-8-label-13",
+        "label": "BLOCKED",
+        "field": "description",
+        "role": "itemContent"
+      }
+    ],
+    "textRoles": [
+      "content",
+      "eyebrow",
+      "itemContent",
+      "itemTitle",
+      "title"
+    ],
+    "sectionFields": [
+      "content",
+      "eyebrow",
+      "title"
+    ],
+    "actions": {
+      "primary": {
+        "button": false,
+        "link": false
+      },
+      "secondary": {
+        "button": false,
+        "link": false
+      }
+    }
+  },
+  "story-composition-5": {
+    "family": "story",
+    "layout": "story-split",
+    "type": "media_gallery",
+    "groups": [],
+    "details": [
+      {
+        "slot": "story-composition-5-field-0",
+        "label": "Description",
+        "field": "description",
+        "role": "content"
+      },
+      {
+        "slot": "story-composition-5-field-1",
+        "label": "Description",
+        "field": "description",
+        "role": "content"
+      },
+      {
+        "slot": "story-composition-5-field-2",
+        "label": "Description",
+        "field": "description",
+        "role": "content"
+      },
+      {
+        "slot": "story-composition-5-field-3",
+        "label": "Description",
+        "field": "description",
+        "role": "content"
+      },
+      {
+        "slot": "story-composition-5-label-0",
+        "label": "Example campaign",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-5-label-1",
+        "label": "DRAFT",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-5-label-2",
+        "label": "Current viewers",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-5-label-3",
+        "label": "128",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-5-label-4",
+        "label": "Live heartbeat",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-5-label-5",
+        "label": "Peak viewers",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-5-label-6",
+        "label": "236",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-5-label-7",
+        "label": "Campaign record",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-5-label-8",
+        "label": "Broadcast duration",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-5-label-9",
+        "label": "48m",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-5-label-10",
+        "label": "Latest session",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-5-label-11",
+        "label": "Tracked orders",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-5-label-12",
+        "label": "24",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-5-label-13",
+        "label": "Live source",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-5-label-14",
+        "label": "Illustrative dashboard data",
+        "field": "description",
+        "role": "itemContent"
+      }
+    ],
+    "textRoles": [
+      "content",
+      "eyebrow",
+      "title"
+    ],
+    "sectionFields": [
+      "content",
+      "eyebrow",
+      "title"
+    ],
+    "actions": {
+      "primary": {
+        "button": false,
+        "link": false
+      },
+      "secondary": {
+        "button": false,
+        "link": false
+      }
+    }
+  },
+  "cards-composition-9": {
+    "family": "cards",
+    "layout": "cards-compact",
+    "type": "feature_cards",
+    "groups": [
+      {
+        "id": "c0",
+        "label": "Item cards",
+        "kind": "card",
+        "fields": [
+          "description",
+          "title"
+        ],
+        "min": 0,
+        "max": 24
+      }
+    ],
+    "details": [
+      {
+        "slot": "cards-composition-9-label-0",
+        "label": "01",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-9-label-1",
+        "label": "02",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-9-label-2",
+        "label": "03",
+        "field": "description",
+        "role": "itemContent"
+      }
+    ],
+    "textRoles": [
+      "eyebrow",
+      "itemContent",
+      "itemTitle",
+      "title"
+    ],
+    "sectionFields": [
+      "eyebrow",
+      "title"
+    ],
+    "actions": {
+      "primary": {
+        "button": false,
+        "link": false
+      },
+      "secondary": {
+        "button": false,
+        "link": false
+      }
+    }
+  },
+  "hero-composition-6": {
+    "family": "hero",
+    "layout": "hero-split",
+    "type": "hero_banner",
+    "groups": [],
+    "details": [
+      {
+        "slot": "hero-composition-6-field-0",
+        "label": "TikTok Shop",
+        "field": "imageUrl",
+        "role": "image"
+      },
+      {
+        "slot": "hero-composition-6-field-1",
+        "label": "Shopee",
+        "field": "imageUrl",
+        "role": "image"
+      },
+      {
+        "slot": "hero-composition-6-field-2",
+        "label": "Lazada",
+        "field": "imageUrl",
+        "role": "image"
+      },
+      {
+        "slot": "hero-composition-6-field-3",
+        "label": "Facebook",
+        "field": "imageUrl",
+        "role": "image"
+      },
+      {
+        "slot": "hero-composition-6-field-4",
+        "label": "Instagram",
+        "field": "imageUrl",
+        "role": "image"
+      },
+      {
+        "slot": "hero-composition-6-label-0",
+        "label": "One dashboard for products, inventory, orders and marketplace fulfilme",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-6-label-1",
+        "label": "Connect your store with",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-6-label-2",
+        "label": "W",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-6-label-3",
+        "label": "Online Store",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-6-label-4",
+        "label": "TikTok Shop",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-6-label-5",
+        "label": "Shopee",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-6-label-6",
+        "label": "Lazada",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-6-label-7",
+        "label": "Facebook",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-6-label-8",
+        "label": "Instagram",
+        "field": "description",
+        "role": "itemContent"
+      }
+    ],
+    "textRoles": [
+      "content",
+      "eyebrow",
+      "title"
+    ],
+    "sectionFields": [
+      "buttonText",
+      "content",
+      "eyebrow",
+      "mediaUrl",
+      "secondaryButtonText",
+      "title",
+      "mediaAlt",
+      "buttonLink",
+      "secondaryButtonLink"
+    ],
+    "actions": {
+      "primary": {
+        "button": true,
+        "link": false
+      },
+      "secondary": {
+        "button": true,
+        "link": false
+      }
+    }
+  },
+  "cards-composition-10": {
+    "family": "cards",
+    "layout": "cards-grid",
+    "type": "feature_cards",
+    "groups": [
+      {
+        "id": "c0",
+        "label": "Item cards",
+        "kind": "card",
+        "fields": [
+          "description",
+          "title"
+        ],
+        "min": 0,
+        "max": 24
+      }
+    ],
+    "details": [
+      {
+        "slot": "cards-composition-10-label-0",
+        "label": "01",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-10-label-1",
+        "label": "Live inventory",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-10-label-2",
+        "label": "Synced",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-10-label-3",
+        "label": "24",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-10-label-4",
+        "label": "18",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-10-label-5",
+        "label": "02",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-10-label-6",
+        "label": "Order queue",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-10-label-7",
+        "label": "12 new",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-10-label-8",
+        "label": "#TT-1028",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-10-label-9",
+        "label": "2 items",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-10-label-10",
+        "label": "Paid",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-10-label-11",
+        "label": "#SP-4815",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-10-label-12",
+        "label": "1 item",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-10-label-13",
+        "label": "Pack",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-10-label-14",
+        "label": "03",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-10-label-15",
+        "label": "Product catalog",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-10-label-16",
+        "label": "4 items",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-10-label-17",
+        "label": "04",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-10-label-18",
+        "label": "Monthly sales",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-10-label-19",
+        "label": "+18.4%",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-10-label-20",
+        "label": "Jan",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-10-label-21",
+        "label": "Feb",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-10-label-22",
+        "label": "Mar",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-10-label-23",
+        "label": "Apr",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-10-label-24",
+        "label": "May",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-10-label-25",
+        "label": "Jun",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-10-label-26",
+        "label": "TikTok",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-10-label-27",
+        "label": "Shopee",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-10-label-28",
+        "label": "W",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-10-label-29",
+        "label": "Store",
+        "field": "description",
+        "role": "itemContent"
+      }
+    ],
+    "textRoles": [
+      "content",
+      "eyebrow",
+      "itemContent",
+      "itemTitle",
+      "title"
+    ],
+    "sectionFields": [
+      "content",
+      "eyebrow",
+      "title"
+    ],
+    "actions": {
+      "primary": {
+        "button": false,
+        "link": false
+      },
+      "secondary": {
+        "button": false,
+        "link": false
+      }
+    }
+  },
+  "story-composition-6": {
+    "family": "story",
+    "layout": "story-rows",
+    "type": "media_gallery",
+    "groups": [
+      {
+        "id": "c0",
+        "label": "Item cards",
+        "kind": "story",
+        "fields": [
+          "description",
+          "imageUrl",
+          "mediaAlt",
+          "title"
+        ],
+        "min": 0,
+        "max": 12
+      }
+    ],
+    "details": [
+      {
+        "slot": "story-composition-6-entry-0-slots-eyebrow1",
+        "label": "Start with clear stock and SKU relationships. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-6-entry-0-slots-itemContent1",
+        "label": "Start with clear stock and SKU relationships. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-6-entry-0-slots-itemContent2",
+        "label": "Start with clear stock and SKU relationships. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-6-entry-0-slots-itemContent3",
+        "label": "Start with clear stock and SKU relationships. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-6-entry-1-slots-eyebrow1",
+        "label": "Review marketplace orders with more context. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-6-entry-1-slots-itemContent1",
+        "label": "Review marketplace orders with more context. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-6-entry-1-slots-itemContent2",
+        "label": "Review marketplace orders with more context. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-6-entry-1-slots-itemContent3",
+        "label": "Review marketplace orders with more context. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-6-entry-2-slots-eyebrow1",
+        "label": "Use channel data to guide the next decision. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-6-entry-2-slots-itemContent1",
+        "label": "Use channel data to guide the next decision. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-6-entry-2-slots-itemContent2",
+        "label": "Use channel data to guide the next decision. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-6-entry-2-slots-itemContent3",
+        "label": "Use channel data to guide the next decision. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-6-label-0",
+        "label": "Live orders",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-6-label-1",
+        "label": "TikTok",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-6-label-2",
+        "label": "New order",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-6-label-3",
+        "label": "Total",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-6-label-4",
+        "label": "RM286",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-6-label-5",
+        "label": "Shopee",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-6-label-6",
+        "label": "New order",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-6-label-7",
+        "label": "Total",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-6-label-8",
+        "label": "RM159",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-6-label-9",
+        "label": "W",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-6-label-10",
+        "label": "Website",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-6-label-11",
+        "label": "New order",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-6-label-12",
+        "label": "Total",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-6-label-13",
+        "label": "RM420",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-6-label-14",
+        "label": "Facebook",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-6-label-15",
+        "label": "New order",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-6-label-16",
+        "label": "Total",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-6-label-17",
+        "label": "RM199",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-6-label-18",
+        "label": "Instagram",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-6-label-19",
+        "label": "New order",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-6-label-20",
+        "label": "Total",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-6-label-21",
+        "label": "RM250",
+        "field": "description",
+        "role": "itemContent"
+      }
+    ],
+    "textRoles": [
+      "itemContent",
+      "itemTitle"
+    ],
+    "sectionFields": [],
+    "actions": {
+      "primary": {
+        "button": false,
+        "link": false
+      },
+      "secondary": {
+        "button": false,
+        "link": false
+      }
+    }
+  },
+  "process-composition-4": {
+    "family": "process",
+    "layout": "process-cards",
+    "type": "feature_cards",
+    "groups": [
+      {
+        "id": "c0",
+        "label": "Steps",
+        "kind": "step",
+        "fields": [
+          "description",
+          "imageUrl",
+          "mediaAlt",
+          "title"
+        ],
+        "min": 0,
+        "max": 24
+      }
+    ],
+    "details": [
+      {
+        "slot": "process-composition-4-entry-1-slots-image1",
+        "label": "Map the channel — image",
+        "field": "imageUrl",
+        "role": "image"
+      },
+      {
+        "slot": "process-composition-4-entry-1-slots-image2",
+        "label": "Map the channel — image",
+        "field": "imageUrl",
+        "role": "image"
+      },
+      {
+        "slot": "process-composition-4-entry-2-slots-image1",
+        "label": "Check the order flow — image",
+        "field": "imageUrl",
+        "role": "image"
+      },
+      {
+        "slot": "process-composition-4-entry-2-slots-image2",
+        "label": "Check the order flow — image",
+        "field": "imageUrl",
+        "role": "image"
+      },
+      {
+        "slot": "process-composition-4-field-4",
+        "label": "Item title",
+        "field": "title",
+        "role": "itemTitle"
+      },
+      {
+        "slot": "process-composition-4-field-5",
+        "label": "Description",
+        "field": "description",
+        "role": "content"
+      },
+      {
+        "slot": "process-composition-4-field-6",
+        "label": "Item title",
+        "field": "title",
+        "role": "itemTitle"
+      },
+      {
+        "slot": "process-composition-4-field-7",
+        "label": "Description",
+        "field": "description",
+        "role": "content"
+      },
+      {
+        "slot": "process-composition-4-field-8",
+        "label": "Item title",
+        "field": "title",
+        "role": "itemTitle"
+      },
+      {
+        "slot": "process-composition-4-field-9",
+        "label": "Description",
+        "field": "description",
+        "role": "content"
+      },
+      {
+        "slot": "process-composition-4-field-10",
+        "label": "Item title",
+        "field": "title",
+        "role": "itemTitle"
+      },
+      {
+        "slot": "process-composition-4-field-11",
+        "label": "Description",
+        "field": "description",
+        "role": "content"
+      },
+      {
+        "slot": "process-composition-4-label-0",
+        "label": "01",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "process-composition-4-label-1",
+        "label": "Product catalog",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "process-composition-4-label-2",
+        "label": "New product",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "process-composition-4-label-3",
+        "label": "SKU WS-1024",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "process-composition-4-label-4",
+        "label": "02",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "process-composition-4-label-5",
+        "label": "Channel sync",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "process-composition-4-label-6",
+        "label": "TikTok",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "process-composition-4-label-7",
+        "label": "Shopee",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "process-composition-4-label-8",
+        "label": "Lazada",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "process-composition-4-label-9",
+        "label": "03",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "process-composition-4-label-10",
+        "label": "Order dashboard",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "process-composition-4-label-11",
+        "label": "#TT-1028",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "process-composition-4-label-12",
+        "label": "Paid",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "process-composition-4-label-13",
+        "label": "Ready",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "process-composition-4-label-14",
+        "label": "#SP-4815",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "process-composition-4-label-15",
+        "label": "Paid",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "process-composition-4-label-16",
+        "label": "Ready",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "process-composition-4-label-17",
+        "label": "#LZ-2046",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "process-composition-4-label-18",
+        "label": "Paid",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "process-composition-4-label-19",
+        "label": "Ready",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "process-composition-4-label-20",
+        "label": "1",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "process-composition-4-label-21",
+        "label": "2",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "process-composition-4-label-22",
+        "label": "3",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "process-composition-4-label-23",
+        "label": "4",
+        "field": "description",
+        "role": "itemContent"
+      }
+    ],
+    "textRoles": [
+      "content",
+      "eyebrow",
+      "itemContent",
+      "itemTitle",
+      "title"
+    ],
+    "sectionFields": [
+      "content",
+      "eyebrow",
+      "title"
+    ],
+    "actions": {
+      "primary": {
+        "button": false,
+        "link": false
+      },
+      "secondary": {
+        "button": false,
+        "link": false
+      }
+    }
+  },
+  "cards-composition-11": {
+    "family": "cards",
+    "layout": "cards-compact",
+    "type": "feature_cards",
+    "groups": [
+      {
+        "id": "c0",
+        "label": "Item cards",
+        "kind": "card",
+        "fields": [
+          "description",
+          "imageUrl",
+          "mediaAlt",
+          "title"
+        ],
+        "min": 0,
+        "max": 24
+      }
+    ],
+    "details": [
+      {
+        "slot": "cards-composition-11-label-0",
+        "label": "Order process summary",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-11-label-1",
+        "label": "Shipment automation",
+        "field": "description",
+        "role": "itemContent"
+      }
+    ],
+    "textRoles": [
+      "eyebrow",
+      "itemContent",
+      "itemTitle",
+      "title"
+    ],
+    "sectionFields": [
+      "eyebrow",
+      "title"
+    ],
+    "actions": {
+      "primary": {
+        "button": false,
+        "link": false
+      },
+      "secondary": {
+        "button": false,
+        "link": false
+      }
+    }
+  },
+  "cards-composition-12": {
+    "family": "cards",
+    "layout": "cards-bento",
+    "type": "feature_cards",
+    "groups": [],
+    "details": [
+      {
+        "slot": "cards-composition-12-label-0",
+        "label": "Compare channel sales",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-12-label-1",
+        "label": "Identify sales trends",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-12-label-2",
+        "label": "Optimize promotions",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-12-label-3",
+        "label": "Plan inventory",
+        "field": "description",
+        "role": "itemContent"
+      }
+    ],
+    "textRoles": [
+      "content",
+      "eyebrow",
+      "title"
+    ],
+    "sectionFields": [
+      "content",
+      "eyebrow",
+      "mediaUrl",
+      "title",
+      "mediaAlt"
+    ],
+    "actions": {
+      "primary": {
+        "button": false,
+        "link": false
+      },
+      "secondary": {
+        "button": false,
+        "link": false
+      }
+    }
+  },
+  "cards-composition-13": {
+    "family": "cards",
+    "layout": "cards-compact",
+    "type": "feature_cards",
+    "groups": [
+      {
+        "id": "c0",
+        "label": "Item cards",
+        "kind": "card",
+        "fields": [
+          "description",
+          "title"
+        ],
+        "min": 0,
+        "max": 24
+      }
+    ],
+    "details": [
+      {
+        "slot": "cards-composition-13-label-0",
+        "label": "01",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-13-label-1",
+        "label": "02",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-13-label-2",
+        "label": "03",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-13-label-3",
+        "label": "04",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-13-label-4",
+        "label": "05",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-13-label-5",
+        "label": "06",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-13-label-6",
+        "label": "07",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-13-label-7",
+        "label": "08",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "cards-composition-13-label-8",
+        "label": "09",
+        "field": "description",
+        "role": "itemContent"
+      }
+    ],
+    "textRoles": [
+      "eyebrow",
+      "itemContent",
+      "itemTitle",
+      "title"
+    ],
+    "sectionFields": [
+      "eyebrow",
+      "title"
+    ],
+    "actions": {
+      "primary": {
+        "button": false,
+        "link": false
+      },
+      "secondary": {
+        "button": false,
+        "link": false
+      }
+    }
+  },
+  "hero-composition-7": {
+    "family": "hero",
+    "layout": "hero-split",
+    "type": "hero_banner",
+    "groups": [],
+    "details": [
+      {
+        "slot": "hero-composition-7-label-0",
+        "label": "%",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-7-label-1",
+        "label": "Page draft",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-7-label-2",
+        "label": "JW Studio",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-7-label-3",
+        "label": "now",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-7-label-4",
+        "label": "✓",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-7-label-5",
+        "label": "Preview ready",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-7-label-6",
+        "label": "Your next update, ready for review.",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-7-label-7",
+        "label": "now",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-7-label-8",
+        "label": "★",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-7-label-9",
+        "label": "Content updated",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-7-label-10",
+        "label": "Made for your business.",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-7-label-11",
+        "label": "now",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-7-label-12",
+        "label": "One connected mobile app for shopping, membership and customer engagem",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-7-label-13",
+        "label": "Desktop and mobile",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-7-label-14",
+        "label": "Visual editing",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-7-label-15",
+        "label": "Membership points",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-7-label-16",
+        "label": "Vouchers",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "hero-composition-7-label-17",
+        "label": "Customer actions",
+        "field": "description",
+        "role": "itemContent"
+      }
+    ],
+    "textRoles": [
+      "content",
+      "eyebrow",
+      "title"
+    ],
+    "sectionFields": [
+      "buttonText",
+      "content",
+      "eyebrow",
+      "mediaUrl",
+      "secondaryButtonText",
+      "title",
+      "mediaAlt",
+      "buttonLink",
+      "secondaryButtonLink"
+    ],
+    "actions": {
+      "primary": {
+        "button": true,
+        "link": false
+      },
+      "secondary": {
+        "button": true,
+        "link": false
+      }
+    }
+  },
+  "story-composition-7": {
+    "family": "story",
+    "layout": "story-rows",
+    "type": "media_gallery",
+    "groups": [
+      {
+        "id": "c0",
+        "label": "Item cards",
+        "kind": "story",
+        "fields": [
+          "description",
+          "imageUrl",
+          "mediaAlt",
+          "title"
+        ],
+        "min": 0,
+        "max": 12
+      }
+    ],
+    "details": [
+      {
+        "slot": "story-composition-7-entry-0-slots-eyebrow1",
+        "label": "Make changes. See them take shape. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-7-entry-0-slots-itemContent1",
+        "label": "Make changes. See them take shape. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-7-entry-0-slots-itemContent2",
+        "label": "Make changes. See them take shape. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-7-entry-0-slots-itemContent3",
+        "label": "Make changes. See them take shape. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-7-entry-1-slots-eyebrow1",
+        "label": "Start with a layout that fits your message. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-7-entry-1-slots-itemContent1",
+        "label": "Start with a layout that fits your message. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-7-entry-1-slots-itemContent2",
+        "label": "Start with a layout that fits your message. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-7-entry-1-slots-itemContent3",
+        "label": "Start with a layout that fits your message. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-7-entry-2-slots-eyebrow1",
+        "label": "Review your pages on every device. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-7-entry-2-slots-itemContent1",
+        "label": "Review your pages on every device. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-7-entry-2-slots-itemContent2",
+        "label": "Review your pages on every device. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      },
+      {
+        "slot": "story-composition-7-entry-2-slots-itemContent3",
+        "label": "Review your pages on every device. — Caption",
+        "field": "description",
+        "role": "itemContent"
+      }
+    ],
+    "textRoles": [
+      "itemContent",
+      "itemTitle"
+    ],
+    "sectionFields": [],
+    "actions": {
+      "primary": {
+        "button": false,
+        "link": false
+      },
+      "secondary": {
+        "button": false,
+        "link": false
+      }
+    }
+  }
+}

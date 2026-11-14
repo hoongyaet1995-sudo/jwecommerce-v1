@@ -1,4 +1,4 @@
-<header data-shell-header data-shell-appearance="{{ $design['appearance'] }}" data-shell-style="{{ $design['style'] }}" data-shell-business="{{ $design['business'] }}" data-header-mode="{{ $presentation['mode'] }}" data-header-tone="{{ $presentation['tone'] }}" data-mega-nav  class="jw-shell-header">
+<header data-shell-header data-shell-appearance="light" data-shell-style="unified" data-shell-business="{{ $design['business'] }}" data-header-mode="{{ $presentation['mode'] }}" data-header-tone="{{ $presentation['tone'] }}" data-mega-nav  class="jw-shell-header">
     @if($design['showAnnouncement'] && $announcementVisible)
     <div class="jw-shell-announcement" style="{{ $announcementStyle }}">
         @if($centerVisible)<span>{{ data_get($announcementCenter,'text') }} @if(filled(data_get($announcementCenter,'couponCode'))) · {{ data_get($announcementCenter,'couponCode') }} @endif</span>
@@ -36,7 +36,6 @@
                 <button type="button" class="jw-shell-icon" aria-label="Search products" data-shell-search-toggle aria-expanded="false"><i data-lucide="search"></i></button>
                 <a href="{{ route('cart.show') }}" data-cart-drawer-open data-cart-drawer-trigger class="jw-shell-icon" aria-label="Shopping bag"><i data-lucide="shopping-bag"></i><span data-cart-count-badge data-cart-count class="jw-shell-count">{{ $cartCount }}</span></a>
             @endif
-            @if($design['showThemeSwitch'])<button type="button" data-atelier-theme-toggle class="jw-shell-icon" aria-label="Switch light or dark appearance"><i data-atelier-theme-icon data-lucide="{{ $design['appearance']==='dark'?'sun':'moon' }}"></i></button>@endif
             @if($design['showAccount'])<a class="jw-shell-icon jw-shell-optional" href="{{ $memberUser?route('customer.account'):route('customer.login') }}" aria-label="Account"><i data-lucide="user"></i></a>@endif
             @if($design['showCurrency'])<select data-atelier-currency aria-label="Select currency" class="jw-shell-currency jw-shell-optional">@foreach($currencies as $currency)<option value="{{ $currency['code'] }}" @selected($currency['code']===$selectedCurrency['code'])>{{ $currency['code'] }}</option>@endforeach</select>@endif
             @if(filled($design['ctaLabel']) && filled($design['ctaUrl']))<a href="{{ $design['ctaUrl'] }}" class="jw-shell-cta" aria-label="{{ $design['ctaLabel'] }}"><span>{{ $design['ctaLabel'] }}</span></a>@endif

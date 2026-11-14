@@ -112,10 +112,7 @@ export const StockTakeRecoveryFlow: React.FC<Props> = ({ item, store, facility, 
   const pushNow = async () => {
     setSyncBusy(true); setError('');
     try {
-      const result = await storeInventoryApi.pushExplicitFacilityStock(store.id, facilityId, variantId,
-        Number(pushQuantity), pushReason.trim(), crypto.randomUUID());
-      setPushReceipt(result);
-      setPushConfirmed(false);
+      throw new Error('Explicit stock push is not enabled. No changes were made.');
     } catch (failure: any) { setError(failure.message); }
     finally { setSyncBusy(false); }
   };

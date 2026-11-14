@@ -2,7 +2,7 @@
 import React, { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { EasyParcelQuote } from '../../integration/easyParcelFulfillmentData';
+import type { EasyParcelBooking, EasyParcelQuote } from '../../integration/easyParcelFulfillmentData';
 import type { ShipmentParcel } from '../../types/shipping';
 import { EasyParcelBookingModal } from './EasyParcelBookingModal';
 
@@ -83,7 +83,7 @@ describe('EasyParcelBookingModal quote lifecycle', () => {
         parcel: parcel('parcel-pending-awb'),
         onClose,
         onQuote: async () => staleQuote,
-        onBook: async () => ({
+        onBook: async (): Promise<EasyParcelBooking> => ({
           id: 'booking-pending-awb',
           orderId: 'order-parcel-pending-awb',
           quoteId: staleQuote.id,
@@ -134,7 +134,7 @@ describe('EasyParcelBookingModal quote lifecycle', () => {
       parcel: activeParcel,
       onClose: () => undefined,
       onQuote: quote,
-      onBook: async () => ({ id: 'booking', orderId: activeParcel.orderId, quoteId: 'quote', fulfillmentStatus: 'ready_to_ship', trackingNumber: null, hasLabel: true }),
+      onBook: async (): Promise<EasyParcelBooking> => ({ id: 'booking', orderId: activeParcel.orderId, quoteId: 'quote', fulfillmentStatus: 'ready_to_ship', trackingNumber: null, hasLabel: true }),
       onBooked: async () => undefined,
     }));
 
@@ -182,7 +182,7 @@ describe('EasyParcelBookingModal quote lifecycle', () => {
         parcel: parcel('parcel-expiry'),
         onClose: () => undefined,
         onQuote: async () => expiringQuote,
-        onBook: async () => ({ id: 'booking', orderId: 'order-parcel-expiry', quoteId: 'expiring-quote', fulfillmentStatus: 'ready_to_ship', trackingNumber: null, hasLabel: true }),
+        onBook: async (): Promise<EasyParcelBooking> => ({ id: 'booking', orderId: 'order-parcel-expiry', quoteId: 'expiring-quote', fulfillmentStatus: 'ready_to_ship', trackingNumber: null, hasLabel: true }),
         onBooked: async () => undefined,
       }));
     });

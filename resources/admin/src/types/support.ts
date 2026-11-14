@@ -27,6 +27,7 @@ export type MessageType =
   | 'video' 
   | 'document' 
   | 'voice' 
+  | 'audio'
   | 'product_card' 
   | 'order_card' 
   | 'system_event';
@@ -107,6 +108,9 @@ export interface CustomerProfile {
   handle?: string;
   platformUserId?: string | null;
   location?: string;
+  city?: string;
+  country?: string;
+  joinedDate?: string;
   countryCode?: string;
   language: string;
   timezone?: string;

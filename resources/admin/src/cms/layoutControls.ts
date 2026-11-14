@@ -1,3 +1,4 @@
+import {isConnectedFamily,connectedPassport} from './connectedFamilies';
 import type {PageSection} from '../types';
 import matrix from './layoutControlMatrix.json';
 
@@ -9,6 +10,7 @@ const presetFields:Partial<Record<PageSection['type'],keyof PageSection>>={hero_
  * Fixed layout defaults and unsupported old values are preserved, never normalized here.
  */
 export function layoutControlCapabilities(section:PageSection):LayoutControlCapability {
+ if(isConnectedFamily(section))return {spacing:true,alignment:connectedPassport(section)!.sectionFields.some(k=>k==='title'||k==='eyebrow')?['left','center','right']:[],headingOnly:true};
  const field=presetFields[section.type];
  const preset=field?section[field]??'default':'default';
  const capability=(matrix as Record<string,LayoutControlCapability>)[`${section.type}|${preset}`];

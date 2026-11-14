@@ -7,7 +7,7 @@ vi.mock('../../integration/adminBootstrap',()=>({readAdminBootstrap:()=>({})}));
 globalThis.IS_REACT_ACT_ENVIRONMENT=true;
 it('exposes one picture and editable icon labels, retaining images across layout switches',async()=>{
  const node=document.createElement('div');document.body.append(node);const root=createRoot(node);let latest:PageSection;
- function Editor(){const [s,set]=useState({...teamStoryOverview('qa'),imageSlots:[{target:'mediaUrl',mediaAlt:'Keep this alt'}]});latest=s;return <SectionInspector pageId="qa" section={s} onChange={set} onMediaUpload={vi.fn()} onClose={vi.fn()} onDelete={vi.fn()}/>;}
+ function Editor(){const [s,set]=useState<PageSection>({...teamStoryOverview('qa'),imageSlots:[{target:'mediaUrl',mediaAlt:'Keep this alt'}]});latest=s;return <SectionInspector pageId="qa" section={s} onChange={set} onMediaUpload={vi.fn()} onClose={vi.fn()} onDelete={vi.fn()}/>;}
  await act(async()=>root.render(<Editor/>));expect([...node.querySelectorAll('[aria-label="Choose icon"]')].filter(el=>!el.closest('[hidden]'))).toHaveLength(3);
  const add=[...node.querySelectorAll<HTMLButtonElement>('button')].find(b=>b.textContent?.trim()==='Add label')!;await act(async()=>add.click());expect(latest!.items).toHaveLength(4);await act(async()=>node.querySelectorAll<HTMLButtonElement>('[title="Delete item"]')[3].click());expect(latest!.items).toHaveLength(3);
  expect(node.querySelector('[data-inspector-item] input')).not.toBeNull();expect(node.querySelector('[placeholder="e.g. Shop Now"]')).toBeNull();

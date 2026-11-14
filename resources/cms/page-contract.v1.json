@@ -1298,6 +1298,37 @@
         },
         "eyebrow": {
           "type": "string"
+        },
+        "annualPrice": {
+          "type": "number",
+          "minimum": 0
+        },
+        "annualNote": {
+          "type": "string"
+        },
+        "monthlyNote": {
+          "type": "string"
+        },
+        "includesLabel": {
+          "type": "string"
+        },
+        "layoutGroup": {
+          "type": "string"
+        },
+        "layoutSlot": {
+          "type": "string"
+        },
+        "layoutVariant": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "planSurface": {
+          "type": "string",
+          "enum": [
+            "paper",
+            "contrast"
+          ]
         }
       }
     },
@@ -1553,6 +1584,10 @@
           "type": "string",
           "required": true,
           "format": "hex_color"
+        },
+        "contrast": {
+          "type": "string",
+          "format": "hex_color"
         }
       }
     },
@@ -1610,6 +1645,9 @@
         },
         "preserveLayout": {
           "type": "boolean"
+        },
+        "motionPace": {
+          "$ref": "motionPace"
         }
       }
     },
@@ -1875,6 +1913,238 @@
           "format": "hex_color"
         }
       }
+    },
+    "motionPace": {
+      "type": "string",
+      "enum": [
+        "smooth",
+        "relaxed"
+      ]
+    },
+    "itemLayoutMode": {
+      "type": "string",
+      "enum": [
+        "flow"
+      ]
+    },
+    "titleEmphasis": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "allowUnknownFields": false,
+        "fields": {
+          "start": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 500,
+            "required": true
+          },
+          "end": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500,
+            "required": true
+          }
+        }
+      },
+      "maxItems": 24
+    },
+    "pricingCell": {
+      "type": "object",
+      "allowUnknownFields": false,
+      "fields": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "text",
+            "available",
+            "unavailable"
+          ],
+          "required": true
+        },
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "pricingRow": {
+      "type": "object",
+      "allowUnknownFields": false,
+      "fields": {
+        "id": {
+          "type": "string",
+          "required": true
+        },
+        "title": {
+          "type": "string",
+          "required": true
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "cells",
+            "price",
+            "renewal"
+          ]
+        },
+        "showInCards": {
+          "type": "boolean"
+        },
+        "cells": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "pricingCell"
+          },
+          "maxProperties": 6,
+          "required": true
+        }
+      }
+    },
+    "pricingGroup": {
+      "type": "object",
+      "allowUnknownFields": false,
+      "fields": {
+        "id": {
+          "type": "string",
+          "required": true
+        },
+        "title": {
+          "type": "string",
+          "required": true
+        },
+        "rows": {
+          "type": "array",
+          "maxItems": 200,
+          "items": {
+            "$ref": "pricingRow"
+          },
+          "required": true
+        }
+      }
+    },
+    "pricingMatrix": {
+      "type": "object",
+      "allowUnknownFields": false,
+      "fields": {
+        "enabled": {
+          "type": "boolean",
+          "enum": [
+            true
+          ],
+          "required": true
+        },
+        "view": {
+          "type": "string",
+          "enum": [
+            "cards",
+            "matrix"
+          ],
+          "required": true
+        },
+        "sourceSectionId": {
+          "type": "string"
+        },
+        "groups": {
+          "type": "array",
+          "maxItems": 30,
+          "items": {
+            "$ref": "pricingGroup"
+          },
+          "required": true
+        },
+        "billing": {
+          "type": "string",
+          "enum": [
+            "monthly",
+            "yearly"
+          ]
+        }
+      }
+    },
+    "connectedLayout": {
+      "type": "string",
+      "enum": [
+        "cards-bento",
+        "cards-compact",
+        "cards-grid",
+        "closing-cta",
+        "comparison-narrative",
+        "faq-list",
+        "hero-centered",
+        "hero-split",
+        "logo-marquee",
+        "metrics-bento",
+        "metrics-row",
+        "preview-tabs",
+        "process-cards",
+        "process-orbit",
+        "sticky-stack",
+        "story-rows",
+        "story-split"
+      ]
+    },
+    "connectedDiagram": {
+      "type": "string",
+      "enum": [
+        "hero-composition-1",
+        "tabs-composition-1",
+        "metrics-composition-1",
+        "stack-composition-1",
+        "metrics-composition-2",
+        "process-composition-1",
+        "comparison-composition-1",
+        "logos-composition-1",
+        "cta-composition-1",
+        "hero-composition-2",
+        "cards-composition-1",
+        "faq-composition-1",
+        "hero-composition-3",
+        "cards-composition-2",
+        "story-composition-1",
+        "process-composition-2",
+        "cards-composition-3",
+        "faq-composition-2",
+        "hero-composition-4",
+        "cards-composition-4",
+        "story-composition-2",
+        "story-composition-3",
+        "hero-composition-5",
+        "cards-composition-5",
+        "process-composition-3",
+        "story-composition-4",
+        "cards-composition-6",
+        "cards-composition-7",
+        "cards-composition-8",
+        "story-composition-5",
+        "cards-composition-9",
+        "hero-composition-6",
+        "cards-composition-10",
+        "story-composition-6",
+        "process-composition-4",
+        "cards-composition-11",
+        "cards-composition-12",
+        "cards-composition-13",
+        "hero-composition-7",
+        "story-composition-7"
+      ]
+    },
+    "connectedLayoutMemory": {
+      "type": "object",
+      "maxProperties": 17,
+      "additionalProperties": {
+        "$ref": "connectedDiagram"
+      }
+    },
+    "connectedVisualContext": {
+      "type": "string",
+      "enum": [
+        "default",
+        "commerce",
+        "operations",
+        "workflow",
+        "fulfilment",
+        "website"
+      ]
     }
   },
   "section": {
@@ -1892,6 +2162,7 @@
           "sectionBorder",
           "sectionBorderColor",
           "motionPreset",
+          "motionPace",
           "backgroundColor",
           "textColor",
           "paddingY",
@@ -1903,7 +2174,8 @@
           "buttonRadius",
           "buttonSize",
           "colorOverrides",
-          "buttonColors"
+          "buttonColors",
+          "titleEmphasis"
         ],
         "publishRequired": [
           "title"
@@ -1920,6 +2192,7 @@
           "sectionBorder",
           "sectionBorderColor",
           "motionPreset",
+          "motionPace",
           "backgroundColor",
           "textColor",
           "paddingY",
@@ -1950,7 +2223,8 @@
           "buttonRadius",
           "buttonSize",
           "colorOverrides",
-          "buttonColors"
+          "buttonColors",
+          "titleEmphasis"
         ],
         "publishRequired": [
           "title"
@@ -1968,6 +2242,7 @@
           "sectionBorderColor",
           "imageSlots",
           "motionPreset",
+          "motionPace",
           "subtitle",
           "content",
           "mediaUrl",
@@ -1990,7 +2265,13 @@
           "buttonRadius",
           "buttonSize",
           "colorOverrides",
-          "buttonColors"
+          "buttonColors",
+          "titleEmphasis",
+          "connectedLayout",
+          "connectedDiagram",
+          "mediaAlt",
+          "connectedLayoutMemory",
+          "connectedVisualContext"
         ],
         "publishRequired": [
           "title"
@@ -2008,6 +2289,7 @@
           "sectionBorderColor",
           "imageSlots",
           "motionPreset",
+          "motionPace",
           "subtitle",
           "content",
           "buttonText",
@@ -2031,7 +2313,8 @@
           "buttonRadius",
           "buttonSize",
           "colorOverrides",
-          "buttonColors"
+          "buttonColors",
+          "titleEmphasis"
         ],
         "publishRequired": [
           "title"
@@ -2049,6 +2332,7 @@
           "sectionBorderColor",
           "imageSlots",
           "motionPreset",
+          "motionPace",
           "subtitle",
           "content",
           "mediaUrl",
@@ -2074,7 +2358,8 @@
           "buttonRadius",
           "buttonSize",
           "colorOverrides",
-          "buttonColors"
+          "buttonColors",
+          "titleEmphasis"
         ],
         "publishRequired": [
           "title"
@@ -2091,6 +2376,7 @@
           "sectionBorder",
           "sectionBorderColor",
           "motionPreset",
+          "motionPace",
           "subtitle",
           "content",
           "tickerSpeed",
@@ -2105,7 +2391,8 @@
           "buttonRadius",
           "buttonSize",
           "colorOverrides",
-          "buttonColors"
+          "buttonColors",
+          "titleEmphasis"
         ],
         "publishRequired": [
           "title"
@@ -2124,6 +2411,7 @@
           "sectionBorderColor",
           "imageSlots",
           "motionPreset",
+          "motionPace",
           "subtitle",
           "content",
           "mediaUrl",
@@ -2161,7 +2449,9 @@
           "buttonRadius",
           "buttonSize",
           "colorOverrides",
-          "buttonColors"
+          "buttonColors",
+          "itemLayoutMode",
+          "titleEmphasis"
         ],
         "publishRequired": [
           "title"
@@ -2179,6 +2469,7 @@
           "sectionBorderColor",
           "richTextPreset",
           "motionPreset",
+          "motionPace",
           "subtitle",
           "content",
           "quote",
@@ -2196,7 +2487,8 @@
           "buttonRadius",
           "buttonSize",
           "colorOverrides",
-          "buttonColors"
+          "buttonColors",
+          "titleEmphasis"
         ],
         "publishRequired": [
           "title"
@@ -2213,6 +2505,7 @@
           "sectionBorder",
           "sectionBorderColor",
           "motionPreset",
+          "motionPace",
           "subtitle",
           "content",
           "textAlignment",
@@ -2227,7 +2520,8 @@
           "buttonRadius",
           "buttonSize",
           "colorOverrides",
-          "buttonColors"
+          "buttonColors",
+          "titleEmphasis"
         ],
         "publishRequired": [
           "title"
@@ -2244,6 +2538,7 @@
           "sectionBorder",
           "sectionBorderColor",
           "motionPreset",
+          "motionPace",
           "subtitle",
           "content",
           "columnsCount",
@@ -2259,7 +2554,13 @@
           "buttonRadius",
           "buttonSize",
           "colorOverrides",
-          "buttonColors"
+          "buttonColors",
+          "titleEmphasis",
+          "connectedLayout",
+          "connectedDiagram",
+          "imageSlots",
+          "connectedLayoutMemory",
+          "connectedVisualContext"
         ],
         "publishRequired": [
           "title"
@@ -2276,6 +2577,7 @@
           "sectionBorder",
           "sectionBorderColor",
           "motionPreset",
+          "motionPace",
           "subtitle",
           "content",
           "productIds",
@@ -2291,7 +2593,8 @@
           "buttonRadius",
           "buttonSize",
           "colorOverrides",
-          "buttonColors"
+          "buttonColors",
+          "titleEmphasis"
         ],
         "publishRequired": [
           "title"
@@ -2313,6 +2616,7 @@
           "sectionBorder",
           "sectionBorderColor",
           "motionPreset",
+          "motionPace",
           "subtitle",
           "content",
           "sourceType",
@@ -2341,7 +2645,8 @@
           "buttonRadius",
           "buttonSize",
           "colorOverrides",
-          "buttonColors"
+          "buttonColors",
+          "titleEmphasis"
         ],
         "publishRequired": [
           "title",
@@ -2365,6 +2670,7 @@
           "sectionBorder",
           "sectionBorderColor",
           "motionPreset",
+          "motionPace",
           "subtitle",
           "content",
           "tabCategories",
@@ -2380,7 +2686,8 @@
           "buttonRadius",
           "buttonSize",
           "colorOverrides",
-          "buttonColors"
+          "buttonColors",
+          "titleEmphasis"
         ],
         "publishRequired": [
           "title"
@@ -2403,6 +2710,7 @@
           "sectionBorderColor",
           "imageSlots",
           "motionPreset",
+          "motionPace",
           "subtitle",
           "content",
           "mediaUrl",
@@ -2425,7 +2733,8 @@
           "buttonRadius",
           "buttonSize",
           "colorOverrides",
-          "buttonColors"
+          "buttonColors",
+          "titleEmphasis"
         ],
         "publishRequired": [
           "title"
@@ -2442,6 +2751,7 @@
           "sectionBorder",
           "sectionBorderColor",
           "motionPreset",
+          "motionPace",
           "subtitle",
           "content",
           "columnsCount",
@@ -2466,7 +2776,9 @@
           "buttonRadius",
           "buttonSize",
           "colorOverrides",
-          "buttonColors"
+          "buttonColors",
+          "titleEmphasis",
+          "pricingMatrix"
         ],
         "publishRequired": [
           "title"
@@ -2486,6 +2798,7 @@
           "sectionBorderColor",
           "imageSlots",
           "motionPreset",
+          "motionPace",
           "subtitle",
           "content",
           "columnsCount",
@@ -2511,7 +2824,15 @@
           "buttonRadius",
           "buttonSize",
           "colorOverrides",
-          "buttonColors"
+          "buttonColors",
+          "itemLayoutMode",
+          "titleEmphasis",
+          "connectedLayout",
+          "connectedDiagram",
+          "mediaUrl",
+          "mediaAlt",
+          "connectedLayoutMemory",
+          "connectedVisualContext"
         ],
         "publishRequired": [
           "title"
@@ -2528,6 +2849,7 @@
           "sectionBorder",
           "sectionBorderColor",
           "motionPreset",
+          "motionPace",
           "subtitle",
           "content",
           "videoEmbedUrl",
@@ -2542,7 +2864,8 @@
           "buttonRadius",
           "buttonSize",
           "colorOverrides",
-          "buttonColors"
+          "buttonColors",
+          "titleEmphasis"
         ],
         "publishRequired": [
           "title"
@@ -2560,6 +2883,7 @@
           "sectionBorderColor",
           "imageSlots",
           "motionPreset",
+          "motionPace",
           "subtitle",
           "content",
           "beforeImageUrl",
@@ -2577,7 +2901,8 @@
           "buttonRadius",
           "buttonSize",
           "colorOverrides",
-          "buttonColors"
+          "buttonColors",
+          "titleEmphasis"
         ],
         "publishRequired": [
           "title"
@@ -2595,6 +2920,7 @@
           "sectionBorderColor",
           "imageSlots",
           "motionPreset",
+          "motionPace",
           "subtitle",
           "content",
           "columnsCount",
@@ -2610,7 +2936,8 @@
           "buttonRadius",
           "buttonSize",
           "colorOverrides",
-          "buttonColors"
+          "buttonColors",
+          "titleEmphasis"
         ],
         "publishRequired": [
           "title"
@@ -2630,6 +2957,7 @@
           "featureCardsPreset",
           "valuesShowHeading",
           "motionPreset",
+          "motionPace",
           "subtitle",
           "content",
           "columnsCount",
@@ -2645,7 +2973,15 @@
           "buttonRadius",
           "buttonSize",
           "colorOverrides",
-          "buttonColors"
+          "buttonColors",
+          "titleEmphasis",
+          "connectedLayout",
+          "connectedDiagram",
+          "imageSlots",
+          "mediaUrl",
+          "mediaAlt",
+          "connectedLayoutMemory",
+          "connectedVisualContext"
         ],
         "publishRequired": [
           "title"
@@ -2667,6 +3003,7 @@
           "valuesShowDividers",
           "valuesRowSpacing",
           "motionPreset",
+          "motionPace",
           "subtitle",
           "content",
           "backgroundColor",
@@ -2680,7 +3017,8 @@
           "buttonRadius",
           "buttonSize",
           "colorOverrides",
-          "buttonColors"
+          "buttonColors",
+          "titleEmphasis"
         ],
         "publishRequired": [
           "title"
@@ -2697,6 +3035,7 @@
           "sectionBorder",
           "sectionBorderColor",
           "motionPreset",
+          "motionPace",
           "subtitle",
           "content",
           "columnsCount",
@@ -2712,7 +3051,8 @@
           "buttonRadius",
           "buttonSize",
           "colorOverrides",
-          "buttonColors"
+          "buttonColors",
+          "titleEmphasis"
         ],
         "publishRequired": [
           "title"
@@ -2729,6 +3069,7 @@
           "sectionBorder",
           "sectionBorderColor",
           "motionPreset",
+          "motionPace",
           "subtitle",
           "content",
           "comparisonDimensionName",
@@ -2750,7 +3091,12 @@
           "buttonRadius",
           "buttonSize",
           "colorOverrides",
-          "buttonColors"
+          "buttonColors",
+          "titleEmphasis",
+          "connectedLayout",
+          "connectedDiagram",
+          "connectedLayoutMemory",
+          "connectedVisualContext"
         ],
         "publishRequired": [
           "title"
@@ -2767,6 +3113,7 @@
           "sectionBorder",
           "sectionBorderColor",
           "motionPreset",
+          "motionPace",
           "subtitle",
           "content",
           "textAlignment",
@@ -2798,7 +3145,12 @@
           "buttonRadius",
           "buttonSize",
           "colorOverrides",
-          "buttonColors"
+          "buttonColors",
+          "titleEmphasis",
+          "connectedLayout",
+          "connectedDiagram",
+          "connectedLayoutMemory",
+          "connectedVisualContext"
         ],
         "publishRequired": [
           "title"
@@ -2815,6 +3167,7 @@
           "sectionBorder",
           "sectionBorderColor",
           "motionPreset",
+          "motionPace",
           "subtitle",
           "content",
           "formEmail",
@@ -2842,7 +3195,8 @@
           "buttonRadius",
           "buttonSize",
           "colorOverrides",
-          "buttonColors"
+          "buttonColors",
+          "titleEmphasis"
         ],
         "publishRequired": [
           "title"
@@ -2859,6 +3213,7 @@
           "sectionBorder",
           "sectionBorderColor",
           "motionPreset",
+          "motionPace",
           "subtitle",
           "content",
           "columnsCount",
@@ -2879,7 +3234,8 @@
           "buttonRadius",
           "buttonSize",
           "colorOverrides",
-          "buttonColors"
+          "buttonColors",
+          "titleEmphasis"
         ],
         "publishRequired": [
           "title"
@@ -2897,6 +3253,7 @@
           "sectionBorderColor",
           "imageSlots",
           "motionPreset",
+          "motionPace",
           "subtitle",
           "content",
           "columnsCount",
@@ -2913,7 +3270,8 @@
           "buttonRadius",
           "buttonSize",
           "colorOverrides",
-          "buttonColors"
+          "buttonColors",
+          "titleEmphasis"
         ],
         "publishRequired": [
           "title"
@@ -2937,6 +3295,7 @@
           "sectionBorderColor",
           "imageSlots",
           "motionPreset",
+          "motionPace",
           "subtitle",
           "content",
           "columnsCount",
@@ -2952,7 +3311,12 @@
           "buttonRadius",
           "buttonSize",
           "colorOverrides",
-          "buttonColors"
+          "buttonColors",
+          "titleEmphasis",
+          "connectedLayout",
+          "connectedDiagram",
+          "connectedLayoutMemory",
+          "connectedVisualContext"
         ],
         "publishRequired": [
           "title"
@@ -2973,6 +3337,7 @@
           "mediaUrl",
           "imageSlots",
           "motionPreset",
+          "motionPace",
           "subtitle",
           "content",
           "buttonText",
@@ -2990,7 +3355,13 @@
           "buttonRadius",
           "buttonSize",
           "colorOverrides",
-          "buttonColors"
+          "buttonColors",
+          "titleEmphasis",
+          "connectedLayout",
+          "connectedDiagram",
+          "items",
+          "connectedLayoutMemory",
+          "connectedVisualContext"
         ],
         "publishRequired": [
           "title"
@@ -3007,6 +3378,7 @@
           "sectionBorder",
           "sectionBorderColor",
           "motionPreset",
+          "motionPace",
           "subtitle",
           "content",
           "buttonText",
@@ -3024,7 +3396,8 @@
           "buttonRadius",
           "buttonSize",
           "colorOverrides",
-          "buttonColors"
+          "buttonColors",
+          "titleEmphasis"
         ],
         "publishRequired": [
           "title"
@@ -3046,6 +3419,7 @@
           "sectionBorder",
           "sectionBorderColor",
           "motionPreset",
+          "motionPace",
           "subtitle",
           "content",
           "backgroundColor",
@@ -3064,7 +3438,8 @@
           "buttonRadius",
           "buttonSize",
           "colorOverrides",
-          "buttonColors"
+          "buttonColors",
+          "titleEmphasis"
         ],
         "publishRequired": [
           "title"
@@ -3081,6 +3456,7 @@
           "sectionBorder",
           "sectionBorderColor",
           "motionPreset",
+          "motionPace",
           "backgroundColor",
           "textColor",
           "paddingY",
@@ -3104,7 +3480,8 @@
           "buttonRadius",
           "buttonSize",
           "colorOverrides",
-          "buttonColors"
+          "buttonColors",
+          "titleEmphasis"
         ],
         "publishRequired": [
           "title"
@@ -3121,6 +3498,7 @@
           "sectionBorder",
           "sectionBorderColor",
           "motionPreset",
+          "motionPace",
           "subtitle",
           "content",
           "backgroundColor",
@@ -3136,7 +3514,8 @@
           "buttonRadius",
           "buttonSize",
           "colorOverrides",
-          "buttonColors"
+          "buttonColors",
+          "titleEmphasis"
         ],
         "publishRequired": [
           "title"
@@ -3154,6 +3533,7 @@
           "sectionBorderColor",
           "imageSlots",
           "motionPreset",
+          "motionPace",
           "subtitle",
           "content",
           "columnsCount",
@@ -3175,7 +3555,8 @@
           "buttonRadius",
           "buttonSize",
           "colorOverrides",
-          "buttonColors"
+          "buttonColors",
+          "titleEmphasis"
         ],
         "publishRequired": [
           "title"
@@ -3193,6 +3574,7 @@
           "sectionBorderColor",
           "imageSlots",
           "motionPreset",
+          "motionPace",
           "subtitle",
           "content",
           "textAlignment",
@@ -3210,7 +3592,8 @@
           "buttonRadius",
           "buttonSize",
           "colorOverrides",
-          "buttonColors"
+          "buttonColors",
+          "titleEmphasis"
         ],
         "publishRequired": [
           "title"

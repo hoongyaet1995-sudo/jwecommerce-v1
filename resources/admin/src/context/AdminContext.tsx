@@ -376,7 +376,7 @@ interface AdminContextType {
   simulateCourierWebhookEvent: (parcelId: string, eventType: string, location: string, description: string) => void;
 
   pickupRequests: PickupRequest[];
-  createPickupRequest: (request: Omit<PickupRequest, 'id' | 'createdAt'>) => void;
+  createPickupRequest: (request: Omit<PickupRequest, 'id' | 'createdAt' | 'pickupRefNo'>) => void;
   cancelPickupRequest: (id: string) => void;
 
   billingReconciliations: BillingReconciliationRecord[];
@@ -1827,7 +1827,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const markOrderPacked = (orderId: string, packedBy: string) => {
     setMarketplaceOrders(prev => {
-      const updated = prev.map(o => {
+      const updated = prev.map((o): MarketplaceOrder => {
         if (o.id === orderId) {
           return {
             ...o,
@@ -2557,7 +2557,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     void updateShipmentStatus(parcelId, status, description, location);
   };
 
-  const createPickupRequest = (_request: Omit<PickupRequest, 'id' | 'createdAt'>) => {
+  const createPickupRequest = (_request: Omit<PickupRequest, 'id' | 'createdAt' | 'pickupRefNo'>) => {
     addToast({ type: 'error', title: 'Pickup scheduling unavailable', message: 'Driver booking requires a configured courier provider and has not been simulated.' });
   };
 

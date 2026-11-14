@@ -7,7 +7,7 @@
 @php($shellContentWidth = $isStorefront ? ($shellContentWidth ?? app(\App\Services\StorefrontShellSettingsService::class)->live()['contentWidth'] ?? 'wide') : 'wide')
 @php($shellContentWidth = $isCmsStorefrontPreview ? (request()->attributes->get('websiteThemeShellWidth') ?? $shellContentWidth) : $shellContentWidth)
 @php($websiteStyleThemes = array_unique([app(\App\Services\WebsiteDesignService::class)->surface(), request()->attributes->get('websiteRenderedTheme')]))
-<html lang="en" @if($isStorefront) data-storefront-width="{{ $shellContentWidth }}" @endif @if($isStorefront) class="{{ ($shellDesign['appearance'] ?? 'dark') === 'dark' ? 'dark' : '' }}" data-atelier-theme-root data-atelier-theme="{{ $shellDesign['appearance'] ?? 'dark' }}" @if($shellDesign) data-shell-appearance="{{ $shellDesign['appearance'] }}" data-shell-theme-switch="{{ $shellDesign['showThemeSwitch'] ? 'true' : 'false' }}" @endif @elseif($isAdmin) data-admin-root @endif>
+<html lang="en" @if($isStorefront) data-storefront-width="{{ $shellContentWidth }}" @endif @if($isStorefront) class="{{ $shellDesign ? '' : 'dark' }}" data-atelier-theme-root data-atelier-theme="{{ $shellDesign ? 'light' : 'dark' }}" @if($shellDesign) data-shell-appearance="light" data-shell-theme-switch="false" @endif @elseif($isAdmin) data-admin-root @endif>
 @php($searchHead = app(\App\Services\Search\SearchHead::class)->resolve($title, $description))
 <head>
     @if(request()->routeIs('admin.website-design.preview')) @include('admin.theme-demo-guard',['scenario'=>request('surface','plp')]) @endif

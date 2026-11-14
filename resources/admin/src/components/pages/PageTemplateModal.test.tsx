@@ -18,7 +18,7 @@ describe('template settings availability',()=>{
     const blankSelect=[...article('Blank Page').querySelectorAll('button')].find(b=>b.textContent==='Select')!;
     expect(blankSelect.disabled).toBe(false);
     act(()=>blankSelect.click());
-    const create=[...node.querySelectorAll('footer button')].find(b=>b.textContent==='Use Template →')!;
+    const create=[...node.querySelectorAll<HTMLButtonElement>('footer button')].find(b=>b.textContent==='Use Template →')!;
     expect(create.disabled).toBe(false);
     act(()=>create.click());expect(onCreate).toHaveBeenCalledWith('blank');
     expect(node.textContent?.match(/Coming in the next template batch/g)).toHaveLength(1);

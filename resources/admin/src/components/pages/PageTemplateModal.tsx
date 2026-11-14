@@ -1,9 +1,11 @@
+import {connectedPageCards} from '../../cms/connectedPageTemplates';
 import {connectedShowcaseCards} from '../../cms/connectedShowcaseTemplates';
 import React,{useState} from 'react';
 import {X,ArrowLeft,Check} from 'lucide-react';
 import { PageTemplatePreview } from './PageTemplatePreview';
 import type { PageTemplateContext } from '../../cms/pageTemplates';
 export const pageTemplates=[
+ ...connectedPageCards,
  ...connectedShowcaseCards,
  {id:'saas-connected',name:'SaaS & Technology — Connected Workspace',category:'Brand & Story',description:'Spacious midnight, ivory and champagne software homepage with editable platform visuals, monthly packages, add-ons and FAQs. Review illustrative media and contact destinations before publishing.',sections:['Product Hero','Platform Modules','Support','Marketing','Analytics','SaaS Packages','Add-ons','FAQ','Demo CTA'],ready:true},
  {id:'logistics-solution-detail',name:'Container Solution Detail',category:'Brand & Story',description:'Editable solution overview, industrial media mosaic, planning rows and real related containers.',sections:['Solution Hero','Split Introduction','Considerations','Media Mosaic','Planning Steps','Related Containers','Enquiry CTA'],ready:true},

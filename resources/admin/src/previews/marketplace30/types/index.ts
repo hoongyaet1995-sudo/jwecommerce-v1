@@ -80,10 +80,10 @@ export interface ProductSeedReview {
   id: string;
   author: string;
   rating: number; // 1 to 5
-  date: string;
+  date?: string | null;
   title: string;
   comment: string;
-  verifiedBuyer: boolean;
+  verifiedBuyer?: boolean;
   variantPurchased?: string; // e.g. "Gunmetal Titanium / Forest Green"
   helpfulCount?: number;
 }
@@ -363,6 +363,7 @@ export interface MarketplaceStoreProduct {
   variants: MarketplaceStoreVariant[];
 }
 export interface MarketplaceInventoryItem {
+  warehouseName?: string;
   id: string;
   masterSku: string;
   barcode: string;

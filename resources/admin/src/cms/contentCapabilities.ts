@@ -1,3 +1,4 @@
+import {connectedPassport} from './connectedFamilies';
 import {headingCapability} from './sectionHeading';
 import {isWideVisualEditorial} from './wideVisualEditorial';
 import {isImageFlow} from './imageFlow';
@@ -93,6 +94,7 @@ function legacySectionContentFields(section:PageSection):readonly string[]{
 }
 
 export function sectionContentFields(section:PageSection):readonly string[]{
+ const connected=connectedPassport(section);if(connected)return connected.sectionFields as any;
  const cap=headingCapability(section);let result=[...legacySectionContentFields(section)];
  if(cap.legacySubtitle==='eyebrow'||cap.legacySubtitle==='unused')result=result.filter(k=>k!=='subtitle');
  if(cap.mode==='section')result.unshift('eyebrow');

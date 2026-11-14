@@ -1,3 +1,11 @@
+@php
+    $shellPalette = data_get($payload, 'page.document.style.palette', []);
+    $shellPaletteVars = [];
+    foreach (['primary'=>'accent','secondary'=>'secondary','contrast'=>'ink','paper'=>'paper','ink'=>'ink','oncontrast'=>'paper'] as $role=>$key) {
+        $color=$role==='contrast'?($shellPalette['contrast']??$shellPalette['ink']??null):($shellPalette[$key]??null);
+        if(is_string($color) && preg_match('/^#[a-f0-9]{6}$/i',$color)) $shellPaletteVars[]='--cms-shell-'.$role.':'.$color;
+    }
+@endphp
 @php($pageShellDesign = $previewShellDesign ?? \App\Domain\Cms\ShellDesign::resolve(app(\App\Services\StorefrontShellSettingsService::class)->live(), $payload['page']['document']['shellDesign'] ?? null))
 <x-layouts.app :title="$title" :description="$description" :shell-design="$pageShellDesign" :shell-content-width="$shellContentWidth ?? null">
     @if($entry)
@@ -12,7 +20,7 @@
         </x-slot:head>
     @endif
 
-    <div class="min-h-screen bg-neutral-950 text-neutral-100">
+    <div class="min-h-screen bg-neutral-950 text-neutral-100" style="{{ implode(';',$shellPaletteVars) }}">
         <x-storefront.nav :design="$pageShellDesign" :navigation-context="$payload" active="landing" :presentation="$previewHeaderPresentation ?? \App\Domain\Cms\HeaderPresentation::resolve($payload['page']['document'], app(\App\Services\StorefrontShellSettingsService::class)->live())" />
         <main>
             @if($entry)

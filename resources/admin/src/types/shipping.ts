@@ -89,6 +89,7 @@ export interface CourierConfig {
 }
 
 export interface SmartRoutingRule {
+  description?: string;
   id: string;
   name: string;
   priority: number;

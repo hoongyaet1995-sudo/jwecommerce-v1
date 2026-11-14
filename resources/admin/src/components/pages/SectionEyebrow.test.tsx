@@ -33,7 +33,7 @@ it("keeps a legacy Eyebrow color readable without a page palette and lets Typogr
 
 it('places every applicable Eyebrow before its heading across surfaces and optional heading states',()=>{
  const gaps:string[]=[],rows:any[]=[];
- const variants=[...SECTION_TEMPLATES.map(t=>({name:t.title,section:t.defaultData})),{name:'Saved editorial-triptych',section:{type:'media_gallery',galleryPreset:'editorial-triptych',title:'Saved heading'}},{name:'Saved policy default',section:{type:'policy_content',title:'Saved heading'}}];
+ const variants:Array<{name:string;section:Omit<PageSection,'id'|'isVisible'>}>=[...SECTION_TEMPLATES.map(t=>({name:t.title,section:t.defaultData})),{name:'Saved editorial-triptych',section:{type:'media_gallery',galleryPreset:'editorial-triptych',title:'Saved heading'}},{name:'Saved policy default',section:{type:'policy_content',title:'Saved heading'}}];
  for(const t of variants)for(const surface of ['page','light','contrast'] as const)for(const enabled of [false,true]){
   current={...structuredClone(t.section),id:'order-qa',isVisible:true,surface,eyebrow:'ORDER CHECK',...(enabled?{showSectionHeading:true,valuesShowHeading:true}:{}),items:t.section.items?.map(i=>({...i,eyebrow:'SLIDE ORDER CHECK'}))} as PageSection;
   const node=document.createElement('div');node.innerHTML=renderToStaticMarkup(<SectionRenderer section={current} isEditingMode/>);

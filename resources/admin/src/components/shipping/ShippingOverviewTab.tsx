@@ -331,7 +331,7 @@ export const ShippingOverviewTab: React.FC<ShippingOverviewTabProps> = ({
                         {req.pickupDate} • {req.timeSlot}
                       </div>
                       <div className="text-[11px] text-neutral-500 dark:text-neutral-400">
-                        {req.totalParcels} parcels (~{req.estimatedWeightKg} kg) • {req.warehouseLocation}
+                        {req.totalParcels} parcels (~{req.totalWeightKg} kg) • {req.pickupAddress}
                       </div>
                     </div>
                   </div>

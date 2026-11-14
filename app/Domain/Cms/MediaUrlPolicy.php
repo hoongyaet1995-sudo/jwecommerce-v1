@@ -41,6 +41,10 @@ final class MediaUrlPolicy
             return true;
         }
 
+        static $connectedMedia=null;
+        $connectedMedia??=array_fill_keys(json_decode(file_get_contents(resource_path('cms/connected-media.v1.json')),true),true);
+        if(isset($connectedMedia[$url]))return true;
+
         // Bundled, reviewed template assets are distinct from uploaded managed media.
         if (preg_match('#\A/images/cms/templates/connected/[0-9a-f]{24}\.webp\z#D', $url) === 1) { return true; }
 

@@ -1,0 +1,105 @@
+/* Scoped from approved commerce style-v176.css pricing source. */
+.jw-unified-pricing{container-type:inline-size;container-name:cms-pricing;--max:1180px;--muted:#69706c;--pink:#ffa1ed;--yellow:#fff19b;--dark:#0d1b18;--accent:#c1f17d;--ink:#171a18}.jw-unified-pricing .narrow-heading{text-align:center;margin-bottom:55px}
+.jw-unified-pricing .plan-billing-toggle { display: grid; width: 270px; margin: -25px auto 38px; padding: 5px; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: center; gap: 4px; border: 1px solid #d8dbd6; border-radius: 999px; background: #eceeea; box-shadow: inset 0 1px 2px rgba(0,0,0,.04); }
+.jw-unified-pricing .plan-billing-toggle button { display: flex; width: 100%; min-width: 0; min-height: 44px; padding: 8px 14px; appearance: none; -webkit-appearance: none; align-items: center; justify-content: center; border: 0; border-radius: 999px; color: #555b58; background: transparent; box-shadow: none; cursor: pointer; font: inherit; font-size: 15px; font-weight: 650; line-height: 1; white-space: nowrap; transition: color .2s ease, background-color .2s ease, box-shadow .2s ease; }
+.jw-unified-pricing .plan-billing-toggle button:hover { color: #111; }
+.jw-unified-pricing .plan-billing-toggle button.is-active { color: #fff; background: #111; box-shadow: 0 5px 15px rgba(0,0,0,.14); }
+.jw-unified-pricing .plan-billing-toggle button:focus-visible { outline: 3px solid rgba(255,161,237,.5); outline-offset: 2px; }
+.jw-unified-pricing .pricing-grid { display: grid; max-width: var(--max); margin: auto; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.jw-unified-pricing .plan-card { position: relative; display: flex; min-height: 660px; padding: 28px; flex-direction: column; border: 1px solid #e1e3df; border-radius: 22px; background: #fff; }
+.jw-unified-pricing .plan-card-head { display: grid; gap: 6px; }
+.jw-unified-pricing .plan-card-head > span { font-size: 28px; font-weight: 650; letter-spacing: -.045em; }
+.jw-unified-pricing .plan-card-head small { min-height: 38px; color: var(--muted); font-size: 14px; }
+.jw-unified-pricing .plan-price { display: flex; margin-top: 35px; align-items: start; gap: 5px; }
+.jw-unified-pricing .plan-price small { margin-top: 7px; font-size: 15px; font-weight: 700; }
+.jw-unified-pricing .plan-price strong { font-family: "CMS Connected Stack Sans Headline", "CMS Connected Switzer", sans-serif; font-size: 52px; font-weight: 600; letter-spacing: -.06em; line-height: 1; }
+.jw-unified-pricing .plan-price-period { margin-top: 29px; color: #747a77; font-size: 13px; font-weight: 600; white-space: nowrap; }
+.jw-unified-pricing .plan-card > em { width: fit-content; margin-top: 9px; padding: 4px 7px; border-radius: 5px; color: #3f2c00; background: var(--yellow); font-size: 12px; font-style: normal; font-weight: 700; }
+.jw-unified-pricing .plan-includes { min-height: 22px; margin: 24px 0 0; font-size: 13px; font-weight: 650; }
+.jw-unified-pricing .plan-card ul { display: grid; margin: 25px 0 35px; padding: 0; gap: 13px; list-style: none; }
+.jw-unified-pricing .plan-card li { position: relative; padding-left: 21px; color: #505552; font-size: 16px; line-height: 1.4; }
+.jw-unified-pricing .plan-card li::before { position: absolute; left: 0; color: #111; content: "✓"; font-weight: 800; }
+.jw-unified-pricing .plan-card li b { margin-left: 4px; padding: 3px 6px; border-radius: 14px; color: #151515; background: var(--pink); font-size: 11px; text-transform: uppercase; }
+.jw-unified-pricing .plan-button { display: flex; min-height: 48px; margin-top: auto; padding: 10px 11px 10px 16px; align-items: center; justify-content: space-between; border: 1px solid #d8dad6; border-radius: 999px; font-size: 14px; font-weight: 650; }
+.jw-unified-pricing .plan-button img { width: 20px; }
+.jw-unified-pricing .plan-card-popular { border-color: #111; box-shadow: inset 0 0 0 1px #111; }
+.jw-unified-pricing .popular-label { position: absolute; top: 15px; right: 15px; padding: 5px 8px; border-radius: 999px; color: #111; background: var(--pink); font-size: 12px; font-weight: 800; text-transform: uppercase; }
+.jw-unified-pricing .plan-card-dark { color: #fff; border-color: var(--dark); background: var(--dark); }
+.jw-unified-pricing .plan-card-dark .plan-card-head small, .jw-unified-pricing .plan-card-dark li { color: #b5bfbb; }
+.jw-unified-pricing .plan-card-dark .plan-price-period { color: #b5bfbb; }
+.jw-unified-pricing .plan-card-dark li::before { color: var(--accent); }
+.jw-unified-pricing .plan-card-dark .plan-button { color: #111; border-color: #fff; background: #fff; }
+.jw-unified-pricing .ecommerce-comparison { max-width: 1180px; padding: 0; overflow: visible; border-radius: 0; color: var(--ink); background: transparent; }
+.jw-unified-pricing .ecommerce-comparison::before { display: none; }
+.jw-unified-pricing .ecommerce-comparison .eyebrow-dark { color: #303431; border-color: #dfe2dd; background: #fff; }
+.jw-unified-pricing .ecommerce-comparison .eyebrow-dark i { background: var(--ink); }
+.jw-unified-pricing .ecommerce-comparison h2 { margin-bottom: 55px; font-size: clamp(56px, 6.2vw, 90px); }
+.jw-unified-pricing .ecommerce-comparison .comparison-billing-toggle { margin: -28px auto 38px; }
+.jw-unified-pricing .mobile-plan-comparison { display: none; }
+.jw-unified-pricing .comparison-billing-price::after { color: #747a77; content: " / " attr(data-billing-period); font-size: 12px; font-weight: 500; white-space: nowrap; }
+.jw-unified-pricing .plan-table-wrap { position: relative; overflow-x: auto; border: 1px solid #dfe2dd; border-radius: 16px; background: #fff; }
+.jw-unified-pricing .plan-table { width: 100%; min-width: 980px; border-collapse: collapse; background: #fff; text-align: left; }
+.jw-unified-pricing .plan-table th, .jw-unified-pricing .plan-table td { padding: 18px 20px; border-bottom: 1px solid #e7e9e5; font-size: 16px; line-height: 1.45; }
+.jw-unified-pricing .plan-table thead th { position: sticky; top: 0; z-index: 2; padding-top: 21px; padding-bottom: 21px; color: #171a18; background: #eceeea; font-size: 16px; font-weight: 750; }
+.jw-unified-pricing .plan-table th:first-child, .jw-unified-pricing .plan-table td:first-child { width: 36%; }
+.jw-unified-pricing .plan-table td { color: #343936; }
+.jw-unified-pricing .plan-table td:first-child { font-weight: 550; }
+.jw-unified-pricing .plan-table td:not(:first-child), .jw-unified-pricing .plan-table thead th:not(:first-child) { color: #171a18; text-align: center; }
+.jw-unified-pricing .plan-table td small { display: block; margin-top: 4px; color: #737a76; font-size: 14px; font-weight: 400; }
+.jw-unified-pricing .plan-table tbody .plan-category-row:first-child + tr td:not(:first-child) strong { font-size: 18px; line-height: 1.2; }
+.jw-unified-pricing .integration-logo-row { display: flex; margin-top: 11px; flex-wrap: wrap; align-items: center; gap: 8px; }
+.jw-unified-pricing .integration-logo-row img { width: auto; max-width: 60px; height: 34px; padding: 0; object-fit: contain; border: 0; border-radius: 6px; background: transparent; }
+.jw-unified-pricing .integration-logo-row.marketplace-logos img { width: 36px; max-width: 36px; height: 36px; border-radius: 6px; }
+.jw-unified-pricing .plan-table .plan-category-row th { padding: 30px 20px 14px; border-top: 1px solid #d7dad6; color: #253632; background: #fff; font-size: 21px; font-weight: 750; letter-spacing: -.025em; text-align: left; }
+.jw-unified-pricing .plan-table tbody .plan-category-row:first-child th { border-top: 0; }
+.jw-unified-pricing .plan-table td.is-included { color: inherit; font-size: 16px; font-weight: 400; }
+.jw-unified-pricing .plan-check-mark { display: inline-grid; width: 24px; height: 24px; place-items: center; border-radius: 50%; color: #0d1b18; background: var(--accent); font-size: 15px; font-weight: 800; line-height: 1; }
+.jw-unified-pricing .plan-table td.is-unavailable { color: #a0a6a2; font-size: 18px; }
+.jw-unified-pricing .plan-table tbody tr:not(.plan-category-row):hover td { background: #fafbf9; }
+.jw-unified-pricing .plan-table tfoot th, .jw-unified-pricing .plan-table tfoot td { padding: 24px 14px; border-top: 2px solid #dfe2dd; border-bottom: 0; background: #f2f3f0; text-align: center; }
+.jw-unified-pricing .plan-table tfoot th { padding-left: 20px; text-align: left; }
+.jw-unified-pricing .plan-table tfoot th strong { display: block; color: #171a18; font-size: 16px; }
+.jw-unified-pricing .plan-table tfoot th small { display: block; margin-top: 4px; color: #69706c; font-size: 12px; font-weight: 400; }
+.jw-unified-pricing .plan-table .plan-action-row a { display: inline-flex; min-height: 40px; padding: 8px 13px; align-items: center; justify-content: center; border-radius: 999px; color: #fff; background: #111; font-size: 14px; font-weight: 700; line-height: 1.15; transition: color .2s ease, background-color .2s ease, transform .2s ease; }
+.jw-unified-pricing .plan-table .plan-action-row a:hover { color: #0d1b18; background: var(--accent); transform: translateY(-2px); }
+.jw-unified-pricing .table-note { margin: 22px 0 0; color: #69706c; font-size: 13px; text-align: left; }
+.jw-unified-pricing .pricing-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr))}
+@container cms-pricing (max-width:809px){
+.jw-unified-pricing .plan-table-wrap { display: none; }
+.jw-unified-pricing .mobile-plan-comparison { display: block; }
+.jw-unified-pricing .mobile-plan-switcher { position: sticky; top: 76px; z-index: 45; display: grid; margin: 0 0 14px; padding: 4px; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; border: 1px solid #d8dbd6; border-radius: 16px; background: #eceeea; box-shadow: 0 10px 28px rgba(8,16,13,.12); }
+.jw-unified-pricing .mobile-plan-switcher button { min-width: 0; min-height: 42px; padding: 8px 5px; border: 0; border-radius: 12px; color: #555b58; background: transparent; font: inherit; font-size: 13px; font-weight: 700; line-height: 1.15; cursor: pointer; }
+.jw-unified-pricing .mobile-plan-switcher button.is-active { color: #fff; background: #111; box-shadow: 0 5px 14px rgba(0,0,0,.14); }
+.jw-unified-pricing .mobile-plan-switcher button:focus-visible { outline: 3px solid rgba(255,161,237,.55); outline-offset: 1px; }
+.jw-unified-pricing .mobile-plan-group { margin-bottom: 12px; overflow: hidden; border: 1px solid #dfe2dd; border-radius: 14px; background: #fff; }
+.jw-unified-pricing .mobile-plan-group h3 { margin: 0; padding: 18px 12px 11px; color: #253632; background: #f4f5f2; font-size: 19px; font-weight: 750; letter-spacing: -.025em; }
+.jw-unified-pricing .mobile-plan-feature-row { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(98px, .75fr); border-top: 1px solid #e7e9e5; }
+.jw-unified-pricing .mobile-plan-group h3 + .mobile-plan-feature-row { border-top: 0; }
+.jw-unified-pricing .mobile-plan-feature-name { min-width: 0; padding: 14px 12px; color: #343936; font-size: 14px; font-weight: 550; line-height: 1.4; text-align: left; overflow-wrap: anywhere; }
+.jw-unified-pricing .mobile-plan-feature-name small { display: block; margin-top: 4px; color: #737a76; font-size: 12px; font-weight: 400; }
+.jw-unified-pricing .mobile-plan-feature-value { display: none; min-width: 0; padding: 12px 8px; align-items: center; justify-content: center; border-left: 1px solid #e7e9e5; color: #171a18; background: #fafbf9; font-size: 13px; font-weight: 550; line-height: 1.35; text-align: center; overflow-wrap: anywhere; }
+.jw-unified-pricing .mobile-plan-feature-value.has-detail { flex-direction: column; gap: 4px; }
+.jw-unified-pricing .mobile-plan-feature-value.has-detail br { display: none; }
+.jw-unified-pricing .mobile-plan-feature-value.has-detail small { display: block; color: #737a76; font-size: 11px; font-weight: 400; line-height: 1.35; }
+.jw-unified-pricing .mobile-plan-feature-value{display:flex}.jw-unified-pricing .mobile-plan-switcher{display:flex;overflow-x:auto}.jw-unified-pricing .mobile-plan-switcher button{flex:1;min-width:75px}.jw-unified-pricing .pricing-grid{grid-template-columns:1fr}
+}
+
+.jw-unified-pricing .plan-card{background:var(--pricing-paper,#fff);color:var(--pricing-ink,#171a18)}
+.jw-unified-pricing .plan-card-dark{background:var(--pricing-contrast,#0d1b18);color:var(--pricing-contrast-ink,#fff);border-color:var(--pricing-contrast,#0d1b18)}
+.jw-unified-pricing .plan-card-dark .plan-card-head small,.jw-unified-pricing .plan-card-dark li,.jw-unified-pricing .plan-card-dark .plan-price-period{color:inherit;opacity:.75}
+.jw-unified-pricing .plan-card-dark li::before{color:var(--pricing-accent,#c1f17d)}
+.jw-unified-pricing .plan-card-dark .plan-button{color:var(--pricing-contrast,#0d1b18);background:var(--pricing-contrast-ink,#fff)}
+
+/* Source global typography stays scoped; explicit Passport typography wins inline. */
+.jw-unified-pricing{font-family:"CMS Connected Switzer","CMS Connected Inter",Arial,sans-serif;font-size:17px;line-height:1.45;letter-spacing:-.3px;-webkit-font-smoothing:antialiased}
+.jw-unified-pricing .narrow-heading{max-width:790px;margin:0 auto 70px;text-align:center}
+.jw-unified-pricing h2,.jw-unified-pricing h3{font-family:"CMS Connected Stack Sans Headline","CMS Connected Inter",Arial,sans-serif}
+.jw-unified-pricing .narrow-heading h2{margin:20px 0 12px;font-size:clamp(44px,5cqw,72px);font-weight:550;letter-spacing:-.065em;line-height:1}
+.jw-unified-pricing .narrow-heading p{max-width:620px;margin:auto;color:var(--muted);font-size:17px}
+.jw-unified-pricing a{color:inherit;text-decoration:none}
+.jw-unified-pricing button{font:inherit}
+@container cms-pricing (max-width:809px){.jw-unified-pricing .narrow-heading h2{font-size:39px}}
+
+/* Native section owns gutters and spacing because the shared outer container is flush. */
+.jw-unified-pricing .pricing-content{padding:0 36px var(--pricing-space,190px)}
+@container cms-pricing (max-width:809px){.jw-unified-pricing .pricing-content{padding:0 16px var(--pricing-mobile-space,95px)}}

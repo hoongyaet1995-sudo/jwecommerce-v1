@@ -36,7 +36,7 @@ const receipt = (overrides: Partial<EasyParcelWebhookReceiptRow> = {}): EasyParc
   ...overrides,
 });
 
-const trackingProps = (overrides: Record<string, unknown> = {}) => ({
+const trackingProps = (overrides: Partial<React.ComponentProps<typeof TrackingAndWebhooksTab>> = {}): React.ComponentProps<typeof TrackingAndWebhooksTab> => ({
   parcels: [],
   webhookReceipts: [],
   webhookAuditStatus: 'ready',
@@ -374,6 +374,7 @@ describe('ShippingDashboard provider action binding', () => {
       onOpenTrackingModal: vi.fn(),
       onOpenPickupModal: vi.fn(),
       onUpdateStatus: vi.fn(),
+      onOpenFulfilment: vi.fn(),
       onOpenEasyParcelBooking,
       onRefreshEasyParcelStatus: vi.fn().mockResolvedValue({
         result: {
@@ -506,6 +507,7 @@ describe('ShippingDashboard provider action binding', () => {
       onOpenTrackingModal: vi.fn(),
       onOpenPickupModal: vi.fn(),
       onUpdateStatus: vi.fn(),
+      onOpenFulfilment: vi.fn(),
       onOpenEasyParcelBooking,
       onRefreshEasyParcelStatus: vi.fn(),
       onRefreshAllEasyParcelStatuses: vi.fn().mockResolvedValue([{
@@ -563,7 +565,7 @@ describe('ShippingDashboard provider action binding', () => {
     mountedRoots.push({ root, host });
 
     const Harness = () => {
-      const [rows, setRows] = React.useState([pending]);
+      const [rows, setRows] = React.useState<ShipmentParcel[]>([pending]);
       return React.createElement(ShippingFulfillmentTab, {
         parcels: rows,
         onGenerateAWB: vi.fn(),
@@ -572,6 +574,7 @@ describe('ShippingDashboard provider action binding', () => {
         onOpenTrackingModal: vi.fn(),
         onOpenPickupModal: vi.fn(),
         onUpdateStatus: vi.fn(),
+        onOpenFulfilment: vi.fn(),
         onOpenEasyParcelBooking: vi.fn(),
         onRefreshEasyParcelStatus: async () => {
           setRows([onHold]);
@@ -663,6 +666,7 @@ describe('ShippingDashboard provider action binding', () => {
       onOpenTrackingModal: vi.fn(),
       onOpenPickupModal: vi.fn(),
       onUpdateStatus: vi.fn(),
+      onOpenFulfilment: vi.fn(),
       onOpenEasyParcelBooking,
       onRefreshEasyParcelStatus: vi.fn().mockResolvedValue({
         result: {
@@ -811,6 +815,7 @@ describe('ShippingDashboard provider action binding', () => {
       onOpenTrackingModal: vi.fn(),
       onOpenPickupModal: vi.fn(),
       onUpdateStatus: vi.fn(),
+      onOpenFulfilment: vi.fn(),
       onOpenEasyParcelBooking: vi.fn(),
       onRefreshEasyParcelStatus: vi.fn(),
       onRefreshAllEasyParcelStatuses: vi.fn(),
@@ -836,6 +841,7 @@ describe('ShippingDashboard provider action binding', () => {
       onOpenTrackingModal: vi.fn(),
       onOpenPickupModal: vi.fn(),
       onUpdateStatus: vi.fn(),
+      onOpenFulfilment: vi.fn(),
       onOpenEasyParcelBooking: vi.fn(),
       onRefreshEasyParcelStatus: vi.fn(),
       onRefreshAllEasyParcelStatuses: vi.fn(),
@@ -903,6 +909,7 @@ describe('ShippingDashboard provider action binding', () => {
       onOpenTrackingModal: vi.fn(),
       onOpenPickupModal: vi.fn(),
       onUpdateStatus: vi.fn(),
+      onOpenFulfilment: vi.fn(),
       onOpenEasyParcelBooking,
       onRefreshEasyParcelStatus: vi.fn(),
       onRefreshAllEasyParcelStatuses: vi.fn(),
@@ -1136,6 +1143,7 @@ describe('ShippingDashboard provider action binding', () => {
       onOpenTrackingModal: vi.fn(),
       onOpenPickupModal: vi.fn(),
       onUpdateStatus: vi.fn(),
+      onOpenFulfilment: vi.fn(),
       onOpenEasyParcelBooking: vi.fn(),
       onRefreshEasyParcelStatus: vi.fn(),
       onRefreshAllEasyParcelStatuses: vi.fn(),

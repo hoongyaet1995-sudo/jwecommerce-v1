@@ -1380,7 +1380,7 @@ export const AddSectionModal: React.FC<AddSectionModalProps> = ({
               const Icon = tmpl.icon;
               return (
                 <button
-                  key={`${tmpl.type}-${tmpl.title}`}
+                  key={`${tmpl.type}-${tmpl.title}-${JSON.stringify(tmpl.defaultData)}`}
                   onClick={() => handleSelectTemplate(tmpl)}
                   className="group p-5 rounded-2xl border text-left flex flex-col justify-between transition-all duration-200
                     bg-white dark:bg-neutral-900/90

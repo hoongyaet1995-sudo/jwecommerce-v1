@@ -1,3 +1,4 @@
+import {connectedPassport} from './connectedFamilies';
 import {headingCapability,legacyTypographyRoles} from './sectionHeading';
 import {isPlanComparison} from './planComparison';
 import {sectionContentFields} from './contentCapabilities';
@@ -56,6 +57,7 @@ function legacyTextRoles(section:PageSection):TextRole[] {
  });
 }
 export function textRoles(section:PageSection):TextRole[]{
+ const connected=connectedPassport(section);if(connected)return [...new Set(connected.textRoles.map(r=>r==='value'?'number':r))] as TextRole[];
  const imageOnlyItems=section.type==='logo_cloud'&&section.logoPreset==='partners'||section.type==='media_text_split'&&['corporate-courier','corporate-payments'].includes(section.layoutPreset??'');
  const roles=legacyTextRoles(section).filter(r=>r!=='eyebrow'&&!(imageOnlyItems&&r.startsWith('item'))&&!(section.type==='media_text_split'&&!section.layoutPreset&&r.startsWith('item')));
  return [...new Set([...(headingCapability(section).mode!=='none'?['eyebrow'] as TextRole[]:[]),...roles,...legacyTypographyRoles(section).filter(r=>!(r==='label'&&section.type==='faq_accordion'&&['pricing-card-faq','pricing-band-faq'].includes(section.faqPreset??'')))])];

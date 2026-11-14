@@ -29,7 +29,7 @@ export const CommerceHub: React.FC = () => {
     (o) => o.fulfillmentStatus === 'processing' || o.fulfillmentStatus === 'unfulfilled'
   ).length;
   const vipCustomersCount = safeCustomers.filter((c) => c.tags?.includes('VIP') || c.totalSpent > 1000).length;
-  const totalRevenue = safeOrders.reduce((sum, o) => sum + (o.paymentStatus === 'paid' ? o.totalAmount : 0), 0);
+  const totalRevenue = safeOrders.reduce((sum, o) => sum + (o.paymentGatewayStatus === 'paid' ? o.totalAmount : 0), 0);
 
   const cards = [
     {

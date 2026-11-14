@@ -958,12 +958,14 @@ export interface ModeSwitchServerCheck {
 }
 
 // Entity Warehouse Facility
+export type WarehouseAddress = string | { addressLine?: string; city?: string; state?: string; postalCode?: string };
+
 export interface EntityWarehouse {
   dataClassification?: string;
   id: string; // e.g. 'wh-cyberjaya'
   code: string; // e.g. 'WH-CYB'
   name: string; // e.g. 'Cyberjaya Central Hub'
-  address: string;
+  address: WarehouseAddress;
   state: string;
   isDefaultMaster: boolean;
   isActive: boolean;
@@ -1024,6 +1026,8 @@ export interface StoreFulfillmentBinding {
 
 // Inter-Warehouse Transfer (Stock Relocation)
 export interface InterWarehouseTransfer {
+  reason?: string;
+  operator?: string;
   id: string; // e.g. 'TRF-2026-001'
   sourceWarehouseId: string;
   sourceWarehouseName: string;
@@ -1046,6 +1050,8 @@ export interface InterWarehouseTransfer {
 
 // Mode Switch Audit Ledger
 export interface InventoryModeSwitchAudit {
+  operator?: string;
+  strategy?: 'primary_all' | 'even_split';
   id: string;
   timestamp: string;
   fromMode: InventoryOperatingMode;

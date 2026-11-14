@@ -617,49 +617,6 @@ export const ShopSettingsHub: React.FC = () => {
         <SocialLinkSettingAdmin />
       )}
 
-      {/* Courier & Shipping Setting */}
-      {currentSection === 'settings-courier' && (
-        <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-6 sm:p-8 shadow-sm space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h2 className="text-xl font-bold text-neutral-900 dark:text-white flex items-center gap-2">
-                <Truck className="w-5 h-5 text-indigo-600" />
-                Malaysian Couriers & Shipping Gateway
-              </h2>
-              <p className="text-xs text-neutral-500 mt-0.5">
-                Configure direct merchant API credentials for Pos Malaysia, Ninja Van, J&T Express, Flash Express, DHL, and EasyParcel.
-              </p>
-            </div>
-            <button
-              onClick={() => setCurrentSection('shipping-malaysia')}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold transition cursor-pointer shadow-sm"
-            >
-              <Truck className="w-4 h-4" />
-              Open Malaysia Shipping Center →
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800/50 space-y-2">
-              <div className="font-bold text-xs text-neutral-900 dark:text-neutral-100">Direct API Carriers</div>
-              <p className="text-[11px] text-neutral-500">J&T Express VIP, Ninja Van V2 API, Pos Malaysia E-Consignment, Flash Express, DHL eCommerce</p>
-            </div>
-            <div className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800/50 space-y-2">
-              <div className="font-bold text-xs text-neutral-900 dark:text-neutral-100">Aggregator Multi-Carrier</div>
-              <p className="text-[11px] text-neutral-500">EasyParcel multi-carrier rate quoting and official airway bill generation; account funding remains in the EasyParcel Dashboard</p>
-            </div>
-            <div className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800/50 space-y-2">
-              <div className="font-bold text-xs text-neutral-900 dark:text-neutral-100">Postage Calculation Modes</div>
-              <p className="text-[11px] text-neutral-500">Tiered Weight (&gt; min to max kg = RM cost), Quantity (pcs), or Per Order with subsequent rates</p>
-            </div>
-            <div className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800/50 space-y-2">
-              <div className="font-bold text-xs text-neutral-900 dark:text-neutral-100">Smart Routing Engine</div>
-              <p className="text-[11px] text-neutral-500">Peninsular vs East Malaysia postcodes, COD carrier filtering, volumetric weight surge auditing</p>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Fallback for other modular setting views */}
       {!['settings-ai-agent', 'settings-shop', 'settings-points', 'settings-invoice', 'settings-users', 'settings-social', 'settings-courier'].includes(currentSection) && (
         <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-8 shadow-sm text-center space-y-4">

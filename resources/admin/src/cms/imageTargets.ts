@@ -1,3 +1,4 @@
+import {isConnectedFamily,connectedImageTargets} from './connectedFamilies';
 import {isImageFlow} from './imageFlow';
 import {isKnowledgeTriptych} from './knowledgeTriptych';
 import {isFocusedSteps} from './focusedSteps';
@@ -6,7 +7,7 @@ import {isImageHighlights} from './imageHighlights';
 import {isFixedImageCards,fixedImageCardItems} from './imageCardsThree';
 import type {PageSection,SectionImageSlot} from '../types';
 export const imageControlKeys=['mediaAlt','imageRatio','imagePosition','imageFit','imageWidth','imageShape','imageOverlay','imageOverlayOpacity','imageForeground','imageForegroundColor','imageForegroundOpacity'] as const;
-export const imageSlotFamilies=['product_listing','promotion_highlights','shop_navigation','policy_content','chapter_block','cta_strip','hero_banner','hero_slider','split_hero','media_text_split','featured_deal','media_gallery','before_after','instagram_feed','testimonials_slider','logo_cloud','comparison_matrix'] as const;
+export const imageSlotFamilies=['product_listing','promotion_highlights','shop_navigation','policy_content','chapter_block','cta_strip','hero_banner','hero_slider','split_hero','media_text_split','featured_deal','media_gallery','before_after','instagram_feed','testimonials_slider','logo_cloud','comparison_matrix','stats_counter','feature_cards'] as const;
 export interface ImageTarget {id:string;label:string;url:string;geometryLocked:boolean;itemId?:string;field:'mediaUrl'|'beforeImageUrl'|'afterImageUrl'|'imageUrl'|'authorAvatar'}
 function layoutImageTargets(section:PageSection):ImageTarget[] {
  if(section.type==='media_text_split'&&section.layoutPreset==='wide-visual-centered')return [{id:'mediaUrl',field:'mediaUrl',label:'Visual',url:section.mediaUrl??'',geometryLocked:false}];
@@ -38,6 +39,7 @@ export function editableArtworkGeometry(section:PageSection):boolean {return sec
   ||section.type==='hero_banner'&&['corporate-split-composite','corporate-centered-composite'].includes(section.heroBannerPreset??'')
   ||section.type==='cta_strip'&&['illustrated-panel-right','illustrated-panel','editorial-illustrated'].includes(section.ctaPreset??'');}
 export function imageTargets(section:PageSection):ImageTarget[] {
+ if(isConnectedFamily(section))return connectedImageTargets(section).map((t,i)=>({...t,field:t.field as ImageTarget['field'],label:'Image '+(i+1),geometryLocked:false,url:t.itemId?section.items?.find(item=>item.id===t.itemId)?.imageUrl??'':section.mediaUrl??''}));
  return layoutImageTargets(section).map(target=>editableArtworkGeometry(section)&&!target.label.toLowerCase().includes('logo')?{...target,geometryLocked:false}:target);
 }
 

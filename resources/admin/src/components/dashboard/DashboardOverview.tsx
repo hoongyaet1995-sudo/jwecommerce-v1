@@ -420,7 +420,7 @@ export const DashboardOverview: React.FC = () => {
                       <span className="text-xs font-bold text-neutral-900 dark:text-white">{o.orderNumber}</span>
                       <span className="text-[10px] text-neutral-400">• {o.customerName}</span>
                     </div>
-                    <p className="text-[11px] text-neutral-500 dark:text-neutral-400">{o.itemCount} item(s) • {money(o.totalAmount, o.currency, o.currencyExchangeRate)}</p>
+                    <p className="text-[11px] text-neutral-500 dark:text-neutral-400">{o.itemCount} item(s) • {money(o.totalAmount)}</p>
                   </div>
                 </div>
 

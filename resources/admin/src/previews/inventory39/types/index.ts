@@ -1047,6 +1047,7 @@ export interface InventoryModeSwitchAudit {
 }
 
 export interface MarketplaceInventoryItem {
+  variantId?: number | string;
   id: string;
   masterSku: string;
   barcode: string;

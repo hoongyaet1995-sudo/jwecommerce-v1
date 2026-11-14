@@ -1,3 +1,5 @@
+import {isConnectedPage} from '../../cms/connectedPageTemplates';
+import {semanticPaletteVariables} from '../../cms/semanticPalette';
 import {headingCapability,sectionEyebrow,slideEyebrow} from '../../cms/sectionHeading';
 import {isConnectedShowcase} from '../../cms/connectedShowcaseTemplates';
 import {usePublicationReview} from '../search/PublicationReview';
@@ -581,10 +583,11 @@ export const PageAdmin: React.FC = () => {
         ...(['about-editorial','about-studio','about-chapters'].includes(templateId) ? {containerWidth:'standard' as const} : {}),
         style:createPageTemplateStyle(templateId),
     ...((templateId==='wedding-photography'||isConnectedShowcase(templateId))?{containerWidth:'site' as const}:{}),
+        ...(isConnectedPage(templateId)?{containerWidth:'full' as const}:{}),
         ...(templateId==='wedding-photography'?{shellDesign:{business:'service' as const,style:'editorial' as const,appearance:'light' as const,showAnnouncement:false,showAccount:false,showCurrency:false,showThemeSwitch:false,ctaLabel:'',ctaUrl:'',tagline:'',contactEmail:''}}:{}),
         ...(templateId==='beauty-skincare'?{headerPresentation:{mode:'translucent' as const,tone:'dark' as const}}:{}),
         ...(templateId==='everyday-market'?{containerWidth:'wide' as const}:{}),
-        sections:createPageTemplateSections(template.id, {...templateContext,products,categories,collections,promotionOffers}, 'sec-'+stamp)
+        sections:createPageTemplateSections(template.id, {...templateContext,connectedPageDestinations:Object.fromEntries(pages.filter(p=>p.status!=='archived'&&/^jw-connected-/.test(p.slug)).map(p=>[p.slug,'/pages/'+p.slug])),products,categories,collections,promotionOffers}, 'sec-'+stamp)
       };
       const saved = await savePage(newPage);
       if (saved) { templateLoadRequest.current++; setTemplateOpen(false); await hydrateEditor(saved); }
@@ -810,7 +813,7 @@ export const PageAdmin: React.FC = () => {
       />
 
 
-        {templateOpen && <PageTemplateModal context={{...templateContext,products,categories,collections,promotionOffers}} settingsState={templateSettingsState} busy={templateBusy} onClose={handleCloseTemplates} onCreate={handleCreateNewPage}/>}
+        {templateOpen && <PageTemplateModal context={{...templateContext,connectedPageDestinations:Object.fromEntries(pages.filter(p=>p.status!=='archived'&&/^jw-connected-/.test(p.slug)).map(p=>[p.slug,'/pages/'+p.slug])),products,categories,collections,promotionOffers}} settingsState={templateSettingsState} busy={templateBusy} onClose={handleCloseTemplates} onCreate={handleCreateNewPage}/>}
         {/* Header Title & Actions */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
@@ -1425,7 +1428,7 @@ export const PageAdmin: React.FC = () => {
 
         {/* Center Stage: Interactive Live Storefront Canvas */}
         <div ref={canvasScrollRef} data-cms-canvas-scroll className="flex-1 overflow-y-auto p-4 sm:p-8 flex justify-center bg-neutral-200/60 dark:bg-neutral-950/80 scrollbar-thin">
-          <div className={`w-full ${getCanvasWidthClass()} flex flex-col bg-neutral-900 border border-neutral-800 rounded-3xl shadow-2xl ${currentPage.sections.some(s=>s.type==='media_gallery'&&s.galleryPreset==='scroll-stack-cards')?'overflow-clip':'overflow-hidden'} transition-all duration-300 self-start`}>
+          <div style={semanticPaletteVariables(currentPage.style?.palette??adminRuntimePayload.context.themePalette)} className={`w-full ${getCanvasWidthClass()} flex flex-col bg-neutral-900 border border-neutral-800 rounded-3xl shadow-2xl ${currentPage.sections.some(s=>s.type==='media_gallery'&&s.galleryPreset==='scroll-stack-cards')?'overflow-clip':'overflow-hidden'} transition-all duration-300 self-start`}>
             {/* Simulated Storefront Navbar */}
             {(storefrontShellSettings.shellDesign??currentPage.shellDesign) ? <BuilderShellHeader currentPage={currentPage} pages={pages} value={(storefrontShellSettings.shellDesign??currentPage.shellDesign)!} brand={shopSettings.shopName||'JW Studio'} logo={shopSettings.shopLogo} announcement={storefrontShellSettings.enabled?(storefrontShellSettings.zones.center.enabled?storefrontShellSettings.zones.center.text:storefrontShellSettings.zones.left.enabled?storefrontShellSettings.zones.left.text:undefined):undefined} menus={headerMenus} mobile={viewport!=='desktop'} presentation={resolveHeaderPresentation(currentPage.headerPresentation,storefrontShellSettings.headerPresentation,currentPage.sections)}/> : <>            <link rel="stylesheet" href="/css/cms-header-overlay.css"/><div data-builder-header data-mode={resolveHeaderPresentation(currentPage.headerPresentation,storefrontShellSettings.headerPresentation,currentPage.sections).mode} style={viewport==='desktop'&&resolveHeaderPresentation(currentPage.headerPresentation,storefrontShellSettings.headerPresentation,currentPage.sections).mode!=='normal'?{marginBottom:-56,zIndex:40,background:resolveHeaderPresentation(currentPage.headerPresentation,storefrontShellSettings.headerPresentation,currentPage.sections).mode==='translucent'?'rgba(255,255,255,.7)':'transparent',color:resolveHeaderPresentation(currentPage.headerPresentation,storefrontShellSettings.headerPresentation,currentPage.sections).tone==='light'?'#ffffff':'#18181b'}:undefined} className="h-14 px-6 bg-neutral-950 border-b border-neutral-800 flex items-center justify-between text-neutral-300 text-xs">
               <div className="flex items-center gap-4">
@@ -1567,7 +1570,7 @@ export const PageAdmin: React.FC = () => {
         onSetHomepage={setPageAsHomepage}
       />
 
-      {templateOpen && <PageTemplateModal context={{...templateContext,products,categories,collections,promotionOffers}} settingsState={templateSettingsState} busy={templateBusy} onClose={handleCloseTemplates} onCreate={handleCreateNewPage}/>}
+      {templateOpen && <PageTemplateModal context={{...templateContext,connectedPageDestinations:Object.fromEntries(pages.filter(p=>p.status!=='archived'&&/^jw-connected-/.test(p.slug)).map(p=>[p.slug,'/pages/'+p.slug])),products,categories,collections,promotionOffers}} settingsState={templateSettingsState} busy={templateBusy} onClose={handleCloseTemplates} onCreate={handleCreateNewPage}/>}
     </div>
   );
 };

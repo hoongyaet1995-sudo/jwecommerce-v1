@@ -424,8 +424,8 @@ describe('redacted shipment-list client contract', () => {
   it('renders unified status refresh and keeps the per-shipment refresh inside More Actions', () => {
     const parcel = {
       ...redactedParcel,
-      source: 'easyparcel',
-      courier: 'easyparcel',
+      source: 'easyparcel' as const,
+      courier: 'easyparcel' as const,
       trackingNumber: 'AWB-LATEST-STATUS-1001',
       status: 'ready_to_ship' as const,
       lifecycleStage: 'ready_to_ship' as const,
@@ -461,8 +461,8 @@ describe('redacted shipment-list client contract', () => {
   it('uses status reconciliation instead of offering a duplicate booking while an EasyParcel AWB is pending', () => {
     const parcel = {
       ...redactedParcel,
-      source: 'easyparcel',
-      courier: 'easyparcel',
+      source: 'easyparcel' as const,
+      courier: 'easyparcel' as const,
       trackingNumber: '',
       status: 'pending' as const,
       lifecycleStage: 'pending_fulfilment' as const,

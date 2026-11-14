@@ -9,7 +9,7 @@ export function validSaasPricingSection(value:unknown):boolean {
  if(s.items!==undefined&&!Array.isArray(s.items))return false;
  return (s.items??[]).every(item=>{
   if(!item||typeof item!=='object')return false;
-  if(saasItemFields.some(k=>k in item)&&s.type!=='pricing_table')return false;
+  if((saasItemFields.some(k=>k in item)||['annualPrice','annualNote','monthlyNote','includesLabel','planSurface'].some(k=>k in item))&&s.type!=='pricing_table')return false;
   if(item.pricingMode!==undefined&&!['amount','contact'].includes(item.pricingMode))return false;
   if(saasItemFields.some(k=>k in item&&typeof item[k]!=='string'))return false;
   return s.pricingPreset!=='saas-packages'||item.price===undefined||Number.isFinite(item.price)&&item.price>=0;

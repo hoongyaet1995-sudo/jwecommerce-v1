@@ -1,0 +1,3 @@
+import React from 'react';import type {PageSection} from '../../types';
+/** Plain legacy titles remain plain. Semantic primary emphasis is optional and layout-independent. */
+export function SectionTitle({section:s}:{section:PageSection}){let cursor=0;const parts:React.ReactNode[]=[];for(const range of [...(s.titleEmphasis??[])].sort((a,b)=>a.start-b.start)){const {start,end}=range;if(!Number.isInteger(start)||!Number.isInteger(end)||start<cursor||end<=start||end>s.title.length)continue;parts.push(s.title.slice(cursor,start),<span key={start+'-'+end} data-cms-title-emphasis style={{color:'var(--cms-primary, var(--cms-accent, currentColor))'}}>{s.title.slice(start,end)}</span>);cursor=end}return <>{parts}{s.title.slice(cursor)}</>}

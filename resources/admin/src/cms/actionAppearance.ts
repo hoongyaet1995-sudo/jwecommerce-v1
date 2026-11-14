@@ -1,3 +1,5 @@
+import {connectedPassport} from './connectedFamilies';
+import {isUnifiedPricing} from './unifiedPricing';
 import type {PageSection} from '../types';
 import type {PageStyle} from './pageStyle';
 import {onColor} from './pageStyle';
@@ -11,6 +13,8 @@ type ChannelCapability={button:boolean;link:boolean};
 export interface ActionCapability {primary:ChannelCapability;secondary:ChannelCapability;headingOff?:{primary:ChannelCapability;secondary:ChannelCapability}}
 const empty=():ActionCapability=>({primary:{button:false,link:false},secondary:{button:false,link:false}});
 export function actionCapabilities(s:PageSection):ActionCapability {
+ const connected=connectedPassport(s);if(connected)return connected.actions;
+ if(isUnifiedPricing(s))return {primary:{button:true,link:false},secondary:{button:true,link:false}};
  const f=presets[s.type],key=s.type+'|'+(f?s[f]??'default':'default');
  let cap=(matrix as Record<string,ActionCapability>)[key]??empty();
  if(s.showSectionHeading===false&&cap.headingOff)cap=cap.headingOff;

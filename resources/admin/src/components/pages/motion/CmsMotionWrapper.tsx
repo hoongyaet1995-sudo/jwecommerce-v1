@@ -1,15 +1,17 @@
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { motion, useReducedMotion, type Variants } from 'motion/react';
 import { SectionMotionPreset } from '../../../types';
 
 interface SectionMotionContextType {
   preset: SectionMotionPreset;
   isMotionEnabled: boolean;
+  pace: 'smooth' | 'relaxed';
 }
 
 const SectionMotionContext = createContext<SectionMotionContextType>({
   preset: 'subtle-lift',
-  isMotionEnabled: true
+  isMotionEnabled: true,
+  pace: 'smooth'
 });
 
 export const useSectionMotion = () => useContext(SectionMotionContext);
@@ -21,7 +23,7 @@ export const MOTION_PRESET_DETAILS: Record<
 > = {
   'subtle-lift': {
     label: 'Subtle Lift (Default)',
-    desc: 'Gentle 16px upward float + smooth opacity fade (Apple-style natural curve)',
+    desc: 'Reveals after entering the viewport with a gentle 35px lift and smooth fade',
     iconTag: 'Lift'
   },
   'fade-in': {
@@ -47,7 +49,7 @@ export const MOTION_PRESET_DETAILS: Record<
 };
 
 // Container Variants for Orchestrated Cascade Stagger
-const getContainerVariants = (preset: SectionMotionPreset): Variants => {
+const getContainerVariants = (preset: SectionMotionPreset, duration=.8): Variants => {
   if (preset === 'none') {
     return {
       hidden: {},
@@ -64,7 +66,7 @@ const getContainerVariants = (preset: SectionMotionPreset): Variants => {
         visible: {
           opacity: 1,
           transition: {
-            duration: 0.5,
+            duration,
             ease: 'easeOut',
             staggerChildren: stagger,
             delayChildren: 0.04
@@ -78,7 +80,7 @@ const getContainerVariants = (preset: SectionMotionPreset): Variants => {
           opacity: 1,
           scale: 1,
           transition: {
-            duration: 0.52,
+            duration,
             ease: [0.16, 1, 0.3, 1],
             staggerChildren: stagger,
             delayChildren: 0.04
@@ -104,12 +106,12 @@ const getContainerVariants = (preset: SectionMotionPreset): Variants => {
     case 'subtle-lift':
     default:
       return {
-        hidden: { opacity: 0, y: 16 },
+        hidden: { opacity: 0, y: 35 },
         visible: {
           opacity: 1,
           y: 0,
           transition: {
-            duration: 0.5,
+            duration,
             ease: [0.22, 1, 0.36, 1],
             staggerChildren: stagger,
             delayChildren: 0.04
@@ -120,14 +122,14 @@ const getContainerVariants = (preset: SectionMotionPreset): Variants => {
 };
 
 // Item Variants mapping based on preset
-const getItemVariants = (preset: SectionMotionPreset): Variants => {
+const getItemVariants = (preset: SectionMotionPreset, duration=.8): Variants => {
   switch (preset) {
     case 'fade-in':
       return {
         hidden: { opacity: 0 },
         visible: {
           opacity: 1,
-          transition: { duration: 0.55, ease: 'easeOut' }
+          transition: { duration, ease: 'easeOut' }
         }
       };
     case 'smooth-zoom':
@@ -137,7 +139,7 @@ const getItemVariants = (preset: SectionMotionPreset): Variants => {
           opacity: 1,
           scale: 1,
           y: 0,
-          transition: { duration: 0.52, ease: [0.16, 1, 0.3, 1] }
+          transition: { duration, ease: [0.16, 1, 0.3, 1] }
         }
       };
     case 'dynamic-pop':
@@ -162,12 +164,12 @@ const getItemVariants = (preset: SectionMotionPreset): Variants => {
     case 'subtle-lift':
     default:
       return {
-        hidden: { opacity: 0, y: 16 },
+        hidden: { opacity: 0, y: 35 },
         visible: {
           opacity: 1,
           y: 0,
           transition: {
-            duration: 0.5,
+            duration,
             ease: [0.22, 1, 0.36, 1]
           }
         }
@@ -176,7 +178,7 @@ const getItemVariants = (preset: SectionMotionPreset): Variants => {
 };
 
 // Media (Hero / Split Image) Specific Reveal Variants
-const getMediaVariants = (preset: SectionMotionPreset): Variants => {
+const getMediaVariants = (preset: SectionMotionPreset, duration=.8): Variants => {
   if (preset === 'none') {
     return { hidden: {}, visible: {} };
   }
@@ -189,15 +191,18 @@ const getMediaVariants = (preset: SectionMotionPreset): Variants => {
       opacity: 1,
       scale: 1,
       transition: {
-        duration: 0.75,
+        duration,
         ease: [0.22, 1, 0.36, 1]
       }
     }
   };
 };
 
-interface CmsMotionWrapperProps extends React.HTMLAttributes<HTMLDivElement> {
+// Native drag/animation handlers overlap Motion's gesture/lifecycle signatures.
+type MotionSafeDivAttributes = Omit<React.HTMLAttributes<HTMLDivElement>, 'onDrag'|'onDragStart'|'onDragEnd'|'onAnimationStart'>;
+interface CmsMotionWrapperProps extends MotionSafeDivAttributes {
   preset?: SectionMotionPreset;
+  pace?: 'smooth' | 'relaxed';
   replayKey?: string | number;
   isEditingMode?: boolean;
   children: React.ReactNode;
@@ -209,6 +214,7 @@ interface CmsMotionWrapperProps extends React.HTMLAttributes<HTMLDivElement> {
  */
 export const CmsMotionWrapper: React.FC<CmsMotionWrapperProps> = ({
   preset: rawPreset = 'subtle-lift',
+  pace='smooth',
   replayKey,
   isEditingMode = false,
   className = '',
@@ -219,22 +225,28 @@ export const CmsMotionWrapper: React.FC<CmsMotionWrapperProps> = ({
   const preset: SectionMotionPreset = (rawPreset as SectionMotionPreset) || 'subtle-lift';
   const reducedMotion = useReducedMotion();
   const isMotionEnabled = preset !== 'none' && !reducedMotion && typeof IntersectionObserver !== 'undefined';
-  const containerVariants = getContainerVariants(preset);
+  const containerVariants = getContainerVariants(preset,pace==='relaxed'?1.1:.8);
+  const nodeRef=useRef<HTMLDivElement>(null);
+  const [visible,setVisible]=useState(false);
+  const [probeOffsets,setProbeOffsets]=useState<number[]>([0]);
+  useEffect(()=>{const node=nodeRef.current;if(!node||!isMotionEnabled)return;const measure=()=>{const offsets:number[]=[];for(let y=0;y<node.offsetHeight;y+=240)offsets.push(y);setProbeOffsets(offsets.length?offsets:[0])};measure();const resize=typeof ResizeObserver==='undefined'?null:new ResizeObserver(measure);resize?.observe(node);return()=>resize?.disconnect()},[isMotionEnabled]);
+  useEffect(()=>{setVisible(false)},[replayKey]);
+  useEffect(()=>{const node=nodeRef.current;if(!node||!isMotionEnabled||visible)return;let parent=node.parentElement;while(parent&& !/(auto|scroll)/.test(getComputedStyle(parent).overflowY))parent=parent.parentElement;const observer=new IntersectionObserver(entries=>{if(entries.some(e=>e.isIntersecting)){setVisible(true);observer.disconnect()}},{root:parent,threshold:.12,rootMargin:'0px 0px -35px 0px'});node.querySelectorAll('[data-cms-reveal-probe]').forEach(probe=>observer.observe(probe));return()=>observer.disconnect()},[probeOffsets,visible,replayKey,isMotionEnabled]);
 
   return (
-    <SectionMotionContext.Provider value={{ preset, isMotionEnabled }}>
+    <SectionMotionContext.Provider value={{ preset, isMotionEnabled, pace }}>
       {isMotionEnabled ? (
         <motion.div
           key={replayKey}
+          ref={nodeRef}
           initial="hidden"
-          animate={isEditingMode ? 'visible' : undefined}
-          whileInView={isEditingMode ? undefined : 'visible'}
-          viewport={{ once: true, amount: 0.05 }}
+          animate={visible?'visible':'hidden'}
           variants={containerVariants}
           className={className}
-          style={style}
+          style={{position:'relative',...style}}
           {...rest}
         >
+          {probeOffsets.map(top=><span key={top} data-cms-reveal-probe aria-hidden="true" style={{position:'absolute',top,left:0,width:1,height:Math.max(1,Math.min(100,(nodeRef.current?.offsetHeight??100)-top)),pointerEvents:'none'}}/>)}
           {children}
         </motion.div>
       ) : (
@@ -246,7 +258,8 @@ export const CmsMotionWrapper: React.FC<CmsMotionWrapperProps> = ({
   );
 };
 
-interface MotionItemProps extends React.HTMLAttributes<HTMLDivElement> {
+interface MotionItemProps extends MotionSafeDivAttributes {
+  ref?: React.Ref<HTMLDivElement>;
   className?: string;
   delay?: number;
   independentReveal?: boolean;
@@ -265,7 +278,7 @@ export const MotionItem: React.FC<MotionItemProps> = ({
   style,
   ...rest
 }) => {
-  const { preset, isMotionEnabled } = useSectionMotion();
+  const { preset, isMotionEnabled, pace } = useSectionMotion();
 
   if (!isMotionEnabled) {
     return (
@@ -275,11 +288,11 @@ export const MotionItem: React.FC<MotionItemProps> = ({
     );
   }
 
-  const itemVariants = getItemVariants(preset);
+  const itemVariants = getItemVariants(preset,pace==='relaxed'?1.1:.8);
 
   return (
     <motion.div
-      {...(independentReveal ? { initial: 'hidden', animate: 'visible' } : {})}
+      {...(independentReveal ? { initial: 'hidden', whileInView: 'visible', viewport: {once:true,amount:.12,margin:'0px 0px -35px 0px' as const} } : {})}
       variants={itemVariants}
       transition={delay ? { delay } : undefined}
       className={className}
@@ -301,7 +314,7 @@ export const MotionMedia: React.FC<MotionItemProps> = ({
   style,
   ...rest
 }) => {
-  const { preset, isMotionEnabled } = useSectionMotion();
+  const { preset, isMotionEnabled, pace } = useSectionMotion();
 
   if (!isMotionEnabled) {
     return (
@@ -311,7 +324,7 @@ export const MotionMedia: React.FC<MotionItemProps> = ({
     );
   }
 
-  const mediaVariants = getMediaVariants(preset);
+  const mediaVariants = getMediaVariants(preset,pace==='relaxed'?1.1:.8);
 
   return (
     <motion.div
@@ -335,7 +348,7 @@ export const MotionButton: React.FC<MotionItemProps> = ({
   style,
   ...rest
 }) => {
-  const { preset, isMotionEnabled } = useSectionMotion();
+  const { preset, isMotionEnabled, pace } = useSectionMotion();
 
   if (!isMotionEnabled) {
     return (
@@ -345,7 +358,7 @@ export const MotionButton: React.FC<MotionItemProps> = ({
     );
   }
 
-  const itemVariants = getItemVariants(preset);
+  const itemVariants = getItemVariants(preset,pace==='relaxed'?1.1:.8);
 
   return (
     <motion.div
@@ -373,7 +386,7 @@ export const MotionCard: React.FC<MotionItemProps> = ({
   style,
   ...rest
 }) => {
-  const { preset, isMotionEnabled } = useSectionMotion();
+  const { preset, isMotionEnabled, pace } = useSectionMotion();
 
   if (!isMotionEnabled) {
     return (
@@ -383,7 +396,7 @@ export const MotionCard: React.FC<MotionItemProps> = ({
     );
   }
 
-  const itemVariants = getItemVariants(preset);
+  const itemVariants = getItemVariants(preset,pace==='relaxed'?1.1:.8);
 
   return (
     <motion.div

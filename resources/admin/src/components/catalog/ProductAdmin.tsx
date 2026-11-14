@@ -81,7 +81,7 @@ export const ProductAdmin: React.FC = () => {
       }))
     };
     saveProduct(copy);
-    addToast('success', `Product duplicated: ${copy.title}`);
+    addToast({ type: 'success', title: 'Product duplicated', message: `Product duplicated: ${copy.title}` });
   };
 
   if(editorKey){
@@ -291,7 +291,7 @@ export const ProductAdmin: React.FC = () => {
                           {prod.totalInventory} units
                         </span>
                         {isLowStock && (
-                          <AlertTriangle className="w-3 h-3 text-amber-500" title="Low Inventory Warning" />
+                          <AlertTriangle className="w-3 h-3 text-amber-500" {...{ title: "Low Inventory Warning" }} />
                         )}
                       </div>
                     </td>

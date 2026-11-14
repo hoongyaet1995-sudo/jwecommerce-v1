@@ -1,3 +1,5 @@
+import {parseDraftImport} from './pageImport';
+import {connectedLayouts} from './connectedFamilies';
 import {isButtonColors} from './actionAppearance';
 import {builderNavigationHref} from './builderNavigation';
 import {resolvePlanComparison,isPlanComparisonFacts,type PlanComparisonFacts} from './planComparison';
@@ -260,6 +262,7 @@ type PageSectionFieldRule =
 // `satisfies Record<keyof PageSection, ...>` makes a PageSection type change fail compilation
 // until its browser-bootstrap rule is deliberately classified here.
 export const PAGE_SECTION_BOOTSTRAP_FIELD_RULES = {
+ titleEmphasis:{kind:'nested'},connectedLayout:{kind:'optional-enum',values:connectedLayouts},connectedDiagram:{kind:'optional-string'},connectedVisualContext:{kind:'optional-enum',values:['default','commerce','operations','workflow','fulfilment','website']},connectedLayoutMemory:{kind:'nested'},pricingMatrix:{kind:'nested'},itemLayoutMode:{kind:'optional-enum',values:['flow']},motionPace:{kind:'optional-enum',values:['smooth','relaxed']},
  pricingPreset:{kind:'optional-enum',values:['default','saas-packages','plan-comparison']},pricingCurrency:{kind:'optional-string'},
   newsletterPreset:{kind:'optional-enum',values:['default','inline-signup']},
   surface:{kind:'optional-enum',values:['page','light','contrast']},
@@ -477,7 +480,7 @@ const isPageSection = (value: unknown): value is PageSection => {
   if (isRecord(value) && 'galleryPreset' in value && value.type !== 'media_gallery') return false;
   if (isRecord(value) && 'showSectionHeading' in value && !['media_gallery','feature_cards','policy_content','chapter_block','shop_navigation'].includes(String(value.type))) return false;
   if (isRecord(value) && ['ctaPreset','ctaBannerHeight'].some(field=>field in value) && value.type !== 'cta_strip') return false;
-  if(isRecord(value)&&['planName', 'planAmount', 'planCurrency', 'planPeriod', 'planDescription', 'planPricingMode', 'planPriceLabel', 'pricingSourceItemId'].some(k=>k in value)&&value.type!=='faq_accordion' || ['planContentSource','planTerms','pricingSourcePageId','pricingSourceSectionId','pricingSourceTermsSectionId'].some(k=>k in value)&&!['faq_accordion','pricing_table'].includes(String(value.type)))return false;
+  if(isRecord(value)&&(['planName', 'planAmount', 'planCurrency', 'planPeriod', 'planDescription', 'planPricingMode', 'planPriceLabel', 'pricingSourceItemId'].some(k=>k in value)&&value.type!=='faq_accordion' || ['planContentSource','planTerms','pricingSourcePageId','pricingSourceSectionId','pricingSourceTermsSectionId'].some(k=>k in value)&&!['faq_accordion','pricing_table'].includes(String(value.type))))return false;
   if(isRecord(value)&&'mediaContainerMode' in value&&!['media_text_split','media_gallery','chapter_block','policy_content'].includes(String(value.type)))return false;
   if(isRecord(value)&&(['deliverySource','deliveryNote','deliveryDestinationLabel','deliveryEstimateLabel','deliveryFeeLabel'].some(key=>key in value)&&value.type!=='delivery_table'&&value.type!=='chapter_block'||['faqPreset','faqInitiallyOpen'].some(key=>key in value)&&value.type!=='faq_accordion'))return false;
   if(isRecord(value)&&('contactPreset' in value)&&!['contact_form','store_locator'].includes(String(value.type)))return false;
@@ -677,6 +680,13 @@ const isRuntimePayload = (value: unknown): value is PageRuntimePayload => {
     || (value.context.themePalette!==undefined&&!isPalette(value.context.themePalette))
     || (value.context.wishlist !== undefined && (!isRecord(value.context.wishlist) || typeof value.context.wishlist.authenticated !== 'boolean' || typeof value.context.wishlist.csrfToken !== 'string' || !isStringArray(value.context.wishlist.savedProductIds) || value.context.wishlist.loginUrl !== '/account/login'))) {
     return false;
+  }
+
+  // Reuse canonical nested validators with the complete sibling document: pricing
+  // references and connected layout ownership cannot be validated in isolation.
+  if(value.page.document.sections.some(section=>['connectedDiagram','connectedLayout','connectedVisualContext','connectedLayoutMemory','pricingMatrix','titleEmphasis','itemLayoutMode','motionPace'].some(field=>field in section))){
+    try { parseDraftImport(JSON.stringify(value.page.document),value.page.id); }
+    catch { return false; }
   }
 
   return true;

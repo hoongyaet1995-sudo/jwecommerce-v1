@@ -2,6 +2,13 @@ import {describe,expect,it} from 'vitest';
 import {decodeInventoryIntake,encodeInventoryIntake,inventoryIntakeItems} from './inventoryIntake';
 
 describe('inventory intake handoff',()=>{
+  it('preserves caller rows and excludes rows without authoritative product identity',()=>{
+    const anonymous={id:'unlinked',productName:'Unlinked',totalPhysicalStock:12};
+    expect(inventoryIntakeItems([anonymous],[51])).toEqual([]);
+    expect(anonymous).toEqual({id:'unlinked',productName:'Unlinked',totalPhysicalStock:12});
+    const linked={...anonymous,jwProductId:51};
+    expect(inventoryIntakeItems([linked],[51])[0]).toBe(linked);
+  });
   it('persists only JW product identity and never marketplace stock',()=>{
     const encoded=encodeInventoryIntake({productIds:[51,51,52]});
     expect(JSON.parse(encoded)).toEqual({productIds:[51,52]});

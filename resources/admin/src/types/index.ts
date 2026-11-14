@@ -309,6 +309,7 @@ export interface AdminProductReviewPhoto {
 }
 
 export interface AdminProductReview {
+  verifiedBuyer?: boolean;
   id: string;
   productId: string;
   productTitle: string;
@@ -605,6 +606,14 @@ export interface SectionItem {
   sourceId?: string;
   deliveryEstimate?: string;
   deliveryFee?: string;
+  planSurface?: 'paper'|'contrast';
+  annualPrice?: number;
+  annualNote?: string;
+  monthlyNote?: string;
+  includesLabel?: string;
+  layoutGroup?: string;
+  layoutSlot?: string;
+  layoutVariant?: number;
   id: string;
   title: string;
   subtitle?: string;
@@ -691,6 +700,14 @@ export interface PageSection {
   surface?: 'page' | 'light' | 'contrast';
   brandPalette?: BrandPalette;
   motionPreset?: SectionMotionPreset;
+  titleEmphasis?: Array<{start:number;end:number}>;
+  connectedLayout?: 'cards-bento' | 'cards-compact' | 'cards-grid' | 'closing-cta' | 'comparison-narrative' | 'faq-list' | 'hero-centered' | 'hero-split' | 'logo-marquee' | 'metrics-bento' | 'metrics-row' | 'preview-tabs' | 'process-cards' | 'process-orbit' | 'sticky-stack' | 'story-rows' | 'story-split';
+  connectedDiagram?: string;
+  connectedVisualContext?: 'default'|'commerce'|'operations'|'workflow'|'fulfilment'|'website';
+  connectedLayoutMemory?: Record<string,string>;
+  pricingMatrix?: import('../cms/unifiedPricing').PricingMatrixConfig;
+  itemLayoutMode?: 'flow';
+  motionPace?: 'smooth' | 'relaxed';
   id: string;
   type: PageSectionType;
   title: string;
@@ -763,7 +780,7 @@ export interface PageSection {
   marqueeSpeed?: number;
   marqueeDirection?: 'left' | 'right';
   marqueePauseOnHover?: boolean;
-  galleryPreset?: 'staggered-focus-cards'| 'image-cards-three-staggered'|'focused-steps'|'scroll-stack-cards'|'editorial-knowledge-triptych'|'image-flow' | 'connected-feature-rows' | 'image-cards-four-mosaic' | 'image-cards-three' | 'corporate-connections' | 'corporate-illustrated-steps' | 'corporate-scenarios' | 'photo-marquee' | 'default' | 'editorial-montage' | 'editorial-cards' | 'editorial-triptych' | 'portfolio-cards' | 'routine-steps' | 'industrial-mosaic' | 'album-browser' | 'product-preview-tabs';
+  galleryPreset?: 'image-cards-contrast' | 'staggered-focus-cards'| 'image-cards-three-staggered'|'focused-steps'|'scroll-stack-cards'|'editorial-knowledge-triptych'|'image-flow' | 'connected-feature-rows' | 'image-cards-four-mosaic' | 'image-cards-three' | 'corporate-connections' | 'corporate-illustrated-steps' | 'corporate-scenarios' | 'photo-marquee' | 'default' | 'editorial-montage' | 'editorial-cards' | 'editorial-triptych' | 'portfolio-cards' | 'routine-steps' | 'industrial-mosaic' | 'album-browser' | 'product-preview-tabs';
   galleryFilters?: boolean;
   galleryLightbox?: boolean;
   galleryInitialCount?: number;
@@ -1167,6 +1184,7 @@ export interface ChannelSkuMapping {
 }
 
 export interface MarketplaceInventoryItem {
+  warehouseName?: string;
   id: string;
   masterSku: string;
   barcode: string;

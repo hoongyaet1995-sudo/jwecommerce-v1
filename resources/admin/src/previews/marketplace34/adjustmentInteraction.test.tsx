@@ -9,7 +9,7 @@ it.each([false,true])('keeps failed confirmation open and uses the server quanti
  const host=document.createElement('div'); document.body.append(host);
  const root=createRoot(host);
  const onClose=vi.fn();
- const countApi={review:vi.fn().mockResolvedValue({id:'review',physical_count:10,physical_before:null,actor_id:7,atp:null,
+ const countApi={adjustment:vi.fn(),review:vi.fn().mockResolvedValue({id:'review',physical_count:10,physical_before:null,actor_id:7,atp:null,
   basic_wms:basic?{available:8,owned_reserved:0,safety_stock:2,order_coverage_complete:false,platform_write_authorized:false}:null}),
   confirm:vi.fn().mockRejectedValueOnce(new Error('Inventory changed.')).mockResolvedValueOnce(undefined)};
  const item:any={masterSku:'TEST',productName:'Test',physicalStockStatus:'verified',totalPhysicalStock:10,reservedStock:null,safetyStock:null};

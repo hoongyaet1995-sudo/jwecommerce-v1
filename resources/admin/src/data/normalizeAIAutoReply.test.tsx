@@ -10,6 +10,11 @@ const state = vi.hoisted(() => ({ config: null as any }));
 vi.mock('../context/AdminContext', () => ({ useAdmin: () => ({ aiAutoReplyConfig: state.config, updateAIAutoReplyConfig: vi.fn(), addToast: vi.fn() }) }));
 
 describe('AI Studio configuration compatibility', () => {
+  it('keeps a missing personality enable flag disabled and preserves explicit saved choices', () => {
+    expect(DEFAULT_AI_AUTO_REPLY_CONFIG.personality.isEnabled).toBe(false);
+    expect(normalizeAIAutoReplyConfig({personality:{isEnabled:true}}).personality.isEnabled).toBe(true);
+    expect(normalizeAIAutoReplyConfig({personality:{isEnabled:false}}).personality.isEnabled).toBe(false);
+  });
   it('retains saved FAQ records when source defaults contain no demo records', () => {
     const items = [{ id: 'saved', category: 'shipping', question: 'Saved question', answer: 'Saved answer', keywords: [], isActive: true, lastUpdatedAt: '2026-10-03' }];
     expect(normalizeAIAutoReplyConfig({ knowledgeScope: { faqKnowledge: { items } } }).knowledgeScope.faqKnowledge.items).toEqual(items);

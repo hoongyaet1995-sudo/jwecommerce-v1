@@ -1,37 +1,56 @@
 {
-  "_index-BpHBTKn7.js": {
-    "file": "assets/index-BpHBTKn7.js",
+  "../../public/cms/connected/assets/show-photo/connected-platform.png": {
+    "file": "assets/connected-platform-YepqHuFQ.png",
+    "src": "../../public/cms/connected/assets/show-photo/connected-platform.png"
+  },
+  "../../public/cms/connected/assets/show-photo/malaysia-proud.png": {
+    "file": "assets/malaysia-proud-CoWH8gQK.png",
+    "src": "../../public/cms/connected/assets/show-photo/malaysia-proud.png"
+  },
+  "C:/Users/User/.codex/worktrees/cms-integration-release-20261115/jwstudio-ecommerce/public/css/cms-shell-design.css": {
+    "file": "assets/cms-shell-design-BEKk4_z3.css",
+    "src": "C:/Users/User/.codex/worktrees/cms-integration-release-20261115/jwstudio-ecommerce/public/css/cms-shell-design.css"
+  },
+  "_index-C0rVmUMv.js": {
+    "file": "assets/index-C0rVmUMv.js",
     "name": "index",
     "css": [
-      "assets/index-DmgVl-Hs.css"
+      "assets/index-DvW9XB4x.css"
+    ],
+    "assets": [
+      "assets/connected-platform-YepqHuFQ.png",
+      "assets/malaysia-proud-CoWH8gQK.png"
     ]
   },
-  "_index-DmgVl-Hs.css": {
-    "file": "assets/index-DmgVl-Hs.css",
-    "src": "_index-DmgVl-Hs.css"
+  "_index-DvW9XB4x.css": {
+    "file": "assets/index-DvW9XB4x.css",
+    "src": "_index-DvW9XB4x.css"
   },
   "src/main.tsx": {
-    "file": "assets/main-Bz_JaXBh.js",
+    "file": "assets/main-BxANJXY-.js",
     "name": "main",
     "src": "src/main.tsx",
     "isEntry": true,
     "imports": [
-      "_index-BpHBTKn7.js"
+      "_index-C0rVmUMv.js"
     ],
     "dynamicImports": [
       "src/previews/inventory48/Inventory48Runtime.tsx"
     ],
     "css": [
       "assets/main-lwU9mrON.css"
+    ],
+    "assets": [
+      "assets/cms-shell-design-BEKk4_z3.css"
     ]
   },
   "src/previews/inventory48/Inventory48Runtime.tsx": {
-    "file": "assets/Inventory48Runtime-BNp9AY9n.js",
+    "file": "assets/Inventory48Runtime-D3DVJxwF.js",
     "name": "Inventory48Runtime",
     "src": "src/previews/inventory48/Inventory48Runtime.tsx",
     "isDynamicEntry": true,
     "imports": [
-      "_index-BpHBTKn7.js",
+      "_index-C0rVmUMv.js",
       "src/main.tsx"
     ],
     "css": [
@@ -39,12 +58,12 @@
     ]
   },
   "src/public-page.tsx": {
-    "file": "assets/public-page-DDuztQZH.js",
+    "file": "assets/public-page-D8anGFSo.js",
     "name": "public-page",
     "src": "src/public-page.tsx",
     "isEntry": true,
     "imports": [
-      "_index-BpHBTKn7.js"
+      "_index-C0rVmUMv.js"
     ]
   }
 }

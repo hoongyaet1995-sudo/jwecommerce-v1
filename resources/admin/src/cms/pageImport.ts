@@ -1,3 +1,7 @@
+import {connectedFamilyMetadata} from './connectedFamilies';
+import connectedMedia from '../../../cms/connected-media.v1.json';
+import {isUnifiedPricing,validateUnifiedPricingSection} from './unifiedPricing';
+import type {PageSection} from '../types';
 import {validSaasPricingSection} from './saasPackages';
 import contractManifest from '../../../cms/page-contract.v1.json';
 import type { PageDocument } from '../types';
@@ -15,6 +19,9 @@ type ContractSchema = {
   allowUnknownFields?: boolean;
   fields?: Record<string, ContractSchema>;
   items?: ContractSchema;
+  additionalProperties?: ContractSchema;
+  maxItems?: number;
+  maxProperties?: number;
 };
 
 type ContractManifest = {
@@ -231,6 +238,7 @@ const hasPhpCompatibleRawHost = (value: string): boolean => {
 
 const isSafeMediaUrl = (value: string): boolean => {
   if (value === '') return true;
+  if(connectedMedia.includes(value))return true;
   if (MANAGED_MEDIA_PATTERN.test(value)) return true;
   if (/^\/images\/cms\/templates\/connected\/[0-9a-f]{24}\.webp$/.test(value)) return true;
   if (/^\/images\/cms\/saas\/(?:editor|support|calendar|analytics)\.svg$/.test(value)) return true;
@@ -343,6 +351,8 @@ function validateValue(value: unknown, unresolvedSchema: ContractSchema, path: s
     fail(path, 'Media must use a managed asset URL or a safe public HTTPS URL.');
   }
 
+  if (schema.type === 'array' && Array.isArray(value) && schema.maxItems!==undefined && value.length>schema.maxItems) fail(path,'Too many entries.');
+  if(schema.type==='object'&&isObject(value)&&schema.additionalProperties){if(schema.maxProperties!==undefined&&Object.keys(value).length>schema.maxProperties)fail(path,'Too many values.');for(const [key,entry] of Object.entries(value))validateValue(entry,schema.additionalProperties,pathFor(path,key));}
   if (schema.type === 'array' && Array.isArray(value) && schema.items) {
     value.forEach((item, index) => validateValue(item, schema.items!, pathFor(path, index)));
   }
@@ -411,6 +421,8 @@ export function parseDraftImport(raw: string, currentPageId: string): PageDocume
 
   validateValue(parsed, manifest.document, '');
   assertUniqueIds(parsed);
+  (parsed.sections as unknown as PageSection[]).forEach((section,index)=>{if(section.connectedDiagram){const meta=connectedFamilyMetadata[section.connectedDiagram];if(!meta||meta.type!==section.type||meta.layout!==section.connectedLayout)fail('sections.'+index+'.connectedLayout','Choose a matching shared layout.');}let end=0;for(const range of section.titleEmphasis??[]){if(range.start<end||range.end<=range.start||range.end>section.title.length)fail('sections.'+index+'.titleEmphasis','Use ordered non-overlapping title ranges.');end=range.end;}});
+  (parsed.sections as unknown as PageSection[]).forEach((section,index)=>{if(isUnifiedPricing(section)){const errors=validateUnifiedPricingSection(section,parsed.sections as unknown as PageSection[]);if(errors.length)fail('sections.'+index+'.pricingMatrix',errors.join(' '));}});
 
   return structuredClone(parsed) as unknown as PageDocument;
 }

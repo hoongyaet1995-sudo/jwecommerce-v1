@@ -1,0 +1,12 @@
+// @vitest-environment jsdom
+import React,{act} from 'react';
+import {createRoot} from 'react-dom/client';
+import {describe,it,expect} from 'vitest';
+import {UnifiedPricing} from '../components/pages/UnifiedPricing';
+import {pricingSampleSections} from './unifiedPricingSample';
+import {validateUnifiedPricingSection} from './unifiedPricing';
+(globalThis as any).IS_REACT_ACT_ENVIRONMENT=true;
+describe('shared pricing billing and semantic validation',()=>{
+it('synchronizes cards/matrix while keeping page state isolated and authored annual default',async()=>{const sections=pricingSampleSections('shared'),other=pricingSampleSections('other');const host=document.createElement('div');document.body.append(host);const root=createRoot(host);await act(async()=>root.render(<><UnifiedPricing section={sections[0]} sections={sections} pageKey="one"/><UnifiedPricing section={sections[1]} sections={sections} pageKey="one"/><UnifiedPricing section={other[0]} sections={other} pageKey="two"/></>));const widgets=host.querySelectorAll('[data-unified-pricing]');await act(async()=>(widgets[0].querySelectorAll('button')[1] as HTMLButtonElement).click());expect(widgets[0].querySelectorAll('button')[1].getAttribute('aria-pressed')).toBe('true');expect(widgets[1].querySelectorAll('button')[1].getAttribute('aria-pressed')).toBe('true');expect(widgets[2].querySelectorAll('button')[0].getAttribute('aria-pressed')).toBe('true');await act(async()=>root.unmount());sections[0].pricingMatrix!.billing='yearly';const next=createRoot(host);await act(async()=>next.render(<UnifiedPricing section={sections[1]} sections={sections} pageKey="one"/>));expect(host.querySelectorAll('button')[1].getAttribute('aria-pressed')).toBe('true');await act(async()=>next.unmount());host.remove();});
+it('rejects duplicate IDs/missing cells and accepts sparse empty source',()=>{const sections=pricingSampleSections('semantic'),s=sections[0];expect(validateUnifiedPricingSection(s,sections)).toEqual([]);s.items!.push({...s.items![0]});expect(validateUnifiedPricingSection(s,sections)).toContain('Duplicate or empty plan ID');s.items=[];s.pricingMatrix!.groups=[];expect(validateUnifiedPricingSection(s,sections)).toEqual([]);expect(validateUnifiedPricingSection(sections[1],sections)).toEqual([]);s.items=[{id:'new',title:'New'}];s.pricingMatrix!.groups=[{id:'g',title:'Group',rows:[{id:'r',title:'Row',cells:{}}]}];expect(validateUnifiedPricingSection(s,sections)).toContain('Missing plan cell');});
+});

@@ -26,9 +26,11 @@ export const MarketplaceHub: React.FC = () => {
     marketplaceOrders = [],
     marketplaceInventory = [],
     syncLogs = [],
-    triggerChannelSyncAll,
-    isSyncingMarketplace,
+    addToast,
   } = useAdmin();
+
+  const isSyncingMarketplace = false;
+  const triggerChannelSyncAll = () => addToast({type:'info', title:'Unavailable', message:'This operation is not enabled. No changes were made.'});
 
   const safeConns = connections || [];
   const safeMpOrders = marketplaceOrders || [];

@@ -115,7 +115,7 @@ export const NotificationTemplateSettingAdmin: React.FC = () => {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [testSendError, setTestSendError] = useState<string | null>(null);
-  const [operationStatus, setOperationStatus] = useState<'Saved' | 'Reset' | 'Queued' | 'Not connected' | null>(null);
+  const [operationStatus, setOperationStatus] = useState<'Saved' | 'Reset' | 'Queued' | 'Sent' | 'Not connected' | null>(null);
 
   const selectedStatusIdRef = useRef<NotificationEventKey>('order_created');
   const draftGenerationRef = useRef(0);

@@ -16,7 +16,7 @@ import { CourierCode, PickupRequest } from '../../types/shipping';
 interface PickupScheduleModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (request: Omit<PickupRequest, 'id' | 'createdAt'>) => void;
+  onSubmit: (request: Omit<PickupRequest, 'id' | 'createdAt' | 'pickupRefNo'>) => void;
   defaultCourier?: CourierCode;
   selectedParcelCount?: number;
   totalWeightKg?: number;
@@ -53,16 +53,14 @@ export const PickupScheduleModal: React.FC<PickupScheduleModalProps> = ({
       courier,
       pickupDate,
       timeSlot,
-      vehicleType,
-      warehouseLocation,
+      vehicleType: ({ motorbike: 'motorcycle', car_van: 'car', '1_ton_lorry': 'van_1ton', '3_ton_truck': 'lorry_3ton' } as const)[vehicleType],
+      pickupAddress: warehouseLocation,
       totalParcels: parcelCount,
-      estimatedWeightKg: weightKg,
+      totalWeightKg: weightKg,
       status: 'confirmed',
       driverNotes,
-      contactPerson: {
-        name: contactName,
-        phone: contactPhone
-      }
+      contactPerson: contactName,
+      contactPhone
     });
     onClose();
   };

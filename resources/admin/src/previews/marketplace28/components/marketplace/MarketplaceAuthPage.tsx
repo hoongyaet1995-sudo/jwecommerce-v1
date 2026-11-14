@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAdmin } from '../../context/AdminContext';
-import { MarketplacePlatform, MarketplaceConnection } from '../../types';
+import { MarketplacePlatform, MarketplaceConnection, MarketplaceRegion } from '../../types';
 import { SubNavHeader } from '../common/SubNavHeader';
 import { KeyRound, ShieldCheck, CheckCircle2, RefreshCw, Plus, Trash2, Copy, Check, Sliders, Store, Radio, Clock, Globe2, Activity, Zap, Lock } from 'lucide-react';
 
@@ -33,7 +33,7 @@ export const MarketplaceAuthPage: React.FC = () => {
   const [platform, setPlatform] = useState<MarketplacePlatform>('tiktok');
   const [shopName, setShopName] = useState('');
   const [shopId, setShopId] = useState('');
-  const [region, setRegion] = useState('MY');
+  const [region, setRegion] = useState<MarketplaceRegion>('MY');
   const [appKey, setAppKey] = useState('');
   const [appSecret, setAppSecret] = useState('');
   const [autoSyncStock, setAutoSyncStock] = useState(true);
@@ -641,7 +641,7 @@ export const MarketplaceAuthPage: React.FC = () => {
                     </label>
                     <select
                       value={region}
-                      onChange={e => setRegion(e.target.value)}
+                      onChange={e => setRegion(e.target.value as MarketplaceRegion)}
                       className="w-full px-3 py-2 rounded-xl bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 text-neutral-900 dark:text-white font-semibold focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
                     >
                       <option value="MY">Malaysia (MYR)</option>

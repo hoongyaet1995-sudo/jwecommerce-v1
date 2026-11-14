@@ -22,7 +22,7 @@ export const DeveloperSpecs: React.FC = () => {
   const copyToClipboard = (text: string, key: string) => {
     navigator.clipboard.writeText(text);
     setCopiedKey(key);
-    addToast('success', 'Copied to clipboard!');
+    addToast({ type: 'success', title: 'Copied to clipboard!', message: 'Copied to clipboard!' });
     setTimeout(() => setCopiedKey(null), 2500);
   };
 

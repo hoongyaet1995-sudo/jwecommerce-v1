@@ -36,6 +36,7 @@ final class PageDocumentContract
             $ids = array_column($section['productTabs'] ?? [],'id');
             if (count($ids) !== count(array_unique($ids))) $this->addError($errors,"sections.{$index}.productTabs",'Use a unique ID for each tab.');
         }
+        if ($errors === []) $errors=ConnectedPageContracts::errors($document);
         if ($errors !== []) throw ValidationException::withMessages($errors);
         return $document;
     }
@@ -269,6 +270,11 @@ final class PageDocumentContract
             }
         }
 
+        if (($schema['type'] ?? null) === 'array' && isset($schema['maxItems']) && count($value)>$schema['maxItems']) $this->addError($errors,$path,'Too many entries.');
+        if (($schema['type'] ?? null) === 'object' && isset($schema['additionalProperties'])) {
+            if (isset($schema['maxProperties']) && count((array)$value)>$schema['maxProperties']) $this->addError($errors,$path,'Too many values.');
+            foreach ((array)$value as $key=>$entry) $this->validateValue($entry,$schema['additionalProperties'],$this->path($path,(string)$key),$errors);
+        }
         if (($schema['type'] ?? null) === 'array') {
             foreach ($value as $index => $item) {
                 $this->validateValue($item, $schema['items'], $this->path($path, (string) $index), $errors);
@@ -333,7 +339,7 @@ final class PageDocumentContract
         if (isset($value['pricingCurrency']) && is_string($value['pricingCurrency']) && !preg_match('/^[A-Z]{3}$/', $value['pricingCurrency'])) $this->addError($errors,$path.'.pricingCurrency','Use a three-letter uppercase currency.');
         foreach (is_array($value['items'] ?? null) ? $value['items'] : [] as $i => $item) {
             if (!is_array($item)) continue;
-            foreach (['pricingMode','pricingLabel','billingLabel','highlightLabel'] as $field) if (array_key_exists($field,$item) && $value['type'] !== 'pricing_table') $this->addError($errors,$path.'.items.'.$i.'.'.$field,'This field belongs to pricing plans.');
+            foreach (['pricingMode','pricingLabel','billingLabel','highlightLabel','annualPrice','annualNote','monthlyNote','includesLabel','planSurface'] as $field) if (array_key_exists($field,$item) && $value['type'] !== 'pricing_table') $this->addError($errors,$path.'.items.'.$i.'.'.$field,'This field belongs to pricing plans.');
             if (($value['pricingPreset'] ?? '') === 'saas-packages' && isset($item['price']) && $item['price'] < 0) $this->addError($errors,$path.'.items.'.$i.'.price','Enter a nonnegative price.');
         }
         $this->validateImageSlots($value, $path, $errors);
@@ -378,6 +384,13 @@ final class PageDocumentContract
         if (($type === 'hero_banner' && in_array($section['heroBannerPreset'] ?? '', ['corporate-split-composite','corporate-centered-composite'], true))
             || ($type === 'cta_strip' && in_array($section['ctaPreset'] ?? '', ['illustrated-panel','editorial-illustrated'], true))) {
             $targets['mediaUrl'] = false;
+        }
+        if (isset($section['connectedDiagram'])) {
+            // Compiled connected layouts own their declared canonical media and retained item images.
+            if (array_key_exists('mediaUrl',$section)) $targets['mediaUrl']=false;
+            foreach ($section['items']??[] as $item) { $item=$item instanceof stdClass?get_object_vars($item):$item;
+                if(is_array($item)&&isset($item['id'])&&array_key_exists('imageUrl',$item))$targets['item:'.$item['id'].':imageUrl']=false;
+            }
         }
         $seen = [];
         foreach ($section['imageSlots'] as $index => $slot) {

@@ -353,6 +353,7 @@ export interface MarketplaceStoreProduct {
   variants: MarketplaceStoreVariant[];
 }
 export interface MarketplaceInventoryItem {
+  warehouseName?: string;
   id: string;
   masterSku: string;
   barcode: string;

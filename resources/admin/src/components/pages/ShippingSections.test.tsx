@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import type {PageSection} from '../../types';
 import React,{act} from 'react';
 import {createRoot} from 'react-dom/client';
 import {it,expect,afterEach} from 'vitest';
@@ -21,7 +22,7 @@ it('renders live rates, usable FAQ controls and the scoped process entries',()=>
  act(()=>root.unmount());
 });
 it('edits and reorders manual delivery rows while preserving IDs',()=>{
- let section={...shippingEditorialSections('test')[2],deliverySource:'manual' as const,items:[{id:'one',title:'One',deliveryEstimate:'A',deliveryFee:'B'},{id:'two',title:'Two',deliveryEstimate:'C',deliveryFee:'D'}]};
+ let section:PageSection={...shippingEditorialSections('test')[2],deliverySource:'manual' as const,items:[{id:'one',title:'One',deliveryEstimate:'A',deliveryFee:'B'},{id:'two',title:'Two',deliveryEstimate:'C',deliveryFee:'D'}]};
  const node=document.createElement('div');document.body.append(node);const root=createRoot(node);
  const render=()=>root.render(<ShippingContentSettings section={section} onChange={patch=>{section={...section,...patch};render();}}/>);
  act(render);const up=[...node.querySelectorAll('button')].find(button=>button.textContent==='Up')!;

@@ -1,0 +1,1904 @@
+{
+  "title": "Commerce pricing",
+  "slug": "commerce-pricing",
+  "template": "standard",
+  "headerPresentation": {
+    "mode": "normal",
+    "tone": "light"
+  },
+  "sections": [
+    {
+      "id": "canonical-pricing-plans",
+      "type": "pricing_table",
+      "isVisible": true,
+      "title": "Plans built around your business",
+      "pricingPreset": "saas-packages",
+      "pricingCurrency": "MYR",
+      "items": [
+        {
+          "id": "canonical-pricing-plan-1",
+          "title": "Starter",
+          "description": "Website, commerce and customer support",
+          "price": 299,
+          "pricingMode": "amount",
+          "pricingLabel": "On request",
+          "billingLabel": "/ month",
+          "features": [
+            "Editable business website",
+            "Product and service catalogue",
+            "Purchase and quotation paths",
+            "Customer support workspace",
+            "Agreed usage allowances"
+          ],
+          "buttonText": "Ask for Plan",
+          "linkUrl": "mailto:sales@jwaistudio.online",
+          "isHighlighted": false,
+          "highlightLabel": "Most popular",
+          "monthlyNote": "Monthly plan · scope and usage agreed",
+          "annualNote": "Annual terms and scope by quotation",
+          "planSurface": "paper"
+        },
+        {
+          "id": "canonical-pricing-plan-2",
+          "title": "Growth",
+          "description": "Starter, plus AI assistance",
+          "price": 399,
+          "pricingMode": "amount",
+          "pricingLabel": "On request",
+          "billingLabel": "/ month",
+          "features": [
+            "Everything in Starter",
+            "Business-aware AI assistance",
+            "Human takeover controls",
+            "Supported authorized channels",
+            "Agreed AI usage"
+          ],
+          "buttonText": "Ask for Plan",
+          "linkUrl": "mailto:sales@jwaistudio.online",
+          "isHighlighted": false,
+          "highlightLabel": "Most popular",
+          "monthlyNote": "Monthly plan · scope and usage agreed",
+          "annualNote": "Annual terms and scope by quotation",
+          "includesLabel": "Built around your next stage",
+          "planSurface": "paper"
+        },
+        {
+          "id": "canonical-pricing-plan-3",
+          "title": "Enterprise",
+          "description": "More stores, teams and modules",
+          "pricingMode": "contact",
+          "pricingLabel": "Let’s talk",
+          "billingLabel": "/ month",
+          "features": [
+            "Deployment scope review",
+            "Additional teams and stores",
+            "Module planning",
+            "Provider permissions",
+            "Agreed usage allowances",
+            "Deployment scope review"
+          ],
+          "buttonText": "Ask for Plan",
+          "linkUrl": "mailto:sales@jwaistudio.online",
+          "isHighlighted": true,
+          "highlightLabel": "Most popular",
+          "monthlyNote": "A project scope built around you",
+          "annualNote": "Annual terms and scope by quotation",
+          "includesLabel": "Built around your next stage",
+          "planSurface": "paper"
+        },
+        {
+          "id": "canonical-pricing-plan-4",
+          "title": "Custom",
+          "description": "A workflow built around your business",
+          "pricingMode": "contact",
+          "pricingLabel": "By scope",
+          "billingLabel": "/ month",
+          "features": [
+            "Workflow discovery",
+            "Business rules and permissions",
+            "Integration planning",
+            "A bounded first phase",
+            "Review before rollout"
+          ],
+          "buttonText": "Ask for Plan",
+          "linkUrl": "mailto:sales@jwaistudio.online",
+          "isHighlighted": false,
+          "highlightLabel": "Most popular",
+          "monthlyNote": "A project scope built around you",
+          "annualNote": "Annual terms and scope by quotation",
+          "includesLabel": "Built around your next stage",
+          "planSurface": "contrast"
+        }
+      ],
+      "pricingMatrix": {
+        "enabled": true,
+        "view": "cards",
+        "groups": [
+          {
+            "id": "canonical-pricing-group-1",
+            "title": "Plan features",
+            "rows": [
+              {
+                "id": "canonical-pricing-row-1",
+                "title": "Monthly plan",
+                "source": "price",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "text",
+                    "value": "RM299"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "text",
+                    "value": "RM399"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "Let’s talk"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-2",
+                "title": "Renewal terms",
+                "source": "renewal",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "text",
+                    "value": "RM299"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "text",
+                    "value": "RM399"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "Let’s talk"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-3",
+                "title": "AI Support (Point of Sale)",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "id": "canonical-pricing-group-2",
+            "title": "Marketing Studio",
+            "rows": [
+              {
+                "id": "canonical-pricing-row-4",
+                "title": "Marketing Studio module",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-5",
+                "title": "Monthly Payment",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-6",
+                "title": "AI usage allowance",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-7",
+                "title": "Team access",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-8",
+                "title": "Provider usage scope",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "id": "canonical-pricing-group-3",
+            "title": "Marketplace sync",
+            "rows": [
+              {
+                "id": "canonical-pricing-row-9",
+                "title": "TikTok Shop, Shopee and Lazada integration",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-10",
+                "title": "Multi-seller account",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-11",
+                "title": "Product and inventory sync",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-12",
+                "title": "Order sync and AWB download",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "id": "canonical-pricing-group-4",
+            "title": "Payment gateway",
+            "rows": [
+              {
+                "id": "canonical-pricing-row-13",
+                "title": "Payment gateway integration",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-14",
+                "title": "Buy Now, Pay Later integration",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-15",
+                "title": "Cash deposit with payment-proof upload",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "id": "canonical-pricing-group-5",
+            "title": "Shipping and courier",
+            "rows": [
+              {
+                "id": "canonical-pricing-row-16",
+                "title": "Shipping integration Connected directly to your courier account",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-17",
+                "title": "Express delivery integration Connected directly to your delivery account",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-18",
+                "title": "Shipping charge settings Flat rate, weight-based and quantity-based",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-19",
+                "title": "Store pickup",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "id": "canonical-pricing-group-6",
+            "title": "Online store features",
+            "rows": [
+              {
+                "id": "canonical-pricing-row-20",
+                "title": "Professional customized design",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-21",
+                "title": "Mobile-responsive layout",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-22",
+                "title": "Product categories",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-23",
+                "title": "Product upload Plan can be upgraded when the limit is reached",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-24",
+                "title": "Multiple product images",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-25",
+                "title": "Product variations For example: size and colour",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-26",
+                "title": "Product search suggestions",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-27",
+                "title": "Additional product features Discount pricing, recommendations, reviews, grouping, styling, sharing, YouTube embeds, tags and more",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-28",
+                "title": "Registered or guest quick checkout",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-29",
+                "title": "Newsletter subscribers",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-30",
+                "title": "Multiple currencies",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "id": "canonical-pricing-group-7",
+            "title": "Marketing features",
+            "rows": [
+              {
+                "id": "canonical-pricing-row-31",
+                "title": "Voucher discounts",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-32",
+                "title": "Combo discounts",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-33",
+                "title": "Discount countdown",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-34",
+                "title": "Quantity bulk discounts",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-35",
+                "title": "Gift-wrap option",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-36",
+                "title": "Free-shipping spending bar",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-37",
+                "title": "Recent-purchase popup message",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-38",
+                "title": "Promotion countdown",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-39",
+                "title": "Reward points Collect, redeem and registration rewards",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-40",
+                "title": "Store credit Including credit issued for refunds",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-41",
+                "title": "Group price settings Different selling prices for multiple customer groups",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-42",
+                "title": "Pre-order settings",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-43",
+                "title": "Abandoned-cart tools",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-44",
+                "title": "Free-gift offers",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-45",
+                "title": "Stock reminders",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-46",
+                "title": "Product video playback",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-47",
+                "title": "Shopping-cart product suggestions",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-48",
+                "title": "Add-on and cross-sell sets Family sets and group sets",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-49",
+                "title": "Minimum-cart purchase discount",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-50",
+                "title": "Purchase-with-purchase promotions Percentage discounts and buy-one-free-one offers",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-51",
+                "title": "Bundle group purchases Special pricing for selected product combinations",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "id": "canonical-pricing-group-8",
+            "title": "Landing page features",
+            "rows": [
+              {
+                "id": "canonical-pricing-row-52",
+                "title": "Dynamic content pages",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-53",
+                "title": "Banner uploads Main, subpage and category banners",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-54",
+                "title": "Popup banners",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-55",
+                "title": "Mobile-view banners",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-56",
+                "title": "Promotional sticky banners",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-57",
+                "title": "Blog",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-58",
+                "title": "Store locator",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-59",
+                "title": "TikTok and Facebook Pixel / Conversion API",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-60",
+                "title": "Facebook catalogue",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-61",
+                "title": "Newsletter integration Mailchimp, GetResponse, AWeber and others",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-62",
+                "title": "Live chat integration WhatsApp Chat, Zendesk, LiveChat and others",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-63",
+                "title": "GA4 ecommerce tracking",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-64",
+                "title": "Google Tag Manager",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "id": "canonical-pricing-group-9",
+            "title": "SEO features",
+            "rows": [
+              {
+                "id": "canonical-pricing-row-65",
+                "title": "Search-friendly URL settings",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-66",
+                "title": "Meta title and description settings",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-67",
+                "title": "AI SEO generator",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "id": "canonical-pricing-group-10",
+            "title": "Domain and hosting services",
+            "rows": [
+              {
+                "id": "canonical-pricing-row-68",
+                "title": "Free domain .com or .com.my",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-69",
+                "title": "Storage",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-70",
+                "title": "Monthly bandwidth",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-71",
+                "title": "SSL certificate",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "id": "canonical-pricing-group-11",
+            "title": "Training and support",
+            "rows": [
+              {
+                "id": "canonical-pricing-row-72",
+                "title": "Training and Q&A",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-73",
+                "title": "Email and phone support",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              },
+              {
+                "id": "canonical-pricing-row-74",
+                "title": "Emergency support",
+                "source": "cells",
+                "cells": {
+                  "canonical-pricing-plan-1": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-2": {
+                    "type": "unavailable",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-3": {
+                    "type": "text",
+                    "value": "By scope"
+                  },
+                  "canonical-pricing-plan-4": {
+                    "type": "text",
+                    "value": "By scope"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "canonical-pricing-comparison",
+      "type": "pricing_table",
+      "isVisible": true,
+      "title": "Compare every feature",
+      "pricingPreset": "plan-comparison",
+      "pricingCurrency": "MYR",
+      "items": [],
+      "pricingMatrix": {
+        "enabled": true,
+        "view": "matrix",
+        "sourceSectionId": "canonical-pricing-plans",
+        "groups": []
+      }
+    }
+  ]
+}

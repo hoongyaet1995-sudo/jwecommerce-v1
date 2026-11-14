@@ -13,7 +13,7 @@ export function connectedShowcaseStyle(id:ShowcaseId):PageStyle{return structure
 export function connectedShowcaseSections(id:ShowcaseId,context:PageTemplateContext,prefix:string):PageSection[]{
  const sections=structuredClone(snapshots[id].sections) as PageSection[];
  const sectionIds=new Map(sections.map((s,i)=>[s.id,`${prefix}-section-${i+1}`]));
- const closing=sections.findLast(s=>s.type==='cta_strip');
+ const closing=[...sections].reverse().find(s=>s.type==='cta_strip');
  const closingId=closing?.id;
  const contact=closingId?`#section-${sectionIds.get(closingId)}`:'#storefront-support-widget';
  const brand=context.shopName?.trim()||'Your business';

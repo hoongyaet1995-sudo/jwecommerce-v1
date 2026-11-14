@@ -189,7 +189,7 @@ export const MarketplaceInventoryPage: React.FC<{intakeProductIds?:number[]}> = 
   const countConfirmed=React.useRef(false);
   useEffect(()=>{
     if(!intakeActive||!intakeProductIds.length||!safeMpInv.length||intakeQueue.length||adjustModalItem)return;
-    const imported=inventoryIntakeItems(safeMpInv,intakeProductIds);
+    const imported=inventoryIntakeItems<MarketplaceInventoryItem>(safeMpInv,intakeProductIds);
     if(!imported.length)return;
     const names=Array.from(new Set(imported.map(item=>item.productName)));
     setSearchQuery(names.length===1?names[0]:'');

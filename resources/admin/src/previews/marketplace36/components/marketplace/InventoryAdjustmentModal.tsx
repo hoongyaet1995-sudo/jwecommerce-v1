@@ -63,7 +63,7 @@ export const InventoryAdjustmentModal: React.FC<InventoryAdjustmentModalProps> =
     : (item?.totalPhysicalStock ?? 0);
 
   const currentReserved = currentWarehouseBalance
-    ? currentWarehouseBalance.reserved
+    ? currentWarehouseBalance.reservedStock
     : (item?.reservedStock ?? 0);
 
   const currentSafety = currentWarehouseBalance

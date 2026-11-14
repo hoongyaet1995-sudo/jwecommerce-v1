@@ -1,0 +1,26 @@
+[
+  {
+    "file": "resources/admin/src/previews/supportOriginal/types/support.ts",
+    "reason": "Independent unshipped preview; keep compiler repair local rather than promote whole unfinished preview"
+  },
+  {
+    "file": "resources/admin/src/previews/reportsBusiness/Sample.tsx",
+    "reason": "Independent unshipped preview; keep compiler repair local rather than promote whole unfinished preview"
+  },
+  {
+    "file": "resources/admin/src/cms/jwCmsPlanAudit.test.tsx",
+    "reason": "Local diagnostic harness depends on local inspection artifacts; not part of production runtime"
+  },
+  {
+    "file": "resources/admin/src/cms/jwCmsIntegrationAudit.test.tsx",
+    "reason": "Local diagnostic harness depends on local inspection artifacts; not part of production runtime"
+  },
+  {
+    "file": "resources/admin/src/cms/controlsPassportScan.test.tsx",
+    "reason": "Local diagnostic harness depends on local inspection artifacts; not part of production runtime"
+  },
+  {
+    "file": "resources/admin/src/cms/controlConsumerAudit.test.tsx",
+    "reason": "Local diagnostic harness depends on local inspection artifacts; not part of production runtime"
+  }
+]

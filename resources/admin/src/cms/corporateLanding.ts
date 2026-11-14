@@ -14,7 +14,7 @@ export function corporateLandingSections(prefix:string,photo=''):PageSection[]{
 export function corporateGrowthSections(prefix:string,photos:{support?:string;marketing?:string}={}):PageSection[]{
  const base=corporateLandingSections(prefix)[2];
  const item=(key:string,title:string,icon:string,category='benefit')=>({id:prefix+'-'+key,title,description:'',icon,category});
- return [
+ const sections:PageSection[]=[
  {...structuredClone(base),id:prefix+'-support',layoutPreset:'corporate-support',mediaPosition:'right',mediaUrl:photos.support??'',mediaAlt:'Illustrative support specialist assisting customers in a bright office',subtitle:'AI CUSTOMER SUPPORT',title:'Every conversation.\nA clearer next step.',content:'Bring customer conversations together, with AI assistance and your team in control.',buttonText:'Explore Multichannel AI Chat',buttonLink:'/pages/multichannel-ai-chat',secondaryButtonText:'Explore Website AI Chat',secondaryButtonLink:'/pages/website-ai-chat',items:[
   item('support-benefit-1','Shared conversations','MessageCircle'),item('support-benefit-2','Business-aware AI assistance','Sparkles'),item('support-benefit-3','Human takeover when needed','Users'),
   item('channel-website','Website','Globe','channel'),item('channel-facebook','Facebook','MessageCircle','channel'),item('channel-instagram','Instagram','Camera','channel'),item('channel-whatsapp','WhatsApp','Phone','channel'),item('channel-tiktok','TikTok','AudioLines','channel'),
@@ -24,7 +24,7 @@ export function corporateGrowthSections(prefix:string,photos:{support?:string;ma
   item('marketing-benefit-1','AI-assisted copy and creative','Sparkles'),item('marketing-benefit-2','Channel-specific content drafts','Layers'),item('marketing-benefit-3','Separate generation and publishing controls','ArrowLeftRight'),
   item('marketing-step-1','Business sources','FileText','workflow'),item('marketing-step-2','AI drafts','Sparkles','workflow'),item('marketing-step-3','Team review','Users','workflow'),item('marketing-step-4','Schedule','Calendar','workflow'),item('marketing-caption','Create with AI. Publish with control.','None','caption')
  ]}
- ].map(section=>({...section,layoutPreset:'corporate-image-story' as const,items:section.items.filter(item=>item.category==='benefit')}));
+ ];return sections.map(section=>({...section,layoutPreset:'corporate-image-story' as const,items:section.items.filter(item=>item.category==='benefit')}));
 }
 
 export function corporatePaymentSection(prefix:string,photo='',logoUrls:string[]=[]):PageSection{

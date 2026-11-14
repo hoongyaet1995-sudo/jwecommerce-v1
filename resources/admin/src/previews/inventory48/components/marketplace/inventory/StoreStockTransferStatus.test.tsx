@@ -67,7 +67,7 @@ it('shows an uncounted JW location as Not counted and blocks transfer',async()=>
     stores={[{id:'website',name:'JW Storefront',platform:'webstore',platformDisplayName:'JW Storefront'} as any,
       {id:'4',name:'Lazada Test',platform:'lazada',platformDisplayName:'Lazada'} as any]}
     storeBalances={{UNC:{website:{physicalStock:0,reservedStock:0,availableStock:0,isCounted:false}}} as any}
-    transfersList={[]} onExecuteTransfer={vi.fn()} />));
+    transfersList={[]} onCheckTransferStatus={vi.fn()} onRetryPlatformSync={vi.fn()} onExecuteTransfer={vi.fn()} />));
   await act(async()=>{await Promise.resolve();await Promise.resolve()});
   expect(host.textContent).toContain('Not counted');
   const execute=[...host.querySelectorAll('button')].find(button=>button.textContent?.includes('Execute Stock Transfer'))!;

@@ -40,7 +40,7 @@ it('uses a new request identity when a duplicate-risk recovery authorization was
  expect(submitLazadaReview).toHaveBeenCalledWith(expect.objectContaining({
   recoveryAuthorizationId:recovered.recoveryAuthorizationId,
  }));
- const newRequestKey=(submitLazadaReview.mock.calls[0][0] as {requestKey:string}).requestKey;
+ const newRequestKey=(vi.mocked(submitLazadaReview).mock.calls[0][0] as {requestKey:string}).requestKey;
  expect(newRequestKey).not.toBe('9285db80-1111-4111-8111-123456789012');
  vi.mocked(marketplaceOperations.recoverPublishingTask).mockResolvedValue({id:6,productId:4,status:'uncertain'} as never);
  expect(await publishLazadaWithRecovery('2',recovered)).toBe('6');
@@ -61,5 +61,5 @@ it('lets a user replace only a server-confirmed missing request before submittin
  vi.mocked(submitLazadaReview).mockResolvedValue('8');
  expect(await publishLazadaWithRecovery('2',changedInput)).toBe('8');
  expect(submitLazadaReview).toHaveBeenCalledWith(expect.objectContaining({categoryId:'12'}));
- expect((submitLazadaReview.mock.calls[0][0] as {requestKey:string}).requestKey).not.toBe('missing-request');
+ expect((vi.mocked(submitLazadaReview).mock.calls[0][0] as {requestKey:string}).requestKey).not.toBe('missing-request');
 });

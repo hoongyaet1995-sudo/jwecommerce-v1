@@ -363,7 +363,7 @@ export const CorrectFulfilmentModal: React.FC<CorrectFulfilmentModalProps> = ({
                   {parcel.status.replace(/_/g, ' ')}
                 </span>
                 <span className="text-[10px] text-neutral-400 block">
-                  {parcel.isAwaitingReplacement ? 'Awaiting replacement' : 'Active attempt'}
+                  {parcel.activeCorrection?.status === 'awaiting_replacement' ? 'Awaiting replacement' : 'Active attempt'}
                 </span>
               </div>
 

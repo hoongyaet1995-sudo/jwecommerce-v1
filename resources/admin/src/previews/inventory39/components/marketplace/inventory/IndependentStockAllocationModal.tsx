@@ -341,7 +341,7 @@ export const IndependentStockAllocationModal: React.FC<IndependentStockAllocatio
                       : 'Allocate Stock'}
                   </h3>
                   <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700">
-                    {mode === 'shared' ? 'Shared Stock' : 'Independent Stock'}
+                    Independent Stock
                   </span>
                   <span className="text-[11px] text-neutral-400">
                     Step {step === 'input' ? '1 of 3: Count & Allocate' : step === 'review' ? '2 of 3: Review' : '3 of 3: Success'}
@@ -786,7 +786,7 @@ export const IndependentStockAllocationModal: React.FC<IndependentStockAllocatio
                                   onNavigateToSkuMapping();
                                 } else {
                                   // Quick simulation toggle
-                                  setUnmappedStores(prev => ({ ...prev, [st.id]: false }));
+                                  // Mapping remains unchanged until the mapping workflow persists it.
                                 }
                               }}
                               className="px-2 py-0.5 rounded border border-amber-500/30 hover:bg-amber-500/20 text-amber-600 dark:text-amber-300 font-semibold cursor-pointer shrink-0"

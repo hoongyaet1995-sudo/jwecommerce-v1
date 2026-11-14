@@ -156,7 +156,7 @@ export const StoreWarehouseBindingTab: React.FC<StoreWarehouseBindingTabProps> =
                             {wh ? wh.name : binding.boundWarehouseName}
                           </p>
                           <p className="text-[11px] text-neutral-500 font-mono">
-                            {wh ? `${wh.code} • ${typeof wh.address === 'string' ? wh.state || 'Location not configured' : [wh.address?.city, wh.address?.state].filter(Boolean).join(', ') || 'Location not configured'}` : binding.boundWarehouseCode}
+                            {wh ? `${wh.code} • ${typeof wh.address === 'string' ? wh.state || 'Location not configured' : [(typeof wh.address === 'string' ? undefined : wh.address?.city), (typeof wh.address === 'string' ? undefined : wh.address?.state)].filter(Boolean).join(', ') || 'Location not configured'}` : binding.boundWarehouseCode}
                           </p>
                         </div>
                       </div>

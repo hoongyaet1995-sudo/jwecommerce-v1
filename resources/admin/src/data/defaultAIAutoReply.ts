@@ -15,6 +15,7 @@ export const DEFAULT_AI_AUTO_REPLY_CONFIG: AIAutoReplyMasterConfig = {
     lazadaChat: false
   },
   personality: {
+    isEnabled: false,
     botName: 'JW AI Concierge & Stylist',
     avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80',
     roleTitle: 'Official JW Studio E-Commerce Stylist & Customer Care Specialist',

@@ -456,7 +456,7 @@ export const SmartRoutingTab: React.FC<SmartRoutingTabProps> = ({
           </table>
         </div>
       </div>
-      <DeleteConfirmationModal isOpen={!!ruleToDelete} itemType="Smart Routing Rule" itemName={ruleToDelete?.name} itemDetails={ruleToDelete ? `Priority Rank: #${ruleToDelete.priority} • Target Carrier: ${couriers.find(courier => courier.code === ruleToDelete.courierCode)?.name || ruleToDelete.courierCode}` : undefined} warningMessage={`Deleting "${ruleToDelete?.name}" stops this automated courier selection rule.`} impactItems={['Checkout will no longer use this routing decision.', 'Other routing rules continue in their configured priority order.']} confirmButtonText="Delete Routing Rule" onConfirm={() => { if (ruleToDelete) { onDeleteRule(ruleToDelete.id); setRuleToDelete(null); } }} onClose={() => setRuleToDelete(null)} />
+      <DeleteConfirmationModal isOpen={!!ruleToDelete} itemType="Smart Routing Rule" itemName={ruleToDelete?.name} itemDetails={ruleToDelete ? `Priority Rank: #${ruleToDelete.priority} • Target Carrier: ${couriers.find(courier => courier.courierCode === ruleToDelete.action.preferredCourier)?.name || ruleToDelete.action.preferredCourier}` : undefined} warningMessage={`Deleting "${ruleToDelete?.name}" stops this automated courier selection rule.`} impactItems={['Checkout will no longer use this routing decision.', 'Other routing rules continue in their configured priority order.']} confirmButtonText="Delete Routing Rule" onConfirm={() => { if (ruleToDelete) { onDeleteRule(ruleToDelete.id); setRuleToDelete(null); } }} onClose={() => setRuleToDelete(null)} />
     </div>
   );
 };

@@ -354,7 +354,7 @@ const markOrderPacked = (orderId: string, packedBy: string) => {
             channelStatus: 'READY_TO_SHIP',
             packedBy: packedBy || 'Warehouse Staff',
             scannedItemsCount: o.items.reduce((sum, item) => sum + item.quantity, 0),
-            fulfillmentStatus: 'processing',
+            fulfillmentStatus: 'processing' as const,
             timeline: [
               {
                 id: `evt-${Date.now()}`,

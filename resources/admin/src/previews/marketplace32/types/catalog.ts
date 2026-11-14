@@ -41,7 +41,7 @@ export interface MarketplaceStoreProduct {
   title: string;
   imageUrl: string;
   categoryName: string;
-  status: 'active' | 'inactive' | 'delisted';
+  status: 'active' | 'inactive' | 'delisted' | 'unknown';
   updatedAt: string;
   variants: MarketplaceStoreVariant[];
 }

@@ -1,3 +1,5 @@
+import {isConnectedFamily,connectedItemFields} from './connectedFamilies';
+import {isUnifiedPricing,unifiedPricingPassport} from './unifiedPricing';
 import {isWideVisualEditorial} from './wideVisualEditorial';
 import {isPlanComparison} from './planComparison';
 import {isConnectedRows,connectedRowsPassport} from './connectedFeatureRows';
@@ -82,6 +84,8 @@ export function supportedNewItem(section:PageSection,item:SectionItem):SectionIt
 }
 
 export function repeatedItemFields(section:PageSection):readonly string[]{
+ if(isConnectedFamily(section))return connectedItemFields(section);
+ if(isUnifiedPricing(section))return section.pricingMatrix?.sourceSectionId?[]:[...unifiedPricingPassport.itemFields];
  const fields=legacyRepeatedItemFields(section);
  return section.type==='hero_slider'?['eyebrow',...fields.filter(k=>k!=='subtitle'&&k!=='badge')]:fields;
 }

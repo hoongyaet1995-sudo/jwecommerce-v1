@@ -7,7 +7,7 @@ vi.mock('../../integration/adminBootstrap',()=>({readAdminBootstrap:()=>({})}));
 globalThis.IS_REACT_ACT_ENVIRONMENT=true;
 it('exposes editable step images and copy, retaining images across layout switches',async()=>{
  const node=document.createElement('div');document.body.append(node);const root=createRoot(node);let latest:PageSection;
- function Editor(){const [s,set]=useState({...focusedSteps('qa'),imageSlots:[{target:'item:qa-step-1:imageUrl',mediaAlt:'Keep this alt'}]});latest=s;return <SectionInspector pageId="qa" section={s} onChange={set} onMediaUpload={vi.fn()} onClose={vi.fn()} onDelete={vi.fn()}/>;}
+ function Editor(){const [s,set]=useState<PageSection>({...focusedSteps('qa'),imageSlots:[{target:'item:qa-step-1:imageUrl',mediaAlt:'Keep this alt'}]});latest=s;return <SectionInspector pageId="qa" section={s} onChange={set} onMediaUpload={vi.fn()} onClose={vi.fn()} onDelete={vi.fn()}/>;}
  await act(async()=>root.render(<Editor/>));expect(node.querySelector('[data-inspector-item] input')).not.toBeNull();
  const add=[...node.querySelectorAll<HTMLButtonElement>('button')].find(b=>b.textContent?.trim()==='Add step')!;await act(async()=>add.click());expect(latest!.items).toHaveLength(5);await act(async()=>node.querySelectorAll<HTMLButtonElement>('[title="Delete item"]')[4].click());expect(latest!.items).toHaveLength(4);
  expect(node.querySelector('[data-inspector-item] input')).not.toBeNull();expect(node.querySelector('[placeholder="e.g. Shop Now"]')).toBeNull();

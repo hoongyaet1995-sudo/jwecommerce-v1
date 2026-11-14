@@ -108,7 +108,23 @@ export function adaptInventory(overview:InventoryOverview){
   });
 }
 
-export function adaptStores(overview:InventoryOverview){return [{id:'website',name:'JW Ecom Storefront',nickname:'JW Storefront',platform:'webstore',platformDisplayName:'JW Ecom Storefront',region:'Malaysia (MYR)',connectionState:'connected',isManagedByJw:true,inventorySyncState:'active',isComingSoon:false,syncStatus:'pending',readStatus:'connected'},...overview.stores.map(s=>{const readiness=(overview.mode_catalog?.items||[]).flatMap((item:any)=>item.mapped_stores||[]).filter((mapped:any)=>String(mapped.id)===String(s.id)).map((mapped:any)=>mapped.sync_readiness);const hasReady=readiness.some((state:any)=>state?.ready);const hasBlocked=readiness.some((state:any)=>state&&!state.ready);const inventorySyncState=s.sync_state==='paused'?'paused':hasReady&&hasBlocked?'partially_ready':hasReady?'active':'setup_required';return {id:String(s.id),name:s.name,nickname:s.name,platform:s.platform,environment:s.account_mode==='production'?'production':'sandbox',platformDisplayName:s.platform==='lazada'?'Lazada':s.platform==='shopee'?'Shopee':s.platform,region:'Malaysia (MYR)',connectionState:s.connection_status,isManagedByJw:overview.mode==='shared'?s.shared_pool_takeover_enabled===true:s.management_status==='managed',inventorySyncState,isComingSoon:false,syncStatus:inventorySyncState==='paused'?'disabled':'pending',readStatus:s.connection_status}}),{id:'tiktok-coming',name:'TikTok Shop',nickname:'TikTok Shop',platform:'tiktok',platformDisplayName:'TikTok Shop',region:'Regional',connectionState:'disconnected',isManagedByJw:false,inventorySyncState:'setup_required',isComingSoon:true,syncStatus:'disabled',readStatus:'disconnected'},{id:'shopify-coming',name:'Shopify',nickname:'Shopify',platform:'shopify',platformDisplayName:'Shopify',region:'Global',connectionState:'disconnected',isManagedByJw:false,inventorySyncState:'setup_required',isComingSoon:true,syncStatus:'disabled',readStatus:'disconnected'}];}
+export interface InventoryStoreView {
+  id: string;
+  name: string;
+  nickname: string;
+  platform: string;
+  platformDisplayName: string;
+  region: string;
+  connectionState: string;
+  inventorySyncState: string;
+  syncStatus: string;
+  readStatus: string;
+  isManagedByJw: boolean;
+  isComingSoon: boolean;
+  environment?: "production" | "sandbox";
+}
+
+export function adaptStores(overview:InventoryOverview):InventoryStoreView[]{return [{id:'website',name:'JW Ecom Storefront',nickname:'JW Storefront',platform:'webstore',platformDisplayName:'JW Ecom Storefront',region:'Malaysia (MYR)',connectionState:'connected',isManagedByJw:true,inventorySyncState:'active',isComingSoon:false,syncStatus:'pending',readStatus:'connected'},...overview.stores.map((s):InventoryStoreView=>{const readiness=(overview.mode_catalog?.items||[]).flatMap((item:any)=>item.mapped_stores||[]).filter((mapped:any)=>String(mapped.id)===String(s.id)).map((mapped:any)=>mapped.sync_readiness);const hasReady=readiness.some((state:any)=>state?.ready);const hasBlocked=readiness.some((state:any)=>state&&!state.ready);const inventorySyncState=s.sync_state==='paused'?'paused':hasReady&&hasBlocked?'partially_ready':hasReady?'active':'setup_required';return {id:String(s.id),name:s.name,nickname:s.name,platform:s.platform,environment:s.account_mode==='production'?'production':'sandbox',platformDisplayName:s.platform==='lazada'?'Lazada':s.platform==='shopee'?'Shopee':s.platform,region:'Malaysia (MYR)',connectionState:s.connection_status,isManagedByJw:overview.mode==='shared'?s.shared_pool_takeover_enabled===true:s.management_status==='managed',inventorySyncState,isComingSoon:false,syncStatus:inventorySyncState==='paused'?'disabled':'pending',readStatus:s.connection_status}}),{id:'tiktok-coming',name:'TikTok Shop',nickname:'TikTok Shop',platform:'tiktok',platformDisplayName:'TikTok Shop',region:'Regional',connectionState:'disconnected',isManagedByJw:false,inventorySyncState:'setup_required',isComingSoon:true,syncStatus:'disabled',readStatus:'disconnected'},{id:'shopify-coming',name:'Shopify',nickname:'Shopify',platform:'shopify',platformDisplayName:'Shopify',region:'Global',connectionState:'disconnected',isManagedByJw:false,inventorySyncState:'setup_required',isComingSoon:true,syncStatus:'disabled',readStatus:'disconnected'}];}
 
 export function adaptBalances(overview:InventoryOverview){
   const result:any={};

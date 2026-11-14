@@ -1,7 +1,9 @@
+import {connectedPassport} from './connectedFamilies';
 import type {PageSection,SectionItem} from '../types';
 export type HeadingMode='section'|'slide'|'none';
 export type LegacySubtitleMeaning='eyebrow'|'secondary-heading'|'chapter-label'|'caption'|'unused';
 export function headingCapability(s:PageSection):{mode:HeadingMode;legacySubtitle:LegacySubtitleMeaning}{
+ const connected=connectedPassport(s);if(connected)return {mode:connected.sectionFields.includes('eyebrow')||connected.sectionFields.includes('title')?'section':'none',legacySubtitle:'unused'};
  const unused=s.type==='cta_strip'&&['industrial-outline','illustrated-panel-right','illustrated-panel','gradient-panel','editorial-band'].includes(s.ctaPreset??'')||s.type==='media_gallery'&&['connected-feature-rows','image-cards-four-mosaic','image-cards-three','corporate-connections','corporate-illustrated-steps','corporate-scenarios','staggered-focus-cards','image-cards-contrast','image-cards-three-staggered','image-flow'].includes(s.galleryPreset??'')||s.type==='media_text_split'&&['image-highlights','corporate-section-story','inset-surface-panel','wide-visual-centered','split-visual-surface','contained-wide-centered','corporate-builder-overview'].includes(s.layoutPreset??'');
  const legacySubtitle:LegacySubtitleMeaning=unused?'unused':s.type==='chapter_block'?'chapter-label':s.type==='media_text_split'&&s.layoutPreset==='kids-discovery'||s.type==='faq_accordion'&&['pricing-card-faq','pricing-band-faq','corporate-starter-faq'].includes(s.faqPreset??'')?'secondary-heading':s.type==='media_gallery'&&s.galleryPreset==='photo-marquee'?'caption':'eyebrow';
  if(s.type==='hero_slider')return {mode:'slide',legacySubtitle:'eyebrow'};

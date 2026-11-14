@@ -16,7 +16,7 @@ export function decodeInventoryIntake(raw:string|null):InventoryIntake|null{
   }catch{return null;}
 }
 
-export function inventoryIntakeItems<T extends {jwProductId?:number|string}>(items:T[],productIds:number[]):T[]{
+export function inventoryIntakeItems<T extends object>(items:T[],productIds:number[]):T[]{
   const ids=new Set(productIds.map(String));
-  return items.filter(item=>item.jwProductId!==undefined&&ids.has(String(item.jwProductId)));
+  return items.filter(item=>'jwProductId' in item&&item.jwProductId!==undefined&&ids.has(String(item.jwProductId)));
 }

@@ -151,7 +151,7 @@ export const StoreFulfillmentBindingModal: React.FC<StoreFulfillmentBindingModal
               <option value="" disabled>Select an entity warehouse</option>
               {warehouses.map(wh => (
                 <option key={wh.id} value={wh.id}>
-                  {wh.name} ({wh.code}) — {typeof wh.address === 'string' ? wh.state || 'Location not configured' : [wh.address?.city, wh.address?.state].filter(Boolean).join(', ') || 'Location not configured'} {wh.isDefaultMaster ? '★ Default Master' : ''}
+                  {wh.name} ({wh.code}) — {typeof wh.address === 'string' ? wh.state || 'Location not configured' : [(typeof wh.address === 'string' ? undefined : wh.address?.city), (typeof wh.address === 'string' ? undefined : wh.address?.state)].filter(Boolean).join(', ') || 'Location not configured'} {wh.isDefaultMaster ? '★ Default Master' : ''}
                 </option>
               ))}
             </select>

@@ -43,7 +43,7 @@ it('keeps a server page visible on page two without slicing it a second time', a
   </PreviewContext.Provider>));
   const publishReview=container.querySelector<HTMLButtonElement>('#btn-push-master-to-store')!;
   expect(publishReview.disabled).toBe(false);
-  expect(publishReview.title).toContain('read-only');
+  expect(publishReview.title).toBe('Review JW product details and destination requirements before publishing.');
   await act(async()=>publishReview.click());
   expect(reviewPublishing).toHaveBeenCalledWith(undefined);
   await act(async()=>root.render(<PreviewContext.Provider value={context as unknown as React.ContextType<typeof PreviewContext>}>

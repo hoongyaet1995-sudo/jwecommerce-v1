@@ -1,3 +1,7 @@
+import {isConnectedFamily} from '../../cms/connectedFamilies';
+import {ConnectedFamilySection} from './ConnectedFamilySection';
+import {UnifiedPricing} from './UnifiedPricing';
+import {isUnifiedPricing} from '../../cms/unifiedPricing';
 import {actionAppearanceCss} from '../../cms/actionAppearance';
 import {slideEyebrow} from '../../cms/sectionHeading';
 import {SectionEyebrow} from './SectionEyebrow';
@@ -2629,6 +2633,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
   };
 
   const renderSectionContent = () => {
+    if(isConnectedFamily(section))return <ConnectedFamilySection section={section} authoredSection={rawSection} editing={isEditingMode} palette={section.brandPalette??runtime.page.document.style?.palette??runtime.context.themePalette}/>;
     switch (section.type) {
       case 'hero_banner': if(['corporate-centered','corporate-split-composite','corporate-centered-composite'].includes(section.heroBannerPreset??''))return <CorporateHero section={section} editing={isEditingMode}/>; return renderHeroBanner();
       case 'split_hero': return renderSplitHero();
@@ -2644,7 +2649,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
       case 'product_listing': return section.listingPreset==='industrial-related'?<IndustrialRelatedProducts section={section} products={listingItems} editing={isEditingMode}/>:section.listingPreset==='fashion-lookbook'?<ProductLookbook section={section} products={listingItems} context={runtime.context} editing={isEditingMode}/>:['editorial-tabs','pantry-tabs','tech-tabs','kids-tabs'].includes(section.listingPreset??'')?<EditorialProductTabs section={section} facts={runtimeSection} context={runtime.context} editing={isEditingMode}/>:['industrial-related','editorial-grid','beauty-grid','pantry-grid','tech-grid','kids-grid'].includes(section.listingPreset??'')?<EditorialProductGrid section={section} products={listingItems} context={runtime.context} editing={isEditingMode}/>:renderProductListing();
       case 'collection_tabs': return renderCollectionTabs();
       case 'featured_deal': return renderFeaturedDeal();
-      case 'pricing_table': if(section.pricingPreset==='plan-comparison')return <PlanComparison section={section} facts={runtimeSection.planComparison} links={runtime.links} editing={isEditingMode}/>; return section.pricingPreset==='saas-packages'?<SaasPackages section={section} currency={runtime.context.currency} editing={isEditingMode}/>:renderPricingTable();
+      case 'pricing_table': if(isUnifiedPricing(section))return <UnifiedPricing pageKey={runtime.page.id} section={{...section,brandPalette:section.brandPalette??runtime.page.document.style?.palette??runtime.context.themePalette}} sections={runtime.page.document.sections} editing={isEditingMode}/>; if(section.pricingPreset==='plan-comparison')return <PlanComparison section={section} facts={runtimeSection.planComparison} links={runtime.links} editing={isEditingMode}/>; return section.pricingPreset==='saas-packages'?<SaasPackages section={section} currency={runtime.context.currency} editing={isEditingMode}/>:renderPricingTable();
       case 'promotion_highlights': return <PromotionHighlights section={section} offers={runtimeSection.promotions?.offers??[]} editing={isEditingMode}/>;
       case 'shop_navigation': return <ShopNavigation section={section} catalog={runtime.catalog} editing={isEditingMode}/>;
       case 'media_gallery': if(section.galleryPreset==='product-preview-tabs')return <CorporateTabs section={section} editing={isEditingMode}/>; return ['industrial-mosaic','album-browser'].includes(section.galleryPreset??'')?<IndustrialGallery section={section} editing={isEditingMode}/>:section.galleryPreset==='photo-marquee'?<PhotoMarquee section={section} editing={isEditingMode}/>:['routine-steps','corporate-illustrated-steps'].includes(section.galleryPreset??'')?<RoutineSteps section={section} editing={isEditingMode}/>:['focused-steps','scroll-stack-cards','editorial-knowledge-triptych','image-flow','connected-feature-rows','image-cards-contrast','staggered-focus-cards','image-cards-three-staggered','image-cards-four-mosaic','image-cards-three','corporate-connections','corporate-scenarios','editorial-montage','editorial-cards','editorial-triptych','portfolio-cards'].includes(section.galleryPreset??'')?<EditorialGallery section={section} authoredSection={rawSection} editing={isEditingMode}/>:renderMediaGallery();
@@ -2710,8 +2715,8 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
         onSelectImage?.(target);
         if(section.type==='hero_slider') {const index=section.items?.findIndex(item=>`item:${item.id}:imageUrl`===target)??-1;if(index>=0)setHeroSlideIdx(index);}
       }}}>
-      <CmsMotionWrapper preset={section.galleryPreset==='scroll-stack-cards'?'none':section.motionPreset} replayKey={`${section.id}-${section.motionPreset}`} isEditingMode={isEditingMode}>
-        <PageSectionContainer width={runtime.page.document.containerWidth} fullBleed={section.containerMode==='full-bleed'}>{renderSectionContent()}</PageSectionContainer>
+      <CmsMotionWrapper pace={section.motionPace} preset={section.galleryPreset==='scroll-stack-cards'?'none':section.motionPreset} replayKey={`${section.id}-${section.motionPreset}`} isEditingMode={isEditingMode}>
+        <PageSectionContainer nativeGutter={isConnectedFamily(section)||isUnifiedPricing(section)} width={runtime.page.document.containerWidth} fullBleed={section.containerMode==='full-bleed'}>{renderSectionContent()}</PageSectionContainer>
       </CmsMotionWrapper>
       </ImageSelectionContext.Provider>
     </section>
