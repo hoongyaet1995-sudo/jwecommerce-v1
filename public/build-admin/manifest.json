@@ -1,4 +1,108 @@
 {
+  "../../public/cms/connected/assets/fonts/008de4ce00269eef.woff2": {
+    "file": "assets/008de4ce00269eef-A29GCmfN.woff2",
+    "src": "../../public/cms/connected/assets/fonts/008de4ce00269eef.woff2"
+  },
+  "../../public/cms/connected/assets/fonts/10b2fbb0e4d6b268.ttf": {
+    "file": "assets/10b2fbb0e4d6b268-OkSPk_nY.ttf",
+    "src": "../../public/cms/connected/assets/fonts/10b2fbb0e4d6b268.ttf"
+  },
+  "../../public/cms/connected/assets/fonts/2f6c206f7c744148.ttf": {
+    "file": "assets/2f6c206f7c744148-Cfj_m2VG.ttf",
+    "src": "../../public/cms/connected/assets/fonts/2f6c206f7c744148.ttf"
+  },
+  "../../public/cms/connected/assets/fonts/30f508d8f046e458.woff": {
+    "file": "assets/30f508d8f046e458-BDtbbAkZ.woff",
+    "src": "../../public/cms/connected/assets/fonts/30f508d8f046e458.woff"
+  },
+  "../../public/cms/connected/assets/fonts/3c1d9c1d967a6130.ttf": {
+    "file": "assets/3c1d9c1d967a6130-ChrDRKVa.ttf",
+    "src": "../../public/cms/connected/assets/fonts/3c1d9c1d967a6130.ttf"
+  },
+  "../../public/cms/connected/assets/fonts/453f93ed7666790d.woff2": {
+    "file": "assets/453f93ed7666790d-CCdVugut.woff2",
+    "src": "../../public/cms/connected/assets/fonts/453f93ed7666790d.woff2"
+  },
+  "../../public/cms/connected/assets/fonts/45e8c31fb26458a3.woff": {
+    "file": "assets/45e8c31fb26458a3-BRMGpqY-.woff",
+    "src": "../../public/cms/connected/assets/fonts/45e8c31fb26458a3.woff"
+  },
+  "../../public/cms/connected/assets/fonts/51af056c5f3b6d52.ttf": {
+    "file": "assets/51af056c5f3b6d52-PpBR-k39.ttf",
+    "src": "../../public/cms/connected/assets/fonts/51af056c5f3b6d52.ttf"
+  },
+  "../../public/cms/connected/assets/fonts/6e1c83f6bbf40d16.woff2": {
+    "file": "assets/6e1c83f6bbf40d16-9JzFtTp4.woff2",
+    "src": "../../public/cms/connected/assets/fonts/6e1c83f6bbf40d16.woff2"
+  },
+  "../../public/cms/connected/assets/fonts/6f49e1b28bce7339.ttf": {
+    "file": "assets/6f49e1b28bce7339-DJlYPwri.ttf",
+    "src": "../../public/cms/connected/assets/fonts/6f49e1b28bce7339.ttf"
+  },
+  "../../public/cms/connected/assets/fonts/79d7c0b0914110df.ttf": {
+    "file": "assets/79d7c0b0914110df-C9-fBv4W.ttf",
+    "src": "../../public/cms/connected/assets/fonts/79d7c0b0914110df.ttf"
+  },
+  "../../public/cms/connected/assets/fonts/87e867b52640b3b3.ttf": {
+    "file": "assets/87e867b52640b3b3-BEUPqj-s.ttf",
+    "src": "../../public/cms/connected/assets/fonts/87e867b52640b3b3.ttf"
+  },
+  "../../public/cms/connected/assets/fonts/9a2d8a3ead8e46ad.woff2": {
+    "file": "assets/9a2d8a3ead8e46ad-BxEtgLLb.woff2",
+    "src": "../../public/cms/connected/assets/fonts/9a2d8a3ead8e46ad.woff2"
+  },
+  "../../public/cms/connected/assets/fonts/9b7862054d9d4831.ttf": {
+    "file": "assets/9b7862054d9d4831-BXXe6oGt.ttf",
+    "src": "../../public/cms/connected/assets/fonts/9b7862054d9d4831.ttf"
+  },
+  "../../public/cms/connected/assets/fonts/9f1ba1bae0a94419.ttf": {
+    "file": "assets/9f1ba1bae0a94419-Cb9Pr7WV.ttf",
+    "src": "../../public/cms/connected/assets/fonts/9f1ba1bae0a94419.ttf"
+  },
+  "../../public/cms/connected/assets/fonts/a4a97be52a584b5b.woff": {
+    "file": "assets/a4a97be52a584b5b-9DY9v6TK.woff",
+    "src": "../../public/cms/connected/assets/fonts/a4a97be52a584b5b.woff"
+  },
+  "../../public/cms/connected/assets/fonts/a699af1dea30b799.ttf": {
+    "file": "assets/a699af1dea30b799-BMa5IoM-.ttf",
+    "src": "../../public/cms/connected/assets/fonts/a699af1dea30b799.ttf"
+  },
+  "../../public/cms/connected/assets/fonts/aa14e09cb8805233.ttf": {
+    "file": "assets/aa14e09cb8805233-TCzmKaQD.ttf",
+    "src": "../../public/cms/connected/assets/fonts/aa14e09cb8805233.ttf"
+  },
+  "../../public/cms/connected/assets/fonts/adc17cdd955aac54.ttf": {
+    "file": "assets/adc17cdd955aac54-DSCq7ePT.ttf",
+    "src": "../../public/cms/connected/assets/fonts/adc17cdd955aac54.ttf"
+  },
+  "../../public/cms/connected/assets/fonts/bc35b564e3a2df27.ttf": {
+    "file": "assets/bc35b564e3a2df27-DuwSOVS1.ttf",
+    "src": "../../public/cms/connected/assets/fonts/bc35b564e3a2df27.ttf"
+  },
+  "../../public/cms/connected/assets/fonts/c23812d52c3a8676.woff": {
+    "file": "assets/c23812d52c3a8676-BueoWvxi.woff",
+    "src": "../../public/cms/connected/assets/fonts/c23812d52c3a8676.woff"
+  },
+  "../../public/cms/connected/assets/fonts/c33b4153fd1bafb6.woff2": {
+    "file": "assets/c33b4153fd1bafb6-DSnGZNn0.woff2",
+    "src": "../../public/cms/connected/assets/fonts/c33b4153fd1bafb6.woff2"
+  },
+  "../../public/cms/connected/assets/fonts/dfbe924f4b2cc312.ttf": {
+    "file": "assets/dfbe924f4b2cc312-CRtYug6l.ttf",
+    "src": "../../public/cms/connected/assets/fonts/dfbe924f4b2cc312.ttf"
+  },
+  "../../public/cms/connected/assets/fonts/e45972c7e9f24dc3.ttf": {
+    "file": "assets/e45972c7e9f24dc3-DvphOyYU.ttf",
+    "src": "../../public/cms/connected/assets/fonts/e45972c7e9f24dc3.ttf"
+  },
+  "../../public/cms/connected/assets/fonts/e87057af2c386644.ttf": {
+    "file": "assets/e87057af2c386644-BEVqzhzM.ttf",
+    "src": "../../public/cms/connected/assets/fonts/e87057af2c386644.ttf"
+  },
+  "../../public/cms/connected/assets/fonts/f86024bfcfdf391f.woff": {
+    "file": "assets/f86024bfcfdf391f-ByVEImyI.woff",
+    "src": "../../public/cms/connected/assets/fonts/f86024bfcfdf391f.woff"
+  },
   "../../public/cms/connected/assets/show-photo/connected-platform.png": {
     "file": "assets/connected-platform-YepqHuFQ.png",
     "src": "../../public/cms/connected/assets/show-photo/connected-platform.png"
@@ -11,28 +115,54 @@
     "file": "assets/cms-shell-design-BEKk4_z3.css",
     "src": "C:/Users/User/.codex/worktrees/cms-integration-release-20261115/jwstudio-ecommerce/public/css/cms-shell-design.css"
   },
-  "_index-C0rVmUMv.js": {
-    "file": "assets/index-C0rVmUMv.js",
+  "_index-CTai4CZr.css": {
+    "file": "assets/index-CTai4CZr.css",
+    "src": "_index-CTai4CZr.css"
+  },
+  "_index-jTrN2dS2.js": {
+    "file": "assets/index-jTrN2dS2.js",
     "name": "index",
     "css": [
-      "assets/index-DvW9XB4x.css"
+      "assets/index-CTai4CZr.css"
     ],
     "assets": [
+      "assets/453f93ed7666790d-CCdVugut.woff2",
+      "assets/c23812d52c3a8676-BueoWvxi.woff",
+      "assets/adc17cdd955aac54-DSCq7ePT.ttf",
+      "assets/9a2d8a3ead8e46ad-BxEtgLLb.woff2",
+      "assets/30f508d8f046e458-BDtbbAkZ.woff",
+      "assets/bc35b564e3a2df27-DuwSOVS1.ttf",
+      "assets/008de4ce00269eef-A29GCmfN.woff2",
+      "assets/a4a97be52a584b5b-9DY9v6TK.woff",
+      "assets/3c1d9c1d967a6130-ChrDRKVa.ttf",
+      "assets/c33b4153fd1bafb6-DSnGZNn0.woff2",
+      "assets/45e8c31fb26458a3-BRMGpqY-.woff",
+      "assets/79d7c0b0914110df-C9-fBv4W.ttf",
+      "assets/6e1c83f6bbf40d16-9JzFtTp4.woff2",
+      "assets/f86024bfcfdf391f-ByVEImyI.woff",
+      "assets/9f1ba1bae0a94419-Cb9Pr7WV.ttf",
+      "assets/a699af1dea30b799-BMa5IoM-.ttf",
+      "assets/e45972c7e9f24dc3-DvphOyYU.ttf",
+      "assets/87e867b52640b3b3-BEUPqj-s.ttf",
+      "assets/6f49e1b28bce7339-DJlYPwri.ttf",
+      "assets/2f6c206f7c744148-Cfj_m2VG.ttf",
+      "assets/dfbe924f4b2cc312-CRtYug6l.ttf",
+      "assets/51af056c5f3b6d52-PpBR-k39.ttf",
+      "assets/10b2fbb0e4d6b268-OkSPk_nY.ttf",
+      "assets/aa14e09cb8805233-TCzmKaQD.ttf",
+      "assets/9b7862054d9d4831-BXXe6oGt.ttf",
+      "assets/e87057af2c386644-BEVqzhzM.ttf",
       "assets/connected-platform-YepqHuFQ.png",
       "assets/malaysia-proud-CoWH8gQK.png"
     ]
   },
-  "_index-DvW9XB4x.css": {
-    "file": "assets/index-DvW9XB4x.css",
-    "src": "_index-DvW9XB4x.css"
-  },
   "src/main.tsx": {
-    "file": "assets/main-BxANJXY-.js",
+    "file": "assets/main-BeNfsEEd.js",
     "name": "main",
     "src": "src/main.tsx",
     "isEntry": true,
     "imports": [
-      "_index-C0rVmUMv.js"
+      "_index-jTrN2dS2.js"
     ],
     "dynamicImports": [
       "src/previews/inventory48/Inventory48Runtime.tsx"
@@ -45,12 +175,12 @@
     ]
   },
   "src/previews/inventory48/Inventory48Runtime.tsx": {
-    "file": "assets/Inventory48Runtime-D3DVJxwF.js",
+    "file": "assets/Inventory48Runtime-BOciKGRE.js",
     "name": "Inventory48Runtime",
     "src": "src/previews/inventory48/Inventory48Runtime.tsx",
     "isDynamicEntry": true,
     "imports": [
-      "_index-C0rVmUMv.js",
+      "_index-jTrN2dS2.js",
       "src/main.tsx"
     ],
     "css": [
@@ -58,12 +188,12 @@
     ]
   },
   "src/public-page.tsx": {
-    "file": "assets/public-page-D8anGFSo.js",
+    "file": "assets/public-page-D6YnSQLP.js",
     "name": "public-page",
     "src": "src/public-page.tsx",
     "isEntry": true,
     "imports": [
-      "_index-C0rVmUMv.js"
+      "_index-jTrN2dS2.js"
     ]
   }
 }

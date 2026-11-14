@@ -9,6 +9,7 @@ $manifest=json_decode(file_get_contents(base_path('public/build-admin/manifest.j
 $files=['build-ssr/page.cjs','css/cms-shell-design.css'];
 foreach($manifest as $entry){$files[]='build-admin/'.$entry['file'];foreach($entry['css']??[] as $css)$files[]='build-admin/'.$css;}
 foreach(json_decode(file_get_contents(base_path('resources/cms/connected-media.v1.json')),true,flags:JSON_THROW_ON_ERROR) as $url){if(!str_starts_with($url,'/cms/connected/assets/'))throw new RuntimeException('Invalid CMS media.');$files[]=ltrim($url,'/');}
+foreach(glob(base_path('public/cms/connected/assets/fonts/*')) as $font){if(!in_array(strtolower(pathinfo($font,PATHINFO_EXTENSION)),['woff2','woff','ttf'],true))throw new RuntimeException('Invalid font asset.');$files[]='cms/connected/assets/fonts/'.basename($font);}
 $files[]='build-admin/manifest.json';
 $backup=storage_path('app/releases/cms-connected-20261115/static-before');
 foreach(array_unique($files) as $file){if(str_contains($file,'..')||str_starts_with($file,'/')||!is_file(base_path('public/'.$file)))throw new RuntimeException('Missing or unsafe asset.');}

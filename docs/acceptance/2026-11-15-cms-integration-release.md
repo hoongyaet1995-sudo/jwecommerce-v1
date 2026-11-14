@@ -12,3 +12,5 @@ Isolated release checks: full TypeScript0 errors;11 frontend suites/29 tests inc
 Release uses fresh assets from isolated source, not dirty canonical output. Restricted www static installer backs up and hash-checks immutable assets and writes manifest last. Both target CMS/settings hashes captured before deploy for after comparison. Deployment receipts and live HTTPS/browser acceptance will be recorded locally after exact-SHA delivery. Authenticated production Inspector acceptance is separate from public/browser smoke checks.
 
 Total elapsed/token usage unavailable. Original canonical branch/dirty work preserved.
+
+Postdelivery font dependency correction:26 accepted font source files added, fresh build passed12.51s with no unresolved connected-font URLs; restricted www installer includes raw font assets. The earlier CSS hash difference was Windows CRLF versus normalized committed Git blob; server bytes match the committed source. Final receipt uses committed-byte hashes. No content/configuration change.
