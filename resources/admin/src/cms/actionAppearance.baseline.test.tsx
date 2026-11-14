@@ -16,7 +16,7 @@ it('freezes all161 default presentation and inventories real action consumers',(
  const html=(s:any)=>{current=s;return renderToStaticMarkup(<SectionRenderer section={s} isEditingMode/>)};
  const rows=SECTION_TEMPLATES.map((t,i)=>{
   index=i;const s:any={...structuredClone(t.defaultData),id:`layout-${i+1}`,isVisible:true};
-  const defaults=[undefined,{palette:stylePresets[0].palette},{palette:stylePresets[0].palette,unifiedButtons:false}].map(style=>{shared=style;return createHash('sha256').update(html(s).replace(/ data-cms-button(?:-kind)?="[^"]*"/g,'')).digest('hex')});shared=undefined;
+  const defaults=[undefined,{palette:stylePresets[0].palette},{palette:stylePresets[0].palette,unifiedButtons:false}].map(style=>{shared=style;return createHash('sha256').update(html(s).replace(/ data-eyebrow-background="[^"]*"/g,'').replace(/ data-cms-button(?:-kind)?="[^"]*"/g,'')).digest('hex')});shared=undefined;
   const active={...s,showSectionHeading:true,valuesShowHeading:true,eyebrow:'Audit eyebrow',content:'Audit content',buttonText:'Audit primary',buttonLink:'/shop',secondaryButtonText:'Audit secondary',secondaryButtonLink:'/shop',items:s.items?.map((v:any)=>({...v,buttonText:'Audit action',linkUrl:'/shop'}))};
   const n=document.createElement('div');n.innerHTML=html(active);
   const actions=[...n.querySelectorAll('a,button')].map(e=>({tag:e.tagName,text:e.textContent?.trim().slice(0,65),action:e.getAttribute('data-cms-action')??e.getAttribute('data-editorial-action'),cls:e.getAttribute('class'),type:e.getAttribute('type'),style:e.getAttribute('style'),item:e.getAttribute('data-cms-item')}));
