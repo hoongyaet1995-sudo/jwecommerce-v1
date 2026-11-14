@@ -9,7 +9,7 @@ if (base_path() !== $expected || public_path() !== $web || parse_url(config('app
     throw new RuntimeException('Restricted www release paths.');
 }
 $manifest = json_decode(file_get_contents(base_path('public/build-admin/manifest.json')), true, flags: JSON_THROW_ON_ERROR);
-$files = [];
+$files = ['build-ssr/page.cjs'];
 foreach ($manifest as $entry) {
     $files[] = 'build-admin/'.$entry['file'];
     foreach ($entry['css'] ?? [] as $css) $files[] = 'build-admin/'.$css;
