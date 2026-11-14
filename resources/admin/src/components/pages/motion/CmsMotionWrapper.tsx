@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import React, { createContext, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { motion, useReducedMotion, type Variants } from 'motion/react';
 import { SectionMotionPreset } from '../../../types';
 
@@ -6,6 +6,7 @@ interface SectionMotionContextType {
   preset: SectionMotionPreset;
   isMotionEnabled: boolean;
   pace: 'smooth' | 'relaxed';
+  replayKey?: string | number;
 }
 
 const SectionMotionContext = createContext<SectionMotionContextType>({
@@ -112,7 +113,9 @@ const getContainerVariants = (preset: SectionMotionPreset, duration=.8): Variant
           y: 0,
           transition: {
             duration,
-            ease: [0.22, 1, 0.36, 1],
+            ease: [0.2, 0.75, 0.2, 1],
+            opacity: { duration, ease: [0.25, 0.1, 0.25, 1] },
+            y: { duration, ease: [0.2, 0.75, 0.2, 1] },
             staggerChildren: stagger,
             delayChildren: 0.04
           }
@@ -170,7 +173,9 @@ const getItemVariants = (preset: SectionMotionPreset, duration=.8): Variants => 
           y: 0,
           transition: {
             duration,
-            ease: [0.22, 1, 0.36, 1]
+            ease: [0.2, 0.75, 0.2, 1],
+            opacity: { duration, ease: [0.25, 0.1, 0.25, 1] },
+            y: { duration, ease: [0.2, 0.75, 0.2, 1] }
           }
         }
       };
@@ -182,6 +187,7 @@ const getMediaVariants = (preset: SectionMotionPreset, duration=.8): Variants =>
   if (preset === 'none') {
     return { hidden: {}, visible: {} };
   }
+  if (preset === 'subtle-lift') return getItemVariants(preset, duration);
   return {
     hidden: {
       opacity: 0,
@@ -197,6 +203,50 @@ const getMediaVariants = (preset: SectionMotionPreset, duration=.8): Variants =>
     }
   };
 };
+
+// A reveal region containing independently revealed content must not add a
+// second 35px displacement. Keep its fade for unwrapped copy in mixed layouts.
+function leafLiftVariants(variants: Variants, preset: SectionMotionPreset, nested: boolean): Variants {
+  if (preset !== 'subtle-lift' || !nested) return variants;
+  return {...variants, hidden: {...(variants.hidden as object), y: 0}};
+}
+
+// Observe the actual reveal target. A tall section cannot reach 12% visibility,
+// so cap the required visible area at 12% of the usable viewport height.
+export const revealThreshold = (height: number, viewportHeight: number) =>
+  Math.min(.12, Math.max(1, viewportHeight - 35) * .12 / Math.max(1, height));
+
+function useElementReveal(enabled: boolean, replayKey?: string | number) {
+  const nodeRef = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+  const [hasNestedTargets, setHasNestedTargets] = useState(false);
+  useLayoutEffect(() => {
+    setHasNestedTargets(Boolean(nodeRef.current?.querySelector('[data-cms-reveal-state]')));
+  });
+  useEffect(() => {
+    setVisible(false);
+    const node = nodeRef.current;
+    if (!node || !enabled) return;
+    let observer: IntersectionObserver;
+    const observe = () => {
+      observer?.disconnect();
+      const threshold = revealThreshold(node.getBoundingClientRect().height, window.innerHeight);
+      observer = new IntersectionObserver(entries => {
+        if (entries.some(entry => entry.isIntersecting && entry.intersectionRatio >= threshold)) {
+          setVisible(true);
+          observer.disconnect();
+          resize?.disconnect();
+        }
+      }, {threshold, rootMargin: '0px 0px -35px 0px'});
+      observer.observe(node);
+    };
+    const resize = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(observe);
+    observe();
+    resize?.observe(node);
+    return () => {observer.disconnect(); resize?.disconnect()};
+  }, [enabled, replayKey]);
+  return {nodeRef, visible, hasNestedTargets};
+}
 
 // Native drag/animation handlers overlap Motion's gesture/lifecycle signatures.
 type MotionSafeDivAttributes = Omit<React.HTMLAttributes<HTMLDivElement>, 'onDrag'|'onDragStart'|'onDragEnd'|'onAnimationStart'>;
@@ -225,16 +275,12 @@ export const CmsMotionWrapper: React.FC<CmsMotionWrapperProps> = ({
   const preset: SectionMotionPreset = (rawPreset as SectionMotionPreset) || 'subtle-lift';
   const reducedMotion = useReducedMotion();
   const isMotionEnabled = preset !== 'none' && !reducedMotion && typeof IntersectionObserver !== 'undefined';
-  const containerVariants = getContainerVariants(preset,pace==='relaxed'?1.1:.8);
-  const nodeRef=useRef<HTMLDivElement>(null);
-  const [visible,setVisible]=useState(false);
-  const [probeOffsets,setProbeOffsets]=useState<number[]>([0]);
-  useEffect(()=>{const node=nodeRef.current;if(!node||!isMotionEnabled)return;const measure=()=>{const offsets:number[]=[];for(let y=0;y<node.offsetHeight;y+=240)offsets.push(y);setProbeOffsets(offsets.length?offsets:[0])};measure();const resize=typeof ResizeObserver==='undefined'?null:new ResizeObserver(measure);resize?.observe(node);return()=>resize?.disconnect()},[isMotionEnabled]);
-  useEffect(()=>{setVisible(false)},[replayKey]);
-  useEffect(()=>{const node=nodeRef.current;if(!node||!isMotionEnabled||visible)return;let parent=node.parentElement;while(parent&& !/(auto|scroll)/.test(getComputedStyle(parent).overflowY))parent=parent.parentElement;const observer=new IntersectionObserver(entries=>{if(entries.some(e=>e.isIntersecting)){setVisible(true);observer.disconnect()}},{root:parent,threshold:.12,rootMargin:'0px 0px -35px 0px'});node.querySelectorAll('[data-cms-reveal-probe]').forEach(probe=>observer.observe(probe));return()=>observer.disconnect()},[probeOffsets,visible,replayKey,isMotionEnabled]);
+  const { nodeRef, visible, hasNestedTargets } = useElementReveal(isMotionEnabled, replayKey);
+
+  const containerVariants = leafLiftVariants(getContainerVariants(preset,pace==='relaxed'?1.1:.8), preset, hasNestedTargets);
 
   return (
-    <SectionMotionContext.Provider value={{ preset, isMotionEnabled, pace }}>
+    <SectionMotionContext.Provider value={{ preset, isMotionEnabled, pace, replayKey }}>
       {isMotionEnabled ? (
         <motion.div
           key={replayKey}
@@ -243,10 +289,10 @@ export const CmsMotionWrapper: React.FC<CmsMotionWrapperProps> = ({
           animate={visible?'visible':'hidden'}
           variants={containerVariants}
           className={className}
-          style={{position:'relative',...style}}
+          data-cms-reveal-state={visible ? 'visible' : 'hidden'}
+          style={style}
           {...rest}
         >
-          {probeOffsets.map(top=><span key={top} data-cms-reveal-probe aria-hidden="true" style={{position:'absolute',top,left:0,width:1,height:Math.max(1,Math.min(100,(nodeRef.current?.offsetHeight??100)-top)),pointerEvents:'none'}}/>)}
           {children}
         </motion.div>
       ) : (
@@ -278,7 +324,8 @@ export const MotionItem: React.FC<MotionItemProps> = ({
   style,
   ...rest
 }) => {
-  const { preset, isMotionEnabled, pace } = useSectionMotion();
+  const { preset, isMotionEnabled, pace, replayKey } = useSectionMotion();
+  const { nodeRef, visible, hasNestedTargets } = useElementReveal(isMotionEnabled, replayKey);
 
   if (!isMotionEnabled) {
     return (
@@ -288,11 +335,14 @@ export const MotionItem: React.FC<MotionItemProps> = ({
     );
   }
 
-  const itemVariants = getItemVariants(preset,pace==='relaxed'?1.1:.8);
+  const itemVariants = leafLiftVariants(getItemVariants(preset,pace==='relaxed'?1.1:.8), preset, hasNestedTargets);
 
   return (
     <motion.div
-      {...(independentReveal ? { initial: 'hidden', whileInView: 'visible', viewport: {once:true,amount:.12,margin:'0px 0px -35px 0px' as const} } : {})}
+      ref={nodeRef}
+      initial="hidden"
+      animate={visible ? 'visible' : 'hidden'}
+      data-cms-reveal-state={visible ? 'visible' : 'hidden'}
       variants={itemVariants}
       transition={delay ? { delay } : undefined}
       className={className}
@@ -314,7 +364,8 @@ export const MotionMedia: React.FC<MotionItemProps> = ({
   style,
   ...rest
 }) => {
-  const { preset, isMotionEnabled, pace } = useSectionMotion();
+  const { preset, isMotionEnabled, pace, replayKey } = useSectionMotion();
+  const { nodeRef, visible, hasNestedTargets } = useElementReveal(isMotionEnabled, replayKey);
 
   if (!isMotionEnabled) {
     return (
@@ -324,10 +375,14 @@ export const MotionMedia: React.FC<MotionItemProps> = ({
     );
   }
 
-  const mediaVariants = getMediaVariants(preset,pace==='relaxed'?1.1:.8);
+  const mediaVariants = leafLiftVariants(getMediaVariants(preset,pace==='relaxed'?1.1:.8), preset, hasNestedTargets);
 
   return (
     <motion.div
+      ref={nodeRef}
+      initial="hidden"
+      animate={visible ? 'visible' : 'hidden'}
+      data-cms-reveal-state={visible ? 'visible' : 'hidden'}
       variants={mediaVariants}
       className={className}
       style={style}
@@ -348,7 +403,8 @@ export const MotionButton: React.FC<MotionItemProps> = ({
   style,
   ...rest
 }) => {
-  const { preset, isMotionEnabled, pace } = useSectionMotion();
+  const { preset, isMotionEnabled, pace, replayKey } = useSectionMotion();
+  const { nodeRef, visible, hasNestedTargets } = useElementReveal(isMotionEnabled, replayKey);
 
   if (!isMotionEnabled) {
     return (
@@ -358,14 +414,17 @@ export const MotionButton: React.FC<MotionItemProps> = ({
     );
   }
 
-  const itemVariants = getItemVariants(preset,pace==='relaxed'?1.1:.8);
+  const itemVariants = leafLiftVariants(getItemVariants(preset,pace==='relaxed'?1.1:.8), preset, hasNestedTargets);
 
   return (
     <motion.div
+      ref={nodeRef}
+      initial="hidden"
+      animate={visible ? 'visible' : 'hidden'}
+      data-cms-reveal-state={visible ? 'visible' : 'hidden'}
       variants={itemVariants}
-      whileHover={{ scale: 1.025 }}
-      whileTap={{ scale: 0.975 }}
-      transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+      whileHover={{ scale: 1.025, transition: { type: 'spring', stiffness: 400, damping: 25 } }}
+      whileTap={{ scale: 0.975, transition: { type: 'spring', stiffness: 400, damping: 25 } }}
       className={`inline-block ${className}`}
       style={style}
       {...rest}
@@ -386,7 +445,8 @@ export const MotionCard: React.FC<MotionItemProps> = ({
   style,
   ...rest
 }) => {
-  const { preset, isMotionEnabled, pace } = useSectionMotion();
+  const { preset, isMotionEnabled, pace, replayKey } = useSectionMotion();
+  const { nodeRef, visible, hasNestedTargets } = useElementReveal(isMotionEnabled, replayKey);
 
   if (!isMotionEnabled) {
     return (
@@ -396,10 +456,14 @@ export const MotionCard: React.FC<MotionItemProps> = ({
     );
   }
 
-  const itemVariants = getItemVariants(preset,pace==='relaxed'?1.1:.8);
+  const itemVariants = leafLiftVariants(getItemVariants(preset,pace==='relaxed'?1.1:.8), preset, hasNestedTargets);
 
   return (
     <motion.div
+      ref={nodeRef}
+      initial="hidden"
+      animate={visible ? 'visible' : 'hidden'}
+      data-cms-reveal-state={visible ? 'visible' : 'hidden'}
       variants={itemVariants}
       transition={delay ? { delay } : undefined}
       whileHover={{ y: -4, transition: { duration: 0.2 } }}

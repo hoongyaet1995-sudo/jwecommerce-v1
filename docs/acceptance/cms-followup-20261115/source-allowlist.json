@@ -1,0 +1,10 @@
+{
+  "resources/admin/src/components/pages/ShippingSections.tsx": "fe3ce8dda09fa5cdc944e1b9801caf14b8137101bfcb6fa143ddc18299347265",
+  "resources/admin/src/components/pages/motion/CmsMotionWrapper.tsx": "d805fa9939c8db3303e1cc7af5b2d34a65c9a6afcc756c7ea0c477399102f123",
+  "resources/admin/src/components/pages/motion/CmsMotionWrapper.test.tsx": "c61d9e2c552b2454974e12aa4678b2135b3c91abedb50ad02744cc83cb0a6ffe",
+  "app/Domain/Cms/ConnectedStarterDrafts.php": "920b9a6f213e16a5be74bea969e8c95e0ebf9f9c58c0648fe1eb7eca8d28e9c1",
+  "tests/Feature/Cms/ConnectedStarterDraftsTest.php": "7d1b2c74e948c11fbdfb24164c6562e317c4a7832b4122a08a1ee9d1165752de",
+  "scripts/cms/export-connected-starters-20261115.mjs": "3ff041cd906fc8c4d73482938ebd4d49c303a91e0e68bb7493578ef986c095b9",
+  "scripts/releases/install-connected-starter-drafts-20261115.php": "8a8897ce4702c809758d608d2cd9e74a76c74fcecc7f27e9ad2dcfecb6a7de76",
+  "resources/cms/releases/20261115-connected-starters.json": "89440d07f95b3b9077511e21829e90049b9b9b9805ad3656010faa7e168850af"
+}
