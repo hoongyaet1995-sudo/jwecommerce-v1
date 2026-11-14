@@ -14,11 +14,34 @@ final class ShellDesignTest extends TestCase
   $profile=\App\Models\StoreSetting::where('key','shop_profile')->first()->value;
   $settings=app(StorefrontShellSettingsService::class)->live();$settings['shellDesign']=array_replace(ShellDesign::defaults('service'),['style'=>'modern','brandName'=>'JW Studio','brandLogo'=>'','ctaLabel'=>'Request a demo','ctaUrl'=>'#storefront-support-widget']);
   app(StorefrontShellSettingsService::class)->save($settings);
-  $this->get('/')->assertOk()->assertSee('JW Studio')->assertDontSee('src="/storage/company-logo.png"',false)->assertSee('data-shell-appearance="light"',false);
+  $this->get('/')->assertOk()->assertSee('JW Studio')->assertSee('src="/storage/company-logo.png"',false)->assertSee('data-shell-appearance="light"',false);
   $this->assertSame($profile,\App\Models\StoreSetting::where('key','shop_profile')->first()->value);
   $settings['shellDesign']['brandName']='';$settings['shellDesign']['brandLogo']='/storage/cms/media/11111111-1111-4111-8111-111111111111.png';app(StorefrontShellSettingsService::class)->save($settings);$this->get('/')->assertOk()->assertSee('src="/storage/cms/media/11111111-1111-4111-8111-111111111111.png"',false);
   $settings['shellDesign']['brandLogo']='javascript:alert(1)';
   $this->actingAs(User::factory()->create(['is_admin'=>true]))->putJson('/admin/api/storefront-shell-settings',$settings)->assertUnprocessable()->assertJsonValidationErrors('shellDesign.brandLogo');
+ }
+
+ public function test_logo_priority_keeps_explicit_override_then_shop_logo_then_brand_text():void {
+  \App\Models\StoreSetting::create(['key'=>'shop_profile','value'=>['data'=>['shopName'=>'Original Merchant','shopLogo'=>'/storage/company-logo.png']]]);
+  $profile=\App\Models\StoreSetting::where('key','shop_profile')->first()->value;
+  $settings=app(StorefrontShellSettingsService::class)->live();
+  $settings['shellDesign']=array_replace(ShellDesign::defaults('service'),['brandName'=>'Independent display name','brandLogo'=>'']);
+  app(StorefrontShellSettingsService::class)->save($settings);
+  $header=function():string { $html=$this->get('/')->assertOk()->getContent();preg_match('~<a class="jw-shell-brand"[^>]*>(.*?)</a>~s',$html,$match);$this->assertNotEmpty($match);return $match[1]; };
+  $inherited=$header();$this->assertStringContainsString('src="/storage/company-logo.png"',$inherited);$this->assertStringContainsString('alt="Independent display name"',$inherited);
+  // A display name must not disable the existing light/dark image variants either.
+  $settings['shellDesign']['appearance']='dark';
+  $settings['overlayLogos']=['light'=>'/storage/cms/media/11111111-1111-4111-8111-111111111111.png','dark'=>null];
+  app(StorefrontShellSettingsService::class)->save($settings);
+  $this->assertStringContainsString('src="/storage/cms/media/11111111-1111-4111-8111-111111111111.png"',$header());
+  $settings['shellDesign']['brandLogo']='/storage/cms/media/22222222-2222-4222-8222-222222222222.png';
+  app(StorefrontShellSettingsService::class)->save($settings);
+  $overridden=$header();$this->assertStringContainsString('src="/storage/cms/media/22222222-2222-4222-8222-222222222222.png"',$overridden);$this->assertStringNotContainsString('/storage/company-logo.png',$overridden);
+  $this->assertSame($profile,\App\Models\StoreSetting::where('key','shop_profile')->first()->value);
+  $settings['shellDesign']['brandLogo']='';$settings['overlayLogos']=['light'=>null,'dark'=>null];app(StorefrontShellSettingsService::class)->save($settings);
+  $this->assertStringContainsString('src="/storage/company-logo.png"',$header());
+  \App\Models\StoreSetting::where('key','shop_profile')->update(['value'=>['data'=>['shopLogo'=>'']]]);
+  $fallback=$header();$this->assertStringNotContainsString('<img',$fallback);$this->assertStringContainsString('Independent display name',$fallback);
  }
 
  public function test_menu_depth_uses_grouped_panels_and_mobile_leaf_links():void {

@@ -3,8 +3,8 @@
     $displayBrand=trim((string)($design['brandName']??''));
     $shopBrandName=$displayBrand?:$shopBrandName;
     $hasDisplayLogo=filled($design['brandLogo']??'');
-    $normalLogo=$hasDisplayLogo?$design['brandLogo']:($displayBrand?null:app(\App\Support\ShopBrand::class)->configuredLogo());
-    $variants=($displayBrand||$hasDisplayLogo)?[]:(app(\App\Services\StorefrontShellSettingsService::class)->live()['overlayLogos'] ?? []);
+    $normalLogo=$hasDisplayLogo?$design['brandLogo']:app(\App\Support\ShopBrand::class)->configuredLogo();
+    $variants=$hasDisplayLogo?[]:(app(\App\Services\StorefrontShellSettingsService::class)->live()['overlayLogos'] ?? []);
     $solidLogo=($design['appearance']==='dark' ? ($variants['light']??null) : ($variants['dark']??null)) ?: $normalLogo;
     $overlayLogo=$header && ($presentation['mode']??'normal')!=='normal' ? (($variants[$presentation['tone']]??null) ?: $solidLogo) : $solidLogo;
 @endphp
