@@ -1,3 +1,4 @@
+import {SectionEyebrow} from './SectionEyebrow';
 import {typographyStyle} from '../../cms/inspectorCapabilities';
 import React from 'react';
 import type {PageSection} from '../../types';
@@ -10,7 +11,7 @@ export function Manifesto({section}:{section:PageSection}) {
   const light=richTextHasDarkBackground(section);
   return <div data-editorial-manifesto className="@container w-full">
     <div className={`text-center ${padding}`}>
-      {section.subtitle && <MotionItem><span data-cms-text="eyebrow" style={{...({color:section.customColors?.eyebrowColor}),...typographyStyle(section,'eyebrow')}} className="block mb-6 text-xs font-bold uppercase tracking-widest text-indigo-600">{section.subtitle}</span></MotionItem>}
+      {<MotionItem><SectionEyebrow section={section}/></MotionItem>}
       <MotionItem><h2 data-cms-text="title" style={{...({color:section.customColors?.titleColor}),...typographyStyle(section,'title')}} className={`text-3xl @min-[640px]:text-4xl font-extrabold leading-[1.12] tracking-tight whitespace-pre-line break-words ${light?'text-white':'text-neutral-900'}`}>{section.title}</h2></MotionItem>
       {paragraphs.length>0 && <div className="max-w-[720px] mx-auto mt-6 space-y-5">{paragraphs.map((paragraph,index)=><MotionItem key={index}><p data-cms-text="content" style={{...({color:section.customColors?.contentColor}),...typographyStyle(section,'content')}} className={`text-base leading-relaxed whitespace-pre-line break-words ${light?'text-neutral-300':'text-neutral-500'}`}>{paragraph}</p></MotionItem>)}</div>}
     </div>

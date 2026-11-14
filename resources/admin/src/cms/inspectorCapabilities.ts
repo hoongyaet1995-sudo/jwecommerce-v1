@@ -1,3 +1,4 @@
+import {headingCapability,legacyTypographyRoles} from './sectionHeading';
 import {isPlanComparison} from './planComparison';
 import {sectionContentFields} from './contentCapabilities';
 import {repeatedItemFields} from './repeatedItemContract';
@@ -5,11 +6,11 @@ import {fontFamilies,type FontFamily} from './fontCatalog';
 import type {CSSProperties} from 'react';
 import type {PageSection} from '../types';
 export type InspectorTab='content'|'design'|'advanced';
-export type TextRole='eyebrow'|'title'|'lead'|'content'|'itemTitle'|'itemContent';
-export interface TextStyle {fontFamily?:FontFamily;fontSize?:number;fontWeight?:number;lineHeight?:number;letterSpacing?:number;color?:string}
+export type TextRole='eyebrow'|'title'|'lead'|'content'|'itemTitle'|'itemContent'|'secondaryTitle'|'label'|'number';
+export interface TextStyle {inheritPage?:boolean;colorOverride?:boolean;fontFamily?:FontFamily;fontSize?:number;fontWeight?:number;lineHeight?:number;letterSpacing?:number;color?:string}
 export type SectionTypography=Partial<Record<TextRole,TextStyle>>;
-export const textRoleLabels:Record<TextRole,string>={eyebrow:'Eyebrow',title:'Heading',lead:'Introduction',content:'Description',itemTitle:'Item headings',itemContent:'Item descriptions'};
-export const roleFields:Record<TextRole,string>={eyebrow:'subtitle',title:'title',lead:'leadText',content:'content',itemTitle:'items',itemContent:'items'};
+export const textRoleLabels:Record<TextRole,string>={eyebrow:'Eyebrow',title:'Heading',lead:'Introduction',content:'Description',itemTitle:'Item headings',itemContent:'Item descriptions',secondaryTitle:'Secondary heading',label:'Labels',number:'Numbers'};
+export const roleFields:Record<TextRole,string>={eyebrow:'eyebrow',title:'title',lead:'leadText',content:'content',itemTitle:'items',itemContent:'items',secondaryTitle:'subtitle',label:'items',number:'items'};
 export const inspectorGroups:Array<{name:string;tab:InspectorTab}>=[
  {name:'Collection layout',tab:'design'},{name:'Text & hierarchy',tab:'content'},
  {name:'Split hero card',tab:'content'},{name:'Ticker speed',tab:'design'},
@@ -25,7 +26,7 @@ export const inspectorGroups:Array<{name:string;tab:InspectorTab}>=[
  {name:'Value entries',tab:'content'},{name:'Repeatable entries',tab:'content'},
  {name:'Layout & theme',tab:'design'},{name:'Motion',tab:'design'},{name:'Palette & colors',tab:'design'},
 ];
-export function textRoles(section:PageSection):TextRole[] {
+function legacyTextRoles(section:PageSection):TextRole[] {
  if(isPlanComparison(section))return ['eyebrow','title','content','itemTitle','itemContent'];
  if(section.galleryPreset==='photo-marquee')return section.showSectionHeading===false?['eyebrow']:['eyebrow','title','content'];
  if(section.type==='hero_slider'&&['editorial-overlay','fashion-editorial'].includes(section.sliderPreset??''))return ['eyebrow','title','content'];
@@ -54,9 +55,15 @@ export function textRoles(section:PageSection):TextRole[] {
   return true;
  });
 }
+export function textRoles(section:PageSection):TextRole[]{
+ const imageOnlyItems=section.type==='logo_cloud'&&section.logoPreset==='partners'||section.type==='media_text_split'&&['corporate-courier','corporate-payments'].includes(section.layoutPreset??'');
+ const roles=legacyTextRoles(section).filter(r=>r!=='eyebrow'&&!(imageOnlyItems&&r.startsWith('item'))&&!(section.type==='media_text_split'&&!section.layoutPreset&&r.startsWith('item')));
+ return [...new Set([...(headingCapability(section).mode!=='none'?['eyebrow'] as TextRole[]:[]),...roles,...legacyTypographyRoles(section).filter(r=>!(r==='label'&&section.type==='faq_accordion'&&['pricing-card-faq','pricing-band-faq'].includes(section.faqPreset??'')))])];
+}
 export function isTypography(value:unknown):value is SectionTypography {
  if(!value||typeof value!=='object'||Array.isArray(value))return false;
  return Object.entries(value).every(([role,style])=>Object.prototype.hasOwnProperty.call(textRoleLabels,role)&&style&&typeof style==='object'&&!Array.isArray(style)&&Object.entries(style).every(([key,v])=>{
+  if(key==='inheritPage'||key==='colorOverride')return typeof v==='boolean';
   if(key==='fontFamily')return typeof v==='string'&&Object.prototype.hasOwnProperty.call(fontFamilies,v);
   if(key==='color')return typeof v==='string'&&/^#[\da-f]{6}$/i.test(v);
   if(typeof v!=='number'||!Number.isFinite(v))return false;
@@ -69,7 +76,7 @@ export function isTypography(value:unknown):value is SectionTypography {
 }
 const readableRoleFloor:Partial<Record<TextRole,number>>={content:16,lead:16,itemContent:14,itemTitle:18,eyebrow:12};
 export function typographyStyle(section:PageSection,role:TextRole):CSSProperties {
- const value=section.typography?.[role];if(!value)return {};
+ const value=section.typography?.[role]??(legacyTypographyRoles(section).includes(role as any)?section.typography?.eyebrow:undefined);if(!value)return {};
  return {...(value.fontFamily?{fontFamily:fontFamilies[value.fontFamily]}:{}),
   ...(value.fontSize?{fontSize:`clamp(${Math.min(value.fontSize,Math.max(readableRoleFloor[role]??8,Math.round(value.fontSize*.7)))}px, ${value.fontSize/7.68}cqi, ${value.fontSize}px)`}:{}),
   ...(value.fontWeight?{fontWeight:value.fontWeight}:{}),...(value.lineHeight?{lineHeight:value.lineHeight}:{}),...(value.letterSpacing!==undefined?{letterSpacing:`${value.letterSpacing}px`}:{}),...(value.color?{color:value.color}:{}),

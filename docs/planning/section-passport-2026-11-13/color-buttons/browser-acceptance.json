@@ -1,0 +1,26 @@
+{
+  "all161ColorMisses": [],
+  "restoredAfterSave": {
+    "bg": "rgb(138, 0, 204)",
+    "color": "rgb(255, 255, 255)",
+    "height": 36,
+    "minHeight": "36px",
+    "radius": "6px"
+  },
+  "mobile": {
+    "viewport": 390,
+    "width": 390
+  },
+  "manualDraft": 81,
+  "checks": [
+    "Inspector edit/save/exit/reload",
+    "compact36px and large52px",
+    "radius6px",
+    "reset local hover inherits page purple",
+    "local hover brown overrides page",
+    "Fashion item title and link independent",
+    "page keep layout colors",
+    "all161 original unrelated text color differences0"
+  ],
+  "noFormsSubmitted": true
+}

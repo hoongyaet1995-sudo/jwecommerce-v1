@@ -14,9 +14,9 @@ describe('Website next connections',()=>{
   const s=websiteBuilderConnections('f01',['/shop.webp','/chat.webp','/ai.webp']);
   expect(s.type).toBe('media_gallery');expect(s.galleryPreset).toBe('corporate-connections');
   expect(s.containerMode).toBe('page');expect(s.motionPreset).toBe('subtle-lift');
-  expect(sectionContentFields(s)).toEqual(['title','content']);
+  expect(sectionContentFields(s)).toEqual(['eyebrow','title','content']);
   expect(repeatedItemFields(s)).toEqual(['title','description','imageUrl','buttonText','linkUrl']);
-  expect(textRoles(s)).toEqual(['title','content','itemTitle','itemContent']);expect(supportsMediaWidth(s)).toBe(false);
+  expect(textRoles(s)).toEqual(['eyebrow','title','content','itemTitle','itemContent']);expect(supportsMediaWidth(s)).toBe(false);
   expect(imageTargets(s).map(t=>t.url)).toEqual(['/shop.webp','/chat.webp','/ai.webp']);
  });
  it('links only the three CTA buttons and never image, title or whole card',()=>{

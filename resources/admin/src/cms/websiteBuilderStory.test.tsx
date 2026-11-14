@@ -14,9 +14,9 @@ describe('Website Builder section story',()=>{
   const s=websiteBuilderStory('f01','/storage/cms/media/story.webp');
   expect(s.type).toBe('media_text_split');expect(s.layoutPreset).toBe('corporate-section-story');
   expect(s.containerMode).toBe('page');expect(s.motionPreset).toBe('subtle-lift');
-  expect(sectionContentFields(s)).toEqual(['title','content','mediaUrl','mediaAlt']);
+  expect(sectionContentFields(s)).toEqual(['eyebrow','title','content','mediaUrl','mediaAlt']);
   expect(repeatedItemFields(s)).toEqual(['title','icon']);
-  expect(textRoles(s)).toEqual(['title','content','itemTitle']);expect(imageTargets(s).map(t=>t.id)).toEqual(['mediaUrl']);
+  expect(textRoles(s)).toEqual(['eyebrow','title','content','itemTitle']);expect(imageTargets(s).map(t=>t.id)).toEqual(['mediaUrl']);
   expect(supportsMediaWidth(s)).toBe(false);
   expect(s.items?.map(i=>i.title)).toEqual(['Hero & introduction','Services & features','Galleries, FAQs & contact']);
  });

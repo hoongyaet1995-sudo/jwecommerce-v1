@@ -13,7 +13,7 @@ describe('Website Builder composite Hero',()=>{
   const section=websiteBuilderHero('f01','/storage/cms-media/hero.webp');
   expect(section.type).toBe('hero_banner');
   expect(section.heroBannerPreset).toBe('corporate-split-composite');
-  expect(sectionContentFields(section)).toEqual(expect.arrayContaining(['title','subtitle','content','mediaUrl','mediaAlt','buttonText','buttonLink','secondaryButtonText','secondaryButtonLink']));
+  expect(sectionContentFields(section)).toEqual(expect.arrayContaining(['eyebrow','title','content','mediaUrl','mediaAlt','buttonText','buttonLink','secondaryButtonText','secondaryButtonLink']));
   expect(imageTargets(section).map(target=>target.id)).toEqual(['mediaUrl']);
   expect(repeatedItemFields(section)).toEqual([]);
   expect(section.containerMode).toBe('page');
@@ -37,4 +37,10 @@ describe('Website Builder composite Hero',()=>{
   const html=renderToStaticMarkup(<CorporateHero section={{...sparse,heroBannerPreset:'corporate-centered'}}/>);
   expect(html).not.toContain('corp-hero-split');
  });
+});
+it('keeps split Hero secondary text readable across section surfaces',()=>{
+ const base={...websiteBuilderHero('qa','/hero.webp'),customColors:{secondaryBtnBg:'#8524ff',secondaryBtnText:'#ffffff',titleColor:'#0d1234'}};
+ const light=renderToStaticMarkup(<CorporateHero section={{...base,surface:'light'}}/>);
+ const contrast=renderToStaticMarkup(<CorporateHero section={{...base,surface:'contrast',customColors:{...base.customColors,titleColor:'#ffffff'}}}/>);
+ expect(light).toContain('style="color:#8524ff"');expect(contrast).toContain('style="color:#ffffff"');
 });

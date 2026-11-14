@@ -15,9 +15,9 @@ describe('Website Builder overview',()=>{
   expect(s.type).toBe('media_text_split');expect(s.id).toBe('f01-builder');
   expect(s.layoutPreset).toBe('corporate-builder-overview');
   expect(s.containerMode).toBe('page');expect(s.motionPreset).toBe('subtle-lift');
-  expect(sectionContentFields(s)).toEqual(['title','content','mediaUrl','mediaAlt']);
+  expect(sectionContentFields(s)).toEqual(['eyebrow','title','content','mediaUrl','mediaAlt']);
   expect(repeatedItemFields(s)).toEqual(['title','icon']);
-  expect(textRoles(s)).toEqual(['title','content','itemTitle']);
+  expect(textRoles(s)).toEqual(['eyebrow','title','content','itemTitle']);
   expect(imageTargets(s).map(t=>t.id)).toEqual(['mediaUrl']);
   expect(supportsMediaWidth(s)).toBe(false);
   expect(s.items?.map(i=>i.title)).toEqual(['Arrange sections','Edit content','Preview each device']);

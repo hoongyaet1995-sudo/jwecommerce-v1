@@ -1,1 +1,0 @@
-import{bL as s,bK as a,j as t,r,a4 as n,bM as c,bN as i}from"./index-DD6mNOzI.js";const o=document.getElementById("cms-page-root");if(o){const e=s();a.createRoot(o).render(t.jsx(r.StrictMode,{children:e?t.jsx(n,{payload:e,children:t.jsx(c,{sections:e.page.document.sections,mode:e.context.mode})}):t.jsx(i,{})}))}

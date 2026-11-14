@@ -1,3 +1,4 @@
+import {headingCapability} from './sectionHeading';
 import {isWideVisualEditorial} from './wideVisualEditorial';
 import {isImageFlow} from './imageFlow';
 import {isPlanComparison,isFramedFaq} from './planComparison';
@@ -30,8 +31,8 @@ const fields:Record<PageSection['type'],readonly string[]>={
  chapter_navigation:[], chapter_block:copy, delivery_table:[...copy,'deliverySource','deliveryNote','deliveryDestinationLabel','deliveryEstimateLabel','deliveryFeeLabel'],
  policy_content:[...copy,'policyNote'], payment_methods:[...copy,'paymentNote'], shop_navigation:[...copy,...primary], promotion_highlights:copy,
 };
-export const contentFieldKeys=new Set(Object.values(fields).flat().concat(['leadText','mapEmbedUrl','contactAddressIcon','buttonText','buttonLink']));
-export function sectionContentFields(section:PageSection):readonly string[]{
+export const contentFieldKeys=new Set(Object.values(fields).flat().concat(['leadText','mapEmbedUrl','contactAddressIcon','buttonText','buttonLink','eyebrow']));
+function legacySectionContentFields(section:PageSection):readonly string[]{
  if(section.type==='media_text_split'&&['contained-wide-centered','wide-visual-centered','inset-surface-panel','split-visual-surface'].includes(section.layoutPreset??''))return ['title','content','mediaUrl','mediaAlt'];
  if(isWideVisualEditorial(section))return ['subtitle','title','content','mediaUrl','mediaAlt'];
  if(isImageFlow(section))return ['title','content'];
@@ -88,5 +89,12 @@ export function sectionContentFields(section:PageSection):readonly string[]{
  }
  if(section.showSectionHeading===false || (section.type==='values_list'||section.featureCardsPreset==='values-list')&&!section.valuesShowHeading)result=result.filter(key=>!copy.includes(key));
  if(section.type==='media_gallery'&&section.galleryPreset==='photo-marquee'&&section.showSectionHeading===false)result.push('subtitle');
+ return [...new Set(result)];
+}
+
+export function sectionContentFields(section:PageSection):readonly string[]{
+ const cap=headingCapability(section);let result=[...legacySectionContentFields(section)];
+ if(cap.legacySubtitle==='eyebrow'||cap.legacySubtitle==='unused')result=result.filter(k=>k!=='subtitle');
+ if(cap.mode==='section')result.unshift('eyebrow');
  return [...new Set(result)];
 }

@@ -269,6 +269,15 @@
         },
         "itemContent": {
           "$ref": "textStyle"
+        },
+        "secondaryTitle": {
+          "$ref": "textStyle"
+        },
+        "label": {
+          "$ref": "textStyle"
+        },
+        "number": {
+          "$ref": "textStyle"
         }
       }
     },
@@ -434,6 +443,12 @@
         "color": {
           "type": "string",
           "format": "hex_color"
+        },
+        "inheritPage": {
+          "type": "boolean"
+        },
+        "colorOverride": {
+          "type": "boolean"
         }
       }
     },
@@ -745,7 +760,8 @@
         "industrial-outline",
         "saas-closing",
         "gradient-panel",
-        "illustrated-panel-right", "illustrated-panel"
+        "illustrated-panel-right",
+        "illustrated-panel"
       ]
     },
     "ctaBannerHeight": {
@@ -1279,6 +1295,9 @@
         },
         "highlightLabel": {
           "type": "string"
+        },
+        "eyebrow": {
+          "type": "string"
         }
       }
     },
@@ -1578,12 +1597,26 @@
             "normal",
             "large"
           ]
+        },
+        "unifiedButtons": {
+          "type": "boolean"
+        },
+        "buttonHover": {
+          "type": "boolean"
+        },
+        "buttonHoverColor": {
+          "type": "string",
+          "format": "hex_color"
+        },
+        "preserveLayout": {
+          "type": "boolean"
         }
       }
     },
     "surface": {
       "type": "string",
       "enum": [
+        "page",
         "light",
         "contrast"
       ]
@@ -1777,6 +1810,71 @@
     },
     "planDescription": {
       "type": "string"
+    },
+    "eyebrow": {
+      "type": "string"
+    },
+    "buttonRadius": {
+      "type": "integer",
+      "enum": [
+        0,
+        6,
+        999
+      ]
+    },
+    "buttonSize": {
+      "type": "string",
+      "enum": [
+        "compact",
+        "normal",
+        "large"
+      ]
+    },
+    "colorOverrides": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "eyebrowColor",
+          "titleColor",
+          "contentColor",
+          "primaryBtnBg",
+          "primaryBtnText",
+          "secondaryBtnBg",
+          "secondaryBtnText",
+          "customBgColor"
+        ]
+      }
+    },
+    "buttonColors": {
+      "type": "object",
+      "allowUnknownFields": false,
+      "fields": {
+        "primaryBg": {
+          "type": "string",
+          "format": "hex_color"
+        },
+        "primaryText": {
+          "type": "string",
+          "format": "hex_color"
+        },
+        "primaryHover": {
+          "type": "string",
+          "format": "hex_color"
+        },
+        "secondaryBg": {
+          "type": "string",
+          "format": "hex_color"
+        },
+        "secondaryText": {
+          "type": "string",
+          "format": "hex_color"
+        },
+        "secondaryHover": {
+          "type": "string",
+          "format": "hex_color"
+        }
+      }
     }
   },
   "section": {
@@ -1800,7 +1898,12 @@
           "customColors",
           "items",
           "surface",
-          "brandPalette"
+          "brandPalette",
+          "eyebrow",
+          "buttonRadius",
+          "buttonSize",
+          "colorOverrides",
+          "buttonColors"
         ],
         "publishRequired": [
           "title"
@@ -1842,7 +1945,12 @@
           "policyNote",
           "showSectionHeading",
           "surface",
-          "brandPalette"
+          "brandPalette",
+          "eyebrow",
+          "buttonRadius",
+          "buttonSize",
+          "colorOverrides",
+          "buttonColors"
         ],
         "publishRequired": [
           "title"
@@ -1877,7 +1985,12 @@
           "items",
           "surface",
           "brandPalette",
-          "heroBannerPreset"
+          "heroBannerPreset",
+          "eyebrow",
+          "buttonRadius",
+          "buttonSize",
+          "colorOverrides",
+          "buttonColors"
         ],
         "publishRequired": [
           "title"
@@ -1913,7 +2026,12 @@
           "customColors",
           "sliderPreset",
           "surface",
-          "brandPalette"
+          "brandPalette",
+          "eyebrow",
+          "buttonRadius",
+          "buttonSize",
+          "colorOverrides",
+          "buttonColors"
         ],
         "publishRequired": [
           "title"
@@ -1951,7 +2069,12 @@
           "cardExtra",
           "customColors",
           "surface",
-          "brandPalette"
+          "brandPalette",
+          "eyebrow",
+          "buttonRadius",
+          "buttonSize",
+          "colorOverrides",
+          "buttonColors"
         ],
         "publishRequired": [
           "title"
@@ -1977,7 +2100,12 @@
           "items",
           "customColors",
           "surface",
-          "brandPalette"
+          "brandPalette",
+          "eyebrow",
+          "buttonRadius",
+          "buttonSize",
+          "colorOverrides",
+          "buttonColors"
         ],
         "publishRequired": [
           "title"
@@ -2028,7 +2156,12 @@
           "items",
           "mediaContainerMode",
           "surface",
-          "brandPalette"
+          "brandPalette",
+          "eyebrow",
+          "buttonRadius",
+          "buttonSize",
+          "colorOverrides",
+          "buttonColors"
         ],
         "publishRequired": [
           "title"
@@ -2058,7 +2191,12 @@
           "paddingY",
           "customColors",
           "surface",
-          "brandPalette"
+          "brandPalette",
+          "eyebrow",
+          "buttonRadius",
+          "buttonSize",
+          "colorOverrides",
+          "buttonColors"
         ],
         "publishRequired": [
           "title"
@@ -2084,7 +2222,12 @@
           "items",
           "customColors",
           "surface",
-          "brandPalette"
+          "brandPalette",
+          "eyebrow",
+          "buttonRadius",
+          "buttonSize",
+          "colorOverrides",
+          "buttonColors"
         ],
         "publishRequired": [
           "title"
@@ -2111,7 +2254,12 @@
           "items",
           "customColors",
           "surface",
-          "brandPalette"
+          "brandPalette",
+          "eyebrow",
+          "buttonRadius",
+          "buttonSize",
+          "colorOverrides",
+          "buttonColors"
         ],
         "publishRequired": [
           "title"
@@ -2138,7 +2286,12 @@
           "paddingY",
           "customColors",
           "surface",
-          "brandPalette"
+          "brandPalette",
+          "eyebrow",
+          "buttonRadius",
+          "buttonSize",
+          "colorOverrides",
+          "buttonColors"
         ],
         "publishRequired": [
           "title"
@@ -2183,7 +2336,12 @@
           "brandPalette",
           "productTabs",
           "items",
-          "imageSlots"
+          "imageSlots",
+          "eyebrow",
+          "buttonRadius",
+          "buttonSize",
+          "colorOverrides",
+          "buttonColors"
         ],
         "publishRequired": [
           "title",
@@ -2217,7 +2375,12 @@
           "paddingY",
           "customColors",
           "surface",
-          "brandPalette"
+          "brandPalette",
+          "eyebrow",
+          "buttonRadius",
+          "buttonSize",
+          "colorOverrides",
+          "buttonColors"
         ],
         "publishRequired": [
           "title"
@@ -2257,7 +2420,12 @@
           "paddingY",
           "customColors",
           "surface",
-          "brandPalette"
+          "brandPalette",
+          "eyebrow",
+          "buttonRadius",
+          "buttonSize",
+          "colorOverrides",
+          "buttonColors"
         ],
         "publishRequired": [
           "title"
@@ -2293,7 +2461,12 @@
           "planTerms",
           "pricingSourcePageId",
           "pricingSourceSectionId",
-          "pricingSourceTermsSectionId"
+          "pricingSourceTermsSectionId",
+          "eyebrow",
+          "buttonRadius",
+          "buttonSize",
+          "colorOverrides",
+          "buttonColors"
         ],
         "publishRequired": [
           "title"
@@ -2333,7 +2506,12 @@
           "galleryFilters",
           "galleryLightbox",
           "galleryInitialCount",
-          "galleryLoadCount"
+          "galleryLoadCount",
+          "eyebrow",
+          "buttonRadius",
+          "buttonSize",
+          "colorOverrides",
+          "buttonColors"
         ],
         "publishRequired": [
           "title"
@@ -2359,7 +2537,12 @@
           "paddingY",
           "customColors",
           "surface",
-          "brandPalette"
+          "brandPalette",
+          "eyebrow",
+          "buttonRadius",
+          "buttonSize",
+          "colorOverrides",
+          "buttonColors"
         ],
         "publishRequired": [
           "title"
@@ -2389,7 +2572,12 @@
           "paddingY",
           "customColors",
           "surface",
-          "brandPalette"
+          "brandPalette",
+          "eyebrow",
+          "buttonRadius",
+          "buttonSize",
+          "colorOverrides",
+          "buttonColors"
         ],
         "publishRequired": [
           "title"
@@ -2417,7 +2605,12 @@
           "items",
           "customColors",
           "surface",
-          "brandPalette"
+          "brandPalette",
+          "eyebrow",
+          "buttonRadius",
+          "buttonSize",
+          "colorOverrides",
+          "buttonColors"
         ],
         "publishRequired": [
           "title"
@@ -2447,7 +2640,12 @@
           "items",
           "customColors",
           "surface",
-          "brandPalette"
+          "brandPalette",
+          "eyebrow",
+          "buttonRadius",
+          "buttonSize",
+          "colorOverrides",
+          "buttonColors"
         ],
         "publishRequired": [
           "title"
@@ -2477,7 +2675,12 @@
           "items",
           "customColors",
           "surface",
-          "brandPalette"
+          "brandPalette",
+          "eyebrow",
+          "buttonRadius",
+          "buttonSize",
+          "colorOverrides",
+          "buttonColors"
         ],
         "publishRequired": [
           "title"
@@ -2504,7 +2707,12 @@
           "items",
           "customColors",
           "surface",
-          "brandPalette"
+          "brandPalette",
+          "eyebrow",
+          "buttonRadius",
+          "buttonSize",
+          "colorOverrides",
+          "buttonColors"
         ],
         "publishRequired": [
           "title"
@@ -2537,7 +2745,12 @@
           "comparisonPreset",
           "imageSlots",
           "buttonText",
-          "buttonLink"
+          "buttonLink",
+          "eyebrow",
+          "buttonRadius",
+          "buttonSize",
+          "colorOverrides",
+          "buttonColors"
         ],
         "publishRequired": [
           "title"
@@ -2580,7 +2793,12 @@
           "planTerms",
           "planPricingMode",
           "planPriceLabel",
-          "planDescription"
+          "planDescription",
+          "eyebrow",
+          "buttonRadius",
+          "buttonSize",
+          "colorOverrides",
+          "buttonColors"
         ],
         "publishRequired": [
           "title"
@@ -2619,7 +2837,12 @@
           "secondaryButtonText",
           "secondaryButtonLink",
           "surface",
-          "brandPalette"
+          "brandPalette",
+          "eyebrow",
+          "buttonRadius",
+          "buttonSize",
+          "colorOverrides",
+          "buttonColors"
         ],
         "publishRequired": [
           "title"
@@ -2651,7 +2874,12 @@
           "mapVisible",
           "contactAddressIcon",
           "surface",
-          "brandPalette"
+          "brandPalette",
+          "eyebrow",
+          "buttonRadius",
+          "buttonSize",
+          "colorOverrides",
+          "buttonColors"
         ],
         "publishRequired": [
           "title"
@@ -2680,7 +2908,12 @@
           "customColors",
           "surface",
           "brandPalette",
-          "testimonialPreset"
+          "testimonialPreset",
+          "eyebrow",
+          "buttonRadius",
+          "buttonSize",
+          "colorOverrides",
+          "buttonColors"
         ],
         "publishRequired": [
           "title"
@@ -2714,7 +2947,12 @@
           "items",
           "customColors",
           "surface",
-          "brandPalette"
+          "brandPalette",
+          "eyebrow",
+          "buttonRadius",
+          "buttonSize",
+          "colorOverrides",
+          "buttonColors"
         ],
         "publishRequired": [
           "title"
@@ -2747,7 +2985,12 @@
           "paddingY",
           "customColors",
           "surface",
-          "brandPalette"
+          "brandPalette",
+          "eyebrow",
+          "buttonRadius",
+          "buttonSize",
+          "colorOverrides",
+          "buttonColors"
         ],
         "publishRequired": [
           "title"
@@ -2776,7 +3019,12 @@
           "customColors",
           "surface",
           "brandPalette",
-          "newsletterPreset"
+          "newsletterPreset",
+          "eyebrow",
+          "buttonRadius",
+          "buttonSize",
+          "colorOverrides",
+          "buttonColors"
         ],
         "publishRequired": [
           "title"
@@ -2811,7 +3059,12 @@
           "deliveryFeeLabel",
           "items",
           "surface",
-          "brandPalette"
+          "brandPalette",
+          "eyebrow",
+          "buttonRadius",
+          "buttonSize",
+          "colorOverrides",
+          "buttonColors"
         ],
         "publishRequired": [
           "title"
@@ -2846,7 +3099,12 @@
           "buttonStyle",
           "columnsCount",
           "surface",
-          "brandPalette"
+          "brandPalette",
+          "eyebrow",
+          "buttonRadius",
+          "buttonSize",
+          "colorOverrides",
+          "buttonColors"
         ],
         "publishRequired": [
           "title"
@@ -2873,7 +3131,12 @@
           "paymentNote",
           "textAlignment",
           "surface",
-          "brandPalette"
+          "brandPalette",
+          "eyebrow",
+          "buttonRadius",
+          "buttonSize",
+          "colorOverrides",
+          "buttonColors"
         ],
         "publishRequired": [
           "title"
@@ -2907,7 +3170,12 @@
           "bannerHeight",
           "showSectionHeading",
           "surface",
-          "brandPalette"
+          "brandPalette",
+          "eyebrow",
+          "buttonRadius",
+          "buttonSize",
+          "colorOverrides",
+          "buttonColors"
         ],
         "publishRequired": [
           "title"
@@ -2937,7 +3205,12 @@
           "promotionLayout",
           "showOfferBadges",
           "surface",
-          "brandPalette"
+          "brandPalette",
+          "eyebrow",
+          "buttonRadius",
+          "buttonSize",
+          "colorOverrides",
+          "buttonColors"
         ],
         "publishRequired": [
           "title"

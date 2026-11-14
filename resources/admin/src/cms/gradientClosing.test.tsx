@@ -8,7 +8,7 @@ import {repeatedItemFields} from './repeatedItemContract';
 import {textRoles} from './inspectorCapabilities';
 it('creates an independent generic CTA with no JW destination or unsupported editors',()=>{
  const a=gradientClosing('a'),b=gradientClosing('b');expect(a.type).toBe('cta_strip');expect(a.ctaPreset).toBe('gradient-panel');expect(a.buttonLink).toBe('');expect(a.containerMode).toBe('page');expect(a.motionPreset).toBe('subtle-lift');
- expect(sectionContentFields(a)).toEqual(['title','content','buttonText','buttonLink']);expect(repeatedItemFields(a)).toEqual([]);expect(textRoles(a)).toEqual(['title','content']);
+ expect(sectionContentFields(a)).toEqual(['eyebrow','title','content','buttonText','buttonLink']);expect(repeatedItemFields(a)).toEqual([]);expect(textRoles(a)).toEqual(['eyebrow','title','content']);
  a.title='Book your visit';expect(b.title).not.toBe(a.title);expect(JSON.stringify(b)).not.toContain('jwaistudio');
 });
 it('renders editable title, body and one button without legacy subtitle or second action',()=>{

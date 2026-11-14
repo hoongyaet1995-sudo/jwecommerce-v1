@@ -21,7 +21,7 @@ const fields:Partial<Record<PageSection['type'],readonly string[]>>={
  policy_content:['title','description','icon','linkUrl','buttonText','imageUrl'],
  delivery_table:['title','deliveryEstimate','deliveryFee'],chapter_navigation:['title','linkUrl'],
 };
-export function repeatedItemFields(section:PageSection):readonly string[]{
+function legacyRepeatedItemFields(section:PageSection):readonly string[]{
  if(section.type==='media_text_split'&&['contained-wide-centered','wide-visual-centered','inset-surface-panel','split-visual-surface'].includes(section.layoutPreset??''))return [];
  if(isWideVisualEditorial(section))return [];
  if(isPlanComparison(section))return section.planContentSource==='reference'?['sourceId','icon','buttonText','linkUrl']:['title','description','price','features','badge','isHighlighted','pricingMode','pricingLabel','billingLabel','highlightLabel','icon','buttonText','linkUrl'];
@@ -78,5 +78,10 @@ export function repeatedItemFields(section:PageSection):readonly string[]{
 }
 export function itemSupports(section:PageSection,key:string){return repeatedItemFields(section).includes(key);}
 export function supportedNewItem(section:PageSection,item:SectionItem):SectionItem{
- return Object.fromEntries(Object.entries({...item,...(!itemSupports(section,'title')?{title:''}:{})}).filter(([key])=>key==='id'||key==='title'||itemSupports(section,key))) as unknown as SectionItem;
+ return Object.fromEntries(Object.entries({...item,...(section.type==='hero_slider'&&!Object.prototype.hasOwnProperty.call(item,'eyebrow')?{eyebrow:''}:{}),...(!itemSupports(section,'title')?{title:''}:{})}).filter(([key])=>key==='id'||key==='title'||itemSupports(section,key))) as unknown as SectionItem;
+}
+
+export function repeatedItemFields(section:PageSection):readonly string[]{
+ const fields=legacyRepeatedItemFields(section);
+ return section.type==='hero_slider'?['eyebrow',...fields.filter(k=>k!=='subtitle'&&k!=='badge')]:fields;
 }

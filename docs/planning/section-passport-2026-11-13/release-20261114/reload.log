@@ -1,0 +1,9 @@
+
+ RUN  v3.2.7 C:/Users/User/.codex/worktrees/passport-release-20261114/jwstudio-ecommerce/resources/admin
+
+··
+
+ Test Files  2 passed (2)
+      Tests  2 passed (2)
+   Start at  11:05:20
+   Duration  8.78s (transform 1.29s, setup 0ms, collect 5.25s, tests 6.79s, environment 1.76s, prepare 301ms)

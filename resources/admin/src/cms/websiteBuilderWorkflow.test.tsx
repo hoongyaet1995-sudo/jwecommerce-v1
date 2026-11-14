@@ -14,9 +14,9 @@ describe('Website illustrated workflow',()=>{
   const s=websiteBuilderWorkflow('f01',['/shape.webp','/edit.webp','/publish.webp']);
   expect(s.type).toBe('media_gallery');expect(s.galleryPreset).toBe('corporate-illustrated-steps');
   expect(s.containerMode).toBe('page');expect(s.motionPreset).toBe('subtle-lift');
-  expect(sectionContentFields(s)).toEqual(['title','content']);
+  expect(sectionContentFields(s)).toEqual(['eyebrow','title','content']);
   expect(repeatedItemFields(s)).toEqual(['title','description','imageUrl']);
-  expect(textRoles(s)).toEqual(['title','content','itemTitle','itemContent']);
+  expect(textRoles(s)).toEqual(['eyebrow','title','content','itemTitle','itemContent']);
   expect(imageTargets(s).map(t=>t.url)).toEqual(['/shape.webp','/edit.webp','/publish.webp']);expect(supportsMediaWidth(s)).toBe(false);
  });
  it('regenerates numbering/connectors after add, reorder and delete; never adds a trailing connector',()=>{

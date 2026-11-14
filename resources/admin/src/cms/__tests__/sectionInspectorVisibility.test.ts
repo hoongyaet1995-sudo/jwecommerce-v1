@@ -22,6 +22,7 @@ const sectionControlInventory = [
   'title',
   'isVisible',
   'subtitle',
+  'eyebrow',
   'content',
   'cardBadge',
   'cardTitle',
@@ -71,6 +72,7 @@ const sectionControlInventory = [
 
 const itemControlInventory = [
   'title',
+  'eyebrow',
   'description',
   'imageUrl',
   'badge',

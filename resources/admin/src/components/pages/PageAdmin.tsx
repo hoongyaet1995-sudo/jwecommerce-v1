@@ -1,3 +1,4 @@
+import {headingCapability,sectionEyebrow,slideEyebrow} from '../../cms/sectionHeading';
 import {isConnectedShowcase} from '../../cms/connectedShowcaseTemplates';
 import {usePublicationReview} from '../search/PublicationReview';
 import {savePublicationToken} from '../../integration/searchVisibility';
@@ -1369,7 +1370,7 @@ export const PageAdmin: React.FC = () => {
 
                     <div className="flex items-center justify-between text-[11px] text-neutral-400 mt-2">
                       <span className="truncate max-w-[120px]">
-                        {section.subtitle || 'No eyebrow'}
+                        {(headingCapability(section).mode==='slide'&&section.items?.[0]?slideEyebrow(section,section.items[0]):sectionEyebrow(section)) || 'No eyebrow'}
                       </span>
                       <span className={`w-2 h-2 rounded-full ${section.isVisible ? 'bg-emerald-500' : 'bg-neutral-400'}`} />
                     </div>
@@ -1476,7 +1477,7 @@ export const PageAdmin: React.FC = () => {
         {/* Right Panel: Section Inspector (Collapsible) */}
         {!isInspectorCollapsed ? (
           <div className="w-84 lg:w-96 flex-shrink-0 flex flex-col transition-all duration-300">
-            <SectionInspector pageTypography={currentPage.style?.typography} pagePalette={currentPage.style?.palette} followTheme={currentPage.style?.colorSource==='theme'} promotionOffers={promotionOffers}
+            <SectionInspector pagePreserveLayout={currentPage.style?.preserveLayout} pageButtonStyle={currentPage.style} pageSpacing={currentPage.style?.spacing} pageTypography={currentPage.style?.typography} pagePalette={currentPage.style?.palette} followTheme={currentPage.style?.colorSource==='theme'} promotionOffers={promotionOffers}
                 selectedElement={selectedElement?.sectionId===activeSection?.id?selectedElement:undefined}
               key={currentPage.id}
               pageId={currentPage.id}

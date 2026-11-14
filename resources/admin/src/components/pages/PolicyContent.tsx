@@ -1,3 +1,4 @@
+import {SectionEyebrow} from './SectionEyebrow';
 import {PolicyDocument} from './PolicyDocument';
 import {SectionIcon} from './IconPicker';
 import React,{useState} from 'react';
@@ -20,7 +21,7 @@ export function PolicyContent({section,isEditingMode=false,embedded=false}:{sect
  if(['document','directory'].includes(preset))return <PolicyDocument section={section} isEditingMode={isEditingMode} embedded={embedded}/>;
  return <div data-policy-content={preset} className={`@container min-w-0 ${embedded?'':section.paddingY==='compact'?'py-8':section.paddingY==='spacious'?'py-20':'py-12 @min-[1024px]:py-16'}`}>
   {section.showSectionHeading!==false&&<div className={`mb-8 ${section.textAlignment==='center'?'text-center':''}`}>
-   {!embedded&&section.subtitle&&<p data-cms-text="eyebrow" style={color('eyebrow')} className="text-xs font-bold uppercase tracking-widest mb-4">{section.subtitle}</p>}
+   {<SectionEyebrow section={section}/>}
    <h2 data-cms-text="title" style={color('title')} className="text-3xl @min-[640px]:text-4xl font-extrabold tracking-tight leading-tight whitespace-pre-line">{section.title}</h2>
    {section.content&&<div data-cms-text="content" style={color('content')} className="mt-4 space-y-3 text-base leading-relaxed">{section.content.split(/\n\s*\n/).map((p,i)=><p key={i}>{p}</p>)}</div>}
   </div>}
@@ -35,7 +36,7 @@ export function PolicyContent({section,isEditingMode=false,embedded=false}:{sect
   </ol>:<>
   <div {...(preset==='tabs'?{role:'tabpanel','aria-labelledby':`${section.id}-tab-${groups.indexOf(active)}`,id:`${section.id}-panel`}:{})} className={['choices','columns','timeline'].includes(preset)?`grid grid-cols-1 ${section.columnsCount===2?'@min-[640px]:grid-cols-2':section.columnsCount===3?'@min-[640px]:grid-cols-3':preset==='columns'?'@min-[640px]:grid-cols-2':'@min-[640px]:grid-cols-3'} gap-6`:''}>
    {shown.map((item,index)=>{const Icon=item.icon==='ArrowLeftRight'?ArrowLeftRight:item.icon==='ShieldCheck'?ShieldCheck:item.icon==='FileText'?FileText:Package;
-    if(preset==='guidelines'||preset==='tabs')return <div key={item.id} data-inspector-item={item.id} className="grid grid-cols-1 @min-[640px]:grid-cols-[1fr_2fr] gap-2 @min-[640px]:gap-8 py-5 border-b border-neutral-200">{title(item)}<div>{description(item)}{item.linkUrl&&<a data-cms-action="itemLink" data-cms-item={item.id} href={item.linkUrl} onClick={e=>{if(isEditingMode)e.preventDefault();else if(item.linkUrl==='#storefront-support-widget'){e.preventDefault();document.getElementById('sf-support-launcher')?.click();}}} className="inline-flex items-center gap-2 text-indigo-600 text-sm mt-2">{item.buttonText||'Learn more'}<ArrowRight className="w-4 h-4"/></a>}</div></div>;
+    if(preset==='guidelines'||preset==='tabs')return <div key={item.id} data-inspector-item={item.id} className="grid grid-cols-1 @min-[640px]:grid-cols-[1fr_2fr] gap-2 @min-[640px]:gap-8 py-5 border-b border-neutral-200">{title(item)}<div>{description(item)}{item.linkUrl&&<a data-cms-button="primary" data-cms-button-kind="link" data-cms-action="itemLink" data-cms-item={item.id} href={item.linkUrl} onClick={e=>{if(isEditingMode)e.preventDefault();else if(item.linkUrl==='#storefront-support-widget'){e.preventDefault();document.getElementById('sf-support-launcher')?.click();}}} className="inline-flex items-center gap-2 text-indigo-600 text-sm mt-2">{item.buttonText||'Learn more'}<ArrowRight className="w-4 h-4"/></a>}</div></div>;
     if(preset==='steps')return <div key={item.id} className="grid grid-cols-[56px_minmax(0,1fr)] gap-6 py-5 border-b border-neutral-200"><span className="text-5xl font-light text-neutral-300">{String(index+1).padStart(2,'0')}</span><div>{title(item)}{description(item)}</div></div>;
     return <div key={item.id} className={preset==='choices'?'p-6 border border-neutral-200 rounded-lg text-center':preset==='timeline'?'relative py-5 @min-[640px]:border-t border-neutral-300':'py-4'}>{preset==='timeline'?<span className="flex w-8 h-8 rounded-full bg-indigo-600 text-white items-center justify-center mb-4">{index+1}</span>:<SectionIcon name={item.icon} fallback="Package" className={`w-9 h-9 mb-4 ${preset==='choices'?'mx-auto':''}`}/>} {title(item)}{description(item)}{item.linkUrl&&<div className="mt-5"><EditorialSectionAction section={{...section,buttonText:item.buttonText||'Contact support',buttonLink:item.linkUrl,buttonStyle:'text-link'}} isEditingMode={isEditingMode}/></div>}</div>;
    })}

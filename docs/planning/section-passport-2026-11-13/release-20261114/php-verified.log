@@ -1,0 +1,168 @@
+
+   PASS  Tests\Unit\Domain\Cms\ActionAppearanceContractTest
+  ✓ owned action colors preserve legacy colors and text metadata                                                 0.80s
+  ✓ action color rejects css payloads                                                                            0.09s
+
+   PASS  Tests\Unit\Domain\Cms\AddonPricingReferenceTest
+  ✓ addon reference preserves authoritative charge and terms                                                     0.11s
+
+   PASS  Tests\Unit\Domain\Cms\BeautyTemplateTest
+  ✓ beauty snapshot and sparse presets round trip                                                                0.10s
+
+   PASS  Tests\Unit\Domain\Cms\ConnectedFeatureRowsTest
+  ✓ bounded preset round trip and legacy layout data retention                                                   0.09s
+  ✓ gallery preset cannot be saved on a hero                                                                     0.09s
+
+   PASS  Tests\Unit\Domain\Cms\ConnectedShowcaseTemplatesTest
+  ✓ bundled assets do not expand arbitrary local media access                                                    0.11s
+  ✓ all six portable snapshots are canonical and have no database price reference                                0.11s
+
+   PASS  Tests\Unit\Domain\Cms\ContactTemplatesTest
+  ✓ all three templates and location changes round trip                                                          0.11s
+  ✓ location fields cannot be added to unrelated sections                                                        0.08s
+
+   PASS  Tests\Unit\Domain\Cms\CorporatePresetsTest
+  ✓ gradient cta is generic and preserves text and action across layouts                                         0.08s
+  ✓ connected features preserve owned illustrations copy and cta destinations                                    0.09s
+  ✓ illustrated steps preserve independent images titles and descriptions                                        0.07s
+  ✓ scenarios keeps owned independent images icons and names                                                     0.07s
+  ✓ section story accepts sparse data and preserves labels and image slots                                       0.09s
+  ✓ builder overview keeps independent icon labels and image across switches                                     0.08s
+  ✓ split composite hero preserves copy actions and owned image slot                                             0.07s
+  ✓ marketplace sparse and benefit content survives layout switches                                              0.08s
+  ✓ courier preset accepts sparse data and owned logo image slots                                                0.08s
+  ✓ payment preset accepts logo slots and preserves layout switches                                              0.08s
+  ✓ support network keeps owned items and managed photo slot                                                     0.08s
+  ✓ sparse corporate presets round trip and keep page width                                                      0.08s
+
+   PASS  Tests\Unit\Domain\Cms\EditorialIllustratedCtaTest
+  ✓ round trip and hidden media retention                                                                        0.09s
+  ✓ wrong preset owner is rejected                                                                               0.08s
+
+   PASS  Tests\Unit\Domain\Cms\FocusedStepsPresetTest
+  ✓ three image preset preserves independent assets alt and hidden layout data                                   0.07s
+
+   PASS  Tests\Unit\Domain\Cms\FoodTemplateTest
+  ✓ food snapshot and all sparse presets round trip                                                              0.08s
+
+   PASS  Tests\Unit\Domain\Cms\IllustratedCtaTest
+  ✓ round trip and hidden media retention                                                                        0.09s
+  ✓ wrong preset owner is rejected                                                                               0.08s
+
+   PASS  Tests\Unit\Domain\Cms\ImageCardsFourMosaicTest
+  ✓ bounded preset round trip and legacy layout data retention                                                   0.08s
+  ✓ gallery preset cannot be saved on a hero                                                                     0.09s
+
+   PASS  Tests\Unit\Domain\Cms\ImageCardsThreeTest
+  ✓ bounded preset round trip and legacy layout data retention                                                   0.08s
+  ✓ gallery preset cannot be saved on a hero                                                                     0.08s
+
+   PASS  Tests\Unit\Domain\Cms\ImageFlowPresetTest
+  ✓ three image preset preserves independent assets alt and hidden layout data                                   0.08s
+
+   PASS  Tests\Unit\Domain\Cms\ImageHighlightsTest
+  ✓ bounded preset round trip and legacy layout data retention                                                   0.07s
+  ✓ gallery preset cannot be saved on a hero                                                                     0.07s
+
+   PASS  Tests\Unit\Domain\Cms\IndustrialDetailTemplateTest
+  ✓ detail and gallery snapshots round trip with owned fields                                                    0.09s
+  ✓ gallery controls cannot be saved on other section types                                                      0.07s
+
+   PASS  Tests\Unit\Domain\Cms\JewelryTemplateTest
+  ✓ jewelry template and sparse artisan survive canonical round trip                                             0.08s
+
+   PASS  Tests\Unit\Domain\Cms\KidsTemplateTest
+  ✓ kids template and sparse presets survive canonical round trip                                                0.08s
+
+   PASS  Tests\Unit\Domain\Cms\KnowledgeTriptychPresetTest
+  ✓ three image preset preserves independent assets alt and hidden layout data                                   0.07s
+
+   PASS  Tests\Unit\Domain\Cms\LogisticsTemplateTest
+  ✓ logistics template round trips through canonical ownership contract                                          0.07s
+  ✓ industrial presets reject wrong section owners                                                               0.09s
+
+   PASS  Tests\Unit\Domain\Cms\PageDocumentContractTest
+  ✓ market template preserves editable cards and layout switches                                                 0.08s
+  ✓ fashion template preserves layouts actions and owned lookbook images                                         0.08s
+  ✓ home deco factory snapshot preserves json object fields                                                      0.08s
+  ✓ media layout switch retains owned image slots                                                                0.07s
+  ✓ owned dormant cta and slider poster slots survive switches                                                   0.07s
+  ✓ editorial product grid manual selection round trip                                                           0.08s
+  ✓ collection banners canonical round trip and wrong owner rejection                                            0.07s
+  ✓ shop navigation source and image slot round trip                                                             0.07s
+  ✓ editorial slider and caption round trip without loosening preset validation                                  0.07s
+  ✓ typography numeric ranges accept integer json and fractional values                                          0.06s
+  ✓ shared typography round trips and rejects unsafe or unbounded overrides                                      0.07s
+  ✓ chapter fields and image slots are owned by their layout                                                     0.08s
+  ✓ editorial collection fields are owned and bounded                                                            0.07s
+  ✓ page container presets are optional and bounded                                                              0.07s
+  ✓ shared borders are saved on every section type and reject invalid positions                                  0.08s
+  ✓ cta banner preset and background slot are owned and validated                                                0.06s
+  ✓ standalone values list controls round trip and reject wrong owners and values                                0.06s
+  ✓ values list fields are bounded and owned by feature cards                                                    0.07s
+  ✓ manifesto preset is owned only by rich text and rejects unknown values                                       0.06s
+  ✓ image slots reject unknown targets duplicates and locked geometry                                            0.06s
+  ✓ editorial hero rejects unsupported presets and crop positions                                                0.06s
+  ✓ all known fields round trip without loss                                                                     0.06s
+  ✓ unknown fields are rejected instead of removed                                                               0.07s
+  ✓ unknown section types are rejected                                                                           0.08s
+  ✓ nested unknown fields are rejected with their exact path                                                     0.08s
+  ✓ scalar fields reject a value with the wrong json type                                                        0.08s
+  ✓ object fields reject a non empty json list                                                                   0.09s
+  ✓ data urls are rejected with the media field path                                                             0.08s
+  ✓ media hostname policy matches shared raw authority parity vectors                                            0.13s
+  ✓ visible empty publish required fields fail with their exact path                                             0.08s
+  ✓ hidden empty publish required fields do not block publication                                                0.07s
+  ✓ all visible fixture section types can publish when runtime facts are valid                                   0.09s
+  ✓ hidden sections without a public renderer do not block publication                                           0.10s
+  ✓ runtime requirement failure uses the declared section field path                                             0.09s
+
+   PASS  Tests\Unit\Domain\Cms\PartnerLogoContractTest
+  ✓ partner settings and owned logo slots round trip and reject out of range sizes                               0.10s
+
+   PASS  Tests\Unit\Domain\Cms\PrivacyTemplatesTest
+  ✓ all three privacy templates round trip                                                                       0.07s
+
+   PASS  Tests\Unit\Domain\Cms\ReturnsTemplatesTest
+  ✓ all registered returns templates and image controls round trip                                               0.08s
+  ✓ process flow round trips without changing items                                                              0.09s
+  ✓ policy presets reject unknown values and wrong section owners                                                0.07s
+
+   PASS  Tests\Unit\Domain\Cms\SaasPackagesContractTest
+  ✓ saas document round trips                                                                                    0.08s
+  ✓ pricing fields reject wrong owner                                                                            0.08s
+  ✓ negative pricing is rejected                                                                                 0.07s
+  ✓ incomplete draft is not publishable                                                                          0.07s
+
+   PASS  Tests\Unit\Domain\Cms\ScrollStackCardsPresetTest
+  ✓ three image preset preserves independent assets alt and hidden layout data                                   0.08s
+
+   PASS  Tests\Unit\Domain\Cms\SectionEyebrowContractTest
+  ✓ canonical eyebrow and explicit empty values round trip without overwriting legacy text                       0.07s
+
+   PASS  Tests\Unit\Domain\Cms\StyleInheritanceContractTest
+  ✓ explicit page inheritance and local buttons round trip                                                       0.06s
+
+   PASS  Tests\Unit\Domain\Cms\TeamStoryOverviewPresetTest
+  ✓ three image preset preserves independent assets alt and hidden layout data                                   0.08s
+
+   PASS  Tests\Unit\Domain\Cms\TechTemplateTest
+  ✓ tech template and sparse presets survive canonical round trip                                                0.07s
+
+   PASS  Tests\Unit\Domain\Cms\TermsTemplatesTest
+  ✓ all three terms templates round trip                                                                         0.07s
+  ✓ document layout cannot be attached to rich text                                                              0.08s
+
+   PASS  Tests\Unit\Domain\Cms\WeddingTemplateTest
+  ✓ editorial quote requires quote content while default testimonial still requires title                        0.08s
+  ✓ bundled asset allowlist does not allow arbitrary local paths                                                 0.07s
+  ✓ portfolio template survives canonical validation without commerce                                            0.07s
+
+   PASS  Tests\Feature\Admin\CmsActionAppearanceAcceptanceTest
+  ✓ all 161 text action appearance edits save reload and reach customer runtime without publication             11.91s
+
+   PASS  Tests\Feature\Admin\CmsLayoutControlsAcceptanceTest
+  ✓ all 161 layout control edits save reload and reach customer runtime without publication                      3.04s
+
+  Tests:    97 passed (670 assertions)
+  Duration: 24.28s

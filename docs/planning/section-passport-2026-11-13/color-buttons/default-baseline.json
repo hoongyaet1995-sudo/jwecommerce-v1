@@ -1,0 +1,1451 @@
+[
+  {
+    "number": 1,
+    "name": "Industrial Split Introduction",
+    "defaults": [
+      "0bb62dcc18fc4e072576b4969ccc21908f858654a7d2d77cd03734289601bbaf",
+      "c1e4e32313103a1baef28b5f7416f44ec172da5ddbcf2cfc225c9e737148105b",
+      "61e9168a1ec387f55ef2b1f1f636312e97e17e1ffc8012e17a49199bcc3f247c"
+    ]
+  },
+  {
+    "number": 2,
+    "name": "Industrial Media Mosaic",
+    "defaults": [
+      "19c5d408ee273cc9a3269271682f52a038dec9cdb837c0c5ca47986bea94a150",
+      "ede404ddef50a294d5c3a9c00e69de0db58813a5eed7178383b080f09720eece",
+      "c1415a1b04bc9c03c600f08393458d59d3569bf36e3174e80915062a756e6303"
+    ]
+  },
+  {
+    "number": 3,
+    "name": "Industrial Process Split",
+    "defaults": [
+      "425c5256992d2a1096dc6431d8b1d8f4ed354c36bfa4916918418780944eecb3",
+      "923f977769efbbd507aa3a2f9f002161935ca3962c2335552090e2d0723d1ff0",
+      "c5f310d85aee957f2ed567c0772a57e1c0059bea1f220c9e33ba747a51e1d056"
+    ]
+  },
+  {
+    "number": 4,
+    "name": "Industrial Related Containers",
+    "defaults": [
+      "8b49532033ac2848855a80d605252df9c7053c74cc40148e368209565baf7977",
+      "59c1689042d6b7e555b4d4ab27cbb81c0e08afe84082098925ee0d79434b5985",
+      "2158ee1dd3d68aa120bdcb4c0dd3bc6dec0e939ce278c536c7e1cca473cf34fa"
+    ]
+  },
+  {
+    "number": 5,
+    "name": "Industrial Outline CTA",
+    "defaults": [
+      "2843338e24043e5c3593e5c98af7c555460fe8830a9590674912e9d8e58327eb",
+      "cf8ffd4e554f0633770a72d0d3cd118bfc99a2a96ebca92dbf87d08bceaa3313",
+      "81ddcc4f3ead15b471832d3798def5e49046c8c0b40e53791063610f3aaf2bef"
+    ]
+  },
+  {
+    "number": 6,
+    "name": "Album Browser",
+    "defaults": [
+      "ff209b893e80ee244c1e7649747e5816a2d0655d68402e66cc15850b4531c0ff",
+      "f16efccac78383429d2f224b4e742fd7dce4b9a694317d45361990b24bcf2d23",
+      "fc45415b1a4e322bf3831b04e0dceeafab05d42ee72c7244065f7eb870bdd00f"
+    ]
+  },
+  {
+    "number": 7,
+    "name": "Editorial Gradient Hero",
+    "defaults": [
+      "9087f6e4c181da316b22be4ef9c7beb1283b4911de05ca900e9a8dc757616e7e",
+      "f414c45a38eb9deeb84c3a47fa2c6b32b41d9d24a34cb69eb6260b979e9196e4",
+      "71efcdacbaf6fa6ff90249960b5814df796f063b726914352298666301e2bdc0"
+    ]
+  },
+  {
+    "number": 8,
+    "name": "Photo Marquee",
+    "defaults": [
+      "33efea2755f2c9d0a36dfdfd8bed1c60564988e7888e97c8ce3e2cf8ebb20f3b",
+      "a015842452bb0afa0e9518fd5eb45ed88ba736c0a7a6895d6fa07fec2f061c0c",
+      "ab7ea8d55fae9a6a676140ca1366767bb525cd44354ef4c7714850e89e0670c9"
+    ]
+  },
+  {
+    "number": 9,
+    "name": "Portfolio Cards",
+    "defaults": [
+      "729cfbd584d70819e1f095b4b854b292a264c36e0fa54f06e3aea0d8338317a5",
+      "c9e3b0ff76865b7a262c16d171af1c1c3e8260737f3e815e96e0bffb6d50c385",
+      "df9e5050d9470d1e90c7faabbb132fdb518f4dad74b027c27682b7889e431d60"
+    ]
+  },
+  {
+    "number": 10,
+    "name": "Numbered Process",
+    "defaults": [
+      "4e48e049b77c506950def61df0238b75c8dc7997401d2a5a84d5bd1c380240d1",
+      "026ba150d7642172f084cf3f47807f864f2ffe6b028f76ae93bf4f078b43af80",
+      "356bdf11ab6ace11e7a46e8b7efcf97559b27f64f4fb289ffb6504502db53fc1"
+    ]
+  },
+  {
+    "number": 11,
+    "name": "Editorial Quote",
+    "defaults": [
+      "1fd1b5f042b818fbb7924caea971662ddde1fd0a771d66ed3df0db1cc1d288f7",
+      "5e27b6af0286d6f9e34f9870d5760196460f052a5565921d3d63669a078ae63b",
+      "b5ada19fa231a5bf2df780d5602cfe1d05d6bbbdb910cb6cd8c6c9fa34b8c7e8"
+    ]
+  },
+  {
+    "number": 12,
+    "name": "Artisan Story",
+    "defaults": [
+      "04f329edbe9e95f1e4cac5e658c1245e60f9f92190499d1f27fc2bbbafe546df",
+      "6ad2f51f055386a7553d61a691c81b55b09f8f4dc367b1bc4bf61b3c5eb83691",
+      "12abcc1c6b37b5701a9407406a7a0010d4a41fdfae0c4a00d7f43eb2911810d7"
+    ]
+  },
+  {
+    "number": 13,
+    "name": "Nursery & Playtime Banners",
+    "defaults": [
+      "ac69235ae4699d67e8b84e542380909ffe2173a2fd0f21c0c737572eb38fce3e",
+      "5b3227fe0a29dbde157687c6c7e45828a5b500d8913ec6cba476093dfd132cf9",
+      "c059a7612825323af528ed00e9dacae323f338b245f1e4a06cd5161c5fc91cfb"
+    ]
+  },
+  {
+    "number": 14,
+    "name": "Age Guide Cards",
+    "defaults": [
+      "2d809c3c0e1bce144e486f97808df0106bb273df81d13f61d21dc7faa3a7ea23",
+      "4b3ff303fc2df8b398f877730bd03112650a4013c402c30370854300e4475d7d",
+      "983fb8a93ddd9aa05e53b10f77151e7fcf5ecbee79c308a90a7ca1a5e624f87d"
+    ]
+  },
+  {
+    "number": 15,
+    "name": "Little Essentials Grid",
+    "defaults": [
+      "aba74a6d64af91237de4bb43f5f848567b252a374bf4f1c5143e4dfe685b408a",
+      "37b3abcd7657fb4b08f7b8dc3c29c7a2949a10b2205f5edc08aea1509f9435da",
+      "ffec494633d034e3a7836d378d0a9acc9db0bc4b3fa08422905f62c95e566039"
+    ]
+  },
+  {
+    "number": 16,
+    "name": "Little Milestones",
+    "defaults": [
+      "ad23f28e9c3e450f7dcbf9071aab3103eac621221f4133891e20b53caad599a7",
+      "82384bc3e7b5a56db211f65d935462dfcfbbc2afdae903f686be819d84602425",
+      "8eb31be5ed234ce483e532afeae7f47498692d9b49b9ff6ca9b8e9a272a93954"
+    ]
+  },
+  {
+    "number": 17,
+    "name": "Play, Rest & Outdoors Tabs",
+    "defaults": [
+      "2d9c5fa1219ee766cbd27edac23172d4fb183b36f24a10670af130c7b7357856",
+      "c2ddc3b2893632dcfad2319fdd0218e9a38aef78d04f679dfcbded041bab9e47",
+      "d957e0da1710f4dfed67787237ff44ad122ca47bf53eeff5d6443602041d63fc"
+    ]
+  },
+  {
+    "number": 18,
+    "name": "Tech Device Grid",
+    "defaults": [
+      "65a24b29e8c146712edb2531b3a9966ca731c2fed67c9fbc7a1fe6057ac257f0",
+      "e21f2cacecd5f7090151e528ec0be31b08d446cac771a552f3b1de2c90de1706",
+      "63bd1fbb441a919ae2ccd56e134ddab7a868429806f96c9bb7780d5d7cc59de4"
+    ]
+  },
+  {
+    "number": 19,
+    "name": "Featured Device",
+    "defaults": [
+      "13a5819c6cb4138e5d028fb9fafa206aaaf7093e2cb49dfe99ac3f2471fb9a12",
+      "3484d24c65f0194429312ba577d6d425f4ec9ace03b2178407ecadb3ae825879",
+      "f1bf02afacde711669c978b094951868de67cc434da80137b1bddb4594542ad1"
+    ]
+  },
+  {
+    "number": 20,
+    "name": "Device Comparison",
+    "defaults": [
+      "c8c84a4e0f44ed3b97267fc42789c2d563c3c0194a909c80f187c8cf0f8c7aed",
+      "c8796842f721d028a08747efd10bde2d14f7630c618a972bfe3e246e40122556",
+      "b770327a3bd640099d375b9ea71019f1f8a5d6d3484e10ee2a5138cf5416b25f"
+    ]
+  },
+  {
+    "number": 21,
+    "name": "Tech Interest Tabs",
+    "defaults": [
+      "d34e136c95a5ca46ff6180b235924374eee999f9242cb265d76440be1a2cbd83",
+      "6007e8dd44b18258f500f90e9cbcbb088885cc5fb6da0efb536017fb71390bc6",
+      "715aeb6d93c8fcafd9ee1af89654bf16427749509f326222b3fe6a97794a93fc"
+    ]
+  },
+  {
+    "number": 22,
+    "name": "Market Hero",
+    "defaults": [
+      "2abf47198da2ae18b621813bb6b1f34b2b80f256dc30b9770c20075373b0329e",
+      "f4aa9ab96acb93a85699a232b5033fb7e0b21c594116e014f7625ff9031baaa3",
+      "e3e1dd4cf88fab985405e32d548048e3b5509f39c1bed5d70a127943bcb208f3"
+    ]
+  },
+  {
+    "number": 23,
+    "name": "Market Offers",
+    "defaults": [
+      "26344b19dbdf44c22ef07546c486664fce5a96fb95ade04e09364ee1d99d18ab",
+      "c523d175278a5f06983e258422e604fc10a7792a399ee823a3a5ecadb955d8be",
+      "30335e5a7edb969e91858665999d52b4690e4f70d5aa6db76f284776cc0c0d7f"
+    ]
+  },
+  {
+    "number": 24,
+    "name": "Fashion Hero",
+    "defaults": [
+      "1b4d17cc3c9b7f0eae530d953296a806fdce663d2d6dbda6509b0af5367177e3",
+      "80abf0b26d4021df401d316dfd5d87db71a7acd36456f7931d80deb62393f4e4",
+      "6de42549521782a3ead426baf20f2fcb3344f4ef4c9ef2f38fd199476cce0fb1"
+    ]
+  },
+  {
+    "number": 25,
+    "name": "Fashion Banners",
+    "defaults": [
+      "3bf328c4c1e06ec06ac72c3bcdf112d8f0c58506e0788b9f245a8f1f71c698af",
+      "99f7a8b78fd8bb510c8c00bf2cddc43a92cd7e5b714300a3bd0614396cb92024",
+      "48f83fd1eae787ab9ec283dcadf9139583cbcab01fe30217651986bb3deaacb6"
+    ]
+  },
+  {
+    "number": 26,
+    "name": "Product Lookbook",
+    "defaults": [
+      "34743c09488ae6fdbc0762748caad24908cb04b0c458abf0f671ac9e8793a0bc",
+      "2c0c0ddbeb3026afc1ffa3e81b0982cf33f4ce6c8b662ac989e00d3abbaf421f",
+      "ea66018da1fd4f034642c005bd9b3c3a0c630d5c70fddf492ac3db3c5c8c1f4c"
+    ]
+  },
+  {
+    "number": 27,
+    "name": "Editorial Hero",
+    "defaults": [
+      "c44371c95c37b18f83de8d92f54d592dad9f336236b99fbf8522ca3432272da4",
+      "fc6e3f691e55966c503c093687bc4e7a23513e4b69bbebc8030a6ad18f13b9cb",
+      "2b9af703572c733f74434cac304b9ff3dfb25e128cebc9b52ca7bfd62dbc9b03"
+    ]
+  },
+  {
+    "number": 28,
+    "name": "Editorial Story",
+    "defaults": [
+      "538a08cf58482d19fcc123afe40bd69db0f32900ebc9fd20000bfc01123af8e2",
+      "ba0463cc41306545246245101625d347853d0a39dd312f69832789a4e7ae9a09",
+      "735f63252dc080e83f800f7e70651c5ae9e519b5b340192abc90de91da2d3ea9"
+    ]
+  },
+  {
+    "number": 29,
+    "name": "Editorial Story Cards",
+    "defaults": [
+      "e6dd419e0fce7ad85b7a6958bc2a0b914065c299c1d708a0b09b02d12e0dc324",
+      "6b2cf484ed35f45b5c30aee4264093e1f5103c2061ed870d637600b3bf62c335",
+      "d5c98a981fb7b2e2c04fe4791189132bf9e01cc175f3e586cb35a4cf638d6aa0"
+    ]
+  },
+  {
+    "number": 30,
+    "name": "Editorial Journal Rows",
+    "defaults": [
+      "544d31a2641c146d737605933fe05c7a764e54c502f2b0f492d6b78fc137c264",
+      "f3bec084f855da3a1f3104f8fdae512c076d34051205a364b05396e992adb18c",
+      "279351d07eea85b850f1db756e7a76c3b6aeca8b3bbabe2895e43d2f8e5673d1"
+    ]
+  },
+  {
+    "number": 31,
+    "name": "Payment Cards",
+    "defaults": [
+      "c7822a06986ee823f71caf9b83a4c94a389de53491a65b0415052c43de211900",
+      "be143b567909385c71de51b6d46230fd5b14fdda79d3100398f9399d06128669",
+      "5cf9cd68d31e9b98a5b2cf9ff283dc045203b1d19a01a1fa15f0bfe01eb32ede"
+    ]
+  },
+  {
+    "number": 32,
+    "name": "Payment List",
+    "defaults": [
+      "d2604aabadcb35654181c90891b12feca65783531a1074adb46c8652fd84394d",
+      "e209369ce2aafdb7ab264153c3415f699e52b46672fddd12f0f00ff725ff2e98",
+      "65581daa326e04741e11b9ea0aa73f9d3c07cf88992a05847c27c344fa166cbe"
+    ]
+  },
+  {
+    "number": 33,
+    "name": "Connected Feature Rows",
+    "defaults": [
+      "d9f63cc49ab2e318374a2e70894e7b70fa1701d7cd5adc0a5bc1840934292fc9",
+      "fa324b6980d60949d11528041063407bf9cfe26925d46e304675c391c804c55b",
+      "d6f125b0b6614fee50bf78aba5863bca4b4f4170583c656a3f3566db24286bf4"
+    ]
+  },
+  {
+    "number": 34,
+    "name": "Image & Highlights",
+    "defaults": [
+      "716444f66996d188d0d97bef0458e2654234201bd9aa59f54e29338772544ae5",
+      "dce9f4065a72d347e55f2473d85432cc165665d780295f8e56431e1f3b0449e1",
+      "789429178a44b3d523c93a6e382fa9d2221c609f6114c70b2f8251a1f746231e"
+    ]
+  },
+  {
+    "number": 35,
+    "name": "Image Cards — Four Mosaic",
+    "defaults": [
+      "81e74de6d6d7f3e9e01e0f96abbe9e6b79c53eec2c88c4cfb8c9bfca49b3f395",
+      "0be931f76e6024f2029a9130e64707114599df6a9110f99cab212c7dd90964fc",
+      "532c9e03269fdb403f753e74f3f15fd347345a3f67abc41827ba5ba5229eb773"
+    ]
+  },
+  {
+    "number": 36,
+    "name": "Image Cards — Three",
+    "defaults": [
+      "bf3a8da2684d9e9a2ad2a164e2cc617a4826387d9a04ceafa470e290e1500466",
+      "b96ce680e4721503f037db633c69ab2a8fb9f32e75a68c95e76bacda14befa2b",
+      "6575a94bf0f2e7181fb2b3423c1f7caa5cb6b4d9c8e522a2fe88785d03bb084f"
+    ]
+  },
+  {
+    "number": 37,
+    "name": "Editorial Illustrated CTA",
+    "defaults": [
+      "b511282938dcea0af69fc587f26b25a76600b0a7a85f23b64176f988b77913f3",
+      "bfed9f8ccf4a05a73cff5a3816b7cdd8a0812b86790226be55aa7b08857dc512",
+      "8535674123940dc22254fb0fddffc6be1c2466da6261eecf48972e114cfad7bf"
+    ]
+  },
+  {
+    "number": 38,
+    "name": "Illustrated CTA Panel — Image Right",
+    "defaults": [
+      "c8ffd5a6189d141857e317d0c3d4dbd6bcd64cb52b22d90ea904f1e8a1184778",
+      "d8c0aa2c0e8bb30f380f55798a3362674a5a008b4de0842911531afc0385a05b",
+      "197e0e1cff7f5a039ae8772ff26ac14448ac25334748d1bb05a4da0a0ae593cd"
+    ]
+  },
+  {
+    "number": 39,
+    "name": "Illustrated CTA Panel",
+    "defaults": [
+      "be5e788e3ecb25f336e432286904fbb6efa210ef2e78788fa15dfdc3d84befee",
+      "6d99e0aa187881986d864d228a674f5e6c81e8bd365530b945d53d32615f7900",
+      "696c95a537da857bfec4c38e46491f679289f39295fcc21f826cc87273d86808"
+    ]
+  },
+  {
+    "number": 40,
+    "name": "Gradient CTA Panel",
+    "defaults": [
+      "77f96c45bb133ef71c99abb15110ab1d4142f9d89025ccbba7af78ba6883dc87",
+      "3911c34632fb5970f0dc88fa999988e8127066de7f7d01fb6c2812ec1de8c67f",
+      "5fdd8ce02b6f3c74305756a79cb173fb378e3c3e118e49dc74e4f329bcbd0bca"
+    ]
+  },
+  {
+    "number": 41,
+    "name": "Pricing Card & FAQ",
+    "defaults": [
+      "3cefaef4909ffb66612ec8f7c60b90d7e0407bfe40e84cdf0ff4a8c78770d5f5",
+      "8850db8f4f77e3c76433b5b5621de2876b85576b0a0b8ad26d96896772312d3a",
+      "49d6c40ac1416449acb259f4906e70687123468b28b619738f048096053130a3"
+    ]
+  },
+  {
+    "number": 42,
+    "name": "Pricing Band & FAQ",
+    "defaults": [
+      "cee3431b4eda4941ee1f781e14ea74574901d8c4b61689e850f4b8a41ad6b12e",
+      "09006a7ec319ae61552279a411ed0050065a40e934ccb5223ec4a621810e575a",
+      "95fbbb0de4e72151fc868fc2414cae764795bf930599d95def382a0ea6fce340"
+    ]
+  },
+  {
+    "number": 43,
+    "name": "Pricing Card & FAQ",
+    "defaults": [
+      "9dceea769d65db74f44042ffc37cd04c66673060d930c0eab8956d591cd32b3e",
+      "b5f26329a0ee8256daeed5f3a746464bfe64891e7fd8a3edb43966e14199dd67",
+      "ae09a4819e0c084eed55198593124e1a6e28dcdc87066c8a20e5ce0d961acf4e"
+    ]
+  },
+  {
+    "number": 44,
+    "name": "Website Connected Features",
+    "defaults": [
+      "2735bec29781941d08a604fea3d25f0e4ca7a1a045a7f61137cf40bc0f715433",
+      "dd3af0a85099b652f15b2a05c6d0625d87bf4917616b2c65762d20cb45e7e7c9",
+      "d1e6e9bb947deed46cd46e4776e956ba127f437d32d50e150806bebe881119bd"
+    ]
+  },
+  {
+    "number": 45,
+    "name": "Website Illustrated Steps",
+    "defaults": [
+      "e7de947559aae5f85cb92a2693a0a27dd3a505083259a43e4d23637ba8bdcc7d",
+      "aea529849cb96c0bb98b5c9e9522fb59d9b3905f7ce22c964285c5d7bfee7ceb",
+      "ba4f758b3b3e87b69c83356a7b929d58429897f7772eaa5f3344585bd83086b0"
+    ]
+  },
+  {
+    "number": 46,
+    "name": "Business Website Scenarios",
+    "defaults": [
+      "2cd3bfa92715d01497b815dded498fe558c6481905e35410990b1c02a07b0009",
+      "3b33c792ff9fd87e985961d2aa4ca5be7b23ad69ff697a21aeba5708b41f4cb7",
+      "932cd6d09ec2b088048f608cc9344f9ffec141d9178b1e8048e959c1c50b3e27"
+    ]
+  },
+  {
+    "number": 47,
+    "name": "Website Section Story",
+    "defaults": [
+      "4abf7bb1590c30256ddcbb3ad19b919627a7013e19d2c0a792f0cfbd558a5568",
+      "2ce09ac86e4f2ac2a5e8a8bcbb97590d97ba95091ab765f5b6bc08e167d5a3ee",
+      "503da7b2877aa79fe9d6adda192d69894eb3126d988f6e682557bab89a034251"
+    ]
+  },
+  {
+    "number": 48,
+    "name": "Staggered Focus Cards",
+    "defaults": [
+      "6eda59099ad0aaf067b210548bda5295f0a619d00eeb8c8e1c251545ed2b574f",
+      "a762f8553727058f4e493a31d9da3b9ff0f7134f6e4fc1e50b2484ad20e51b4e",
+      "b207e08516b609f9a17dcbd88bc672c2cbf204f5a8c6eb93f7411c652816b2fc"
+    ]
+  },
+  {
+    "number": 49,
+    "name": "Contrast Image Cards",
+    "defaults": [
+      "f4ba8fba87becf215282720c302152c070d8cc2ed2262d934de84af7c83105ee",
+      "ef034a1efc9d7f0b4dd1c80bb8c7f9216976f41899a87c3359b7c42165c7dd6a",
+      "80ac1324e9fb4226f810f6f6003bd981421b5b92f70c281812e3ddb24c9127a2"
+    ]
+  },
+  {
+    "number": 50,
+    "name": "Inset Surface Panel",
+    "defaults": [
+      "c0c6e8c382d05b06be888364b98a5588220d7f40eb0e6aacc680d6e819014886",
+      "70a81e46c63e7c2413be1e70b3c76e5ea455d4f39fcb84ef5c4cbf7df36485e7",
+      "e550079d7c90aad3f1aa916e2b35321408a0e6592a46112930ee177c52882322"
+    ]
+  },
+  {
+    "number": 51,
+    "name": "Three Images — Staggered",
+    "defaults": [
+      "fef72bc4b48a3d6e6924a48821e00a117fb177cc450ffb818ac536c6caad8768",
+      "5d337bda6b271e33b4793720d2aa139366df5d7b2ed58ab8eb0e597f70fd028e",
+      "2207e9fe787a4c720e2e97f2c4e43d7323b82dad4d6d0d438be17d883ad2b408"
+    ]
+  },
+  {
+    "number": 52,
+    "name": "Wide Visual — Centered Header",
+    "defaults": [
+      "e06134625ba2d589f85f54872e58eea584ecde813c4e863429e5d494dec8c799",
+      "2f792bd8356db408a24cb30d8ca5d6703bb68ddd97703574b9821255e54f91ff",
+      "5a71261f45a4bcabff13eba265577cbee4e5695b0b4538d06dc7259199ab946c"
+    ]
+  },
+  {
+    "number": 53,
+    "name": "Split Visual — Surface Panel",
+    "defaults": [
+      "8c3f2d02aea1308289fe75b8a50ad90cf4289c4beb3ee4e89dc24c6cdb0b91e9",
+      "4443dd545d97dadb03d0b218c7777cf34c126c6dd05aeee98ab350f943d6109f",
+      "938b0a3645045013b68cb5b5b908e7beb6cfbc30890bc1a8bf81bac669039ffc"
+    ]
+  },
+  {
+    "number": 54,
+    "name": "Wide Visual — Centered Media Panel",
+    "defaults": [
+      "7d642a46a51888ecdfb8267448ab683be2f0d12fc548e796c54a052f9f23edf6",
+      "44591c54f64d10b0c5ce9e17c07cb5ab698c5cee1580d0051a74de5299da3cb8",
+      "8160fa3a9bd7e94c7c48eeab0ae0415309ca81e1a4a566f82c6843afe038e8df"
+    ]
+  },
+  {
+    "number": 55,
+    "name": "Wide Visual — Contained Media Panel",
+    "defaults": [
+      "cd33f959c82060c0b707aa2424c3a753e735815a9170668bccb4e30de19b210d",
+      "a635216bf0a999f51007f567b78bdaa47d9e8eb5d788d9ec41237ff00e3f88b1",
+      "d8c62e2b83623ed565351288ffa2ec198dba3be169deca1787d7e48ccd2e1f77"
+    ]
+  },
+  {
+    "number": 56,
+    "name": "Wide Visual — Editorial Header",
+    "defaults": [
+      "53b0e24008fbbcf4ac9ed2729485677fc2f5b6b2b48d96945917d84f2b377bc8",
+      "6d2763aa8f6a070131700d8101d9fc43516e4ac5ddba844c77ade66336554498",
+      "59bd5cc040a8ca0179e5ce5b5168ce727df08e7e88ee342469bd5a94531e5fa8"
+    ]
+  },
+  {
+    "number": 57,
+    "name": "Website Builder Overview",
+    "defaults": [
+      "e94cf0e19500ff64c55b3debaf89c880d90e043b276502b1a9dabfc923f7381e",
+      "af49c5798ecfdcc1d6676e8e729dd6a41eec3155faa2b8515d66a2eee1cb24c9",
+      "c0ed2386cbb3075a6f76fc93b7af3918c870f8addd3d9516a9416b6d584de499"
+    ]
+  },
+  {
+    "number": 58,
+    "name": "Plan Comparison",
+    "defaults": [
+      "f89f25a70a3f795bbf4b05757f37f0c1c0e65299f36049bc456cbc2c9003c734",
+      "b51468103ee78e5e84eccb789541d087dbebb832bdf40ed0af454243e7ba174d",
+      "103d26ae99fb3da50d15d9fa9ee1e442ed3877535e311625521cc1005e28960b"
+    ]
+  },
+  {
+    "number": 59,
+    "name": "Framed FAQ",
+    "defaults": [
+      "231c3cc4d7fa3d6795850f71cb345f802b3e10ddb96679bfb16ea1752c399b32",
+      "e0da4a7fdbda6386b0a82ef0d79a59b2587410ec0dbf480de79c1a8147b64ea9",
+      "b95fa1d7609757d0e4d3384829f375867e034c8b51ef28b589cabeb8a410bb6d"
+    ]
+  },
+  {
+    "number": 60,
+    "name": "Focused Steps",
+    "defaults": [
+      "95d1c37754a562465539d4e0a40b2db8ea3a07e86d99199bdfcdf6bcc7840187",
+      "e0fd929a531e8399cda3967ebc2ff92155340811baa46e2054c932e4a4b95a46",
+      "aeb48ece8eda4108b32d6481093ebb26078b1a649c7a640488f933faf4c54d79"
+    ]
+  },
+  {
+    "number": 61,
+    "name": "Scroll Stack Cards",
+    "defaults": [
+      "ddcb38055891c28318ab1f7212739abec810dd8caae3b5aa65212f1f5a5c114c",
+      "ab743e06c65215e21cdc4aee2e8e43dc38179d8ae278042180cfdd848e510fb0",
+      "f58e61dae7863df8f58f62195f2453e3b825d0ab7a7a43b3535119e19dedb2ba"
+    ]
+  },
+  {
+    "number": 62,
+    "name": "Team Story Overview",
+    "defaults": [
+      "e5341906b4fb3400543c6c8d9f4c09f138571447f020fc414832845aef3c47d1",
+      "2f3e5da0c14c3dc39dd917eba6f41c7515e975ea24bce2d97fbd63272236273f",
+      "4c3370a5fe573a07c819d8efcb38bc12a728d68f9ee6eb0a4ef7dbcd609f96cc"
+    ]
+  },
+  {
+    "number": 63,
+    "name": "Editorial Knowledge Triptych",
+    "defaults": [
+      "c102d136e9e2b2077d88cb0f0622fae453a110e93267f2869f33809f4b7161ef",
+      "085146163484a8cad8cb8ea8357a98406525bdc8da18992e3623d6c4afe0cdc2",
+      "4de1242e52ba2f21778ec6e57ea2c06f6a52fe7a0fbde4ecce66bffac6b29ede"
+    ]
+  },
+  {
+    "number": 64,
+    "name": "Image Flow",
+    "defaults": [
+      "1f0a252599dc48e14e6aac442a63dad41649dc94a781f1ce041f65a93ad3e618",
+      "04497b3600b9b847c163f63bed21abf59ba7902d152e0b9c14bfa3a8a3e12dea",
+      "d73a1ad6d7bb57e20d1a3e86ab2ec3b7518706e112c1dc50b843ccd3f12d2352"
+    ]
+  },
+  {
+    "number": 65,
+    "name": "Centered Composite Hero",
+    "defaults": [
+      "b5c26fbd964470988e5906d77d8e1a6efabb56fca29cefea9d0a102ad614fcda",
+      "bce82bff839bcaac8f462be72fa5cb3ba94a8bdc602a0b331c6511d7600a7d82",
+      "4e589e364dd1a6639f2bcc3014d1029209ed402c942f2c5e80579d9a4ce121ed"
+    ]
+  },
+  {
+    "number": 66,
+    "name": "Split Image Hero",
+    "defaults": [
+      "7b574eeaad30eb00c59a5e762a6234ded8c1b7eb408f093af761a752ad461715",
+      "c8c83c4407443954f22521b360d4ba7cfb9ee65b5f07cb9a9f925bf3bb3a0c14",
+      "35adf8212c9f32dee4fcfb9305777b7677ae2d60cfc040a716e496a4e915dd33"
+    ]
+  },
+  {
+    "number": 67,
+    "name": "Corporate Marketplace",
+    "defaults": [
+      "7809ebb3ad58f63c85aae363413ebfc1840ca2e23cef74264d9583d3580cbbfd",
+      "f80d426516de11079985c890e162824ea974c8b6e57ea0a681355ad3739255bc",
+      "1dbfe4656bbf13e8df052ef7aafcdd33d1e1b07e01a889bce0697ca3a34fc3c1"
+    ]
+  },
+  {
+    "number": 68,
+    "name": "Corporate Courier",
+    "defaults": [
+      "5f2e130b33e659ac03633f2ac085366c8d12887db21e8618f2171ad695ed4718",
+      "d1b2d5d543ded75b2bf71a8e529a7eeebd3ce8a1d124bf46826d228931971ea6",
+      "a8d35c7320be7b889dbce962ba0ff32fcbafaeeb60eaf84e08eb348e146ff93f"
+    ]
+  },
+  {
+    "number": 69,
+    "name": "Corporate Payments",
+    "defaults": [
+      "919bfdd6504ca59068d892e58938a91fc2024758bb3fec78b064c1a1dd02f929",
+      "1bbc87c1d27de5424fbbd37eb762966b905a809641853bef36302288eb59fd06",
+      "3c74e90e26270cc5cb031a9842a387a78b9d381f590d0f5f6032f313027cbfb6"
+    ]
+  },
+  {
+    "number": 70,
+    "name": "Corporate AI Support",
+    "defaults": [
+      "a2f5a64ea5d093a26d01c0ed852b1a85410c2560454c80dc2cf87a72d3476c69",
+      "6e02c256791bc30004a0aa1452b4996c0b74eac3816722c01d0a9f8074ea9648",
+      "a2be10dfe1a3ed01dba94002ca517b1a8d88d360b24f3f5fb12d621bf46a3eb9"
+    ]
+  },
+  {
+    "number": 71,
+    "name": "Corporate Marketing Studio",
+    "defaults": [
+      "b41ddb0293b1db4d42f63181b174271e3c4e5bcd03230552bbab0d408a4cc715",
+      "e723690b1daf9729b6388cbbd45064dd944e02c31c586e8e4051fe205cb69a25",
+      "1a8ecd0dea0f19e7d864f08f0b13b52229d3b6a3808fde93e2f39cde0ca28008"
+    ]
+  },
+  {
+    "number": 72,
+    "name": "Corporate Centered Hero",
+    "defaults": [
+      "2d4ac35e945a72ce0ea7dd5e4159624abd07733a6b9cf1e2b7789b710e13b573",
+      "0027d4213f30eb4242b7d0e40995d83a5a67a4110cd8129763e9039b81a86095",
+      "562d28e9c79925a8d7377a54e3d2818feed3680700b3e77dc4e06b3786a3cd9f"
+    ]
+  },
+  {
+    "number": 73,
+    "name": "Product Preview Tabs",
+    "defaults": [
+      "2a6400ad655bc25edc299abfaf8c589beab254c3573de5dff67f1c6e0b0f5406",
+      "c1d8a883b321d179deeab039c1e43b5b0eeccbd5ae3a703a2861193dbe2c005d",
+      "b5f35a1dc5f2b51a7ca859a28b549e75020623416c86d6d4e6c1c4d9361fba9c"
+    ]
+  },
+  {
+    "number": 74,
+    "name": "Corporate Feature Story",
+    "defaults": [
+      "c60a8979783ab358f053fa4e0f1d706468c6717ec21d8143c3d02b4e6667394e",
+      "ab13a5c336fe9f52c6b0d6495a1b539ee43a82194c3612c9db09ec8106ea5808",
+      "29518f441564ce75233850d169f29ee694c6bb42657a61859c876bad0be6d9fa"
+    ]
+  },
+  {
+    "number": 75,
+    "name": "SaaS Product Hero",
+    "defaults": [
+      "e3370b778f0115a6bd7d6e8f660bba4ab678907bb9c9006e6b23e421ad5af0b0",
+      "48188bc8079fd06d357c0a5635a82f229531cac2e2f45351fc1c2f05b4ec444b",
+      "30bbca560b683ccc7f17798b6bfe266557e815622924e44ce81f3b98278dea49"
+    ]
+  },
+  {
+    "number": 76,
+    "name": "SaaS Module Strip",
+    "defaults": [
+      "84f7f6402a7c4aab09f56f512adbf2996ba2f01ca9050d54482a2902d4b5eb9f",
+      "89c2f8c119f29e28d054094fddc91130c8032c991ad704999c30b9349b5e8344",
+      "ae81bd3ae21c8baafada7b199bbff2f731e87420c00b1bb1649817d871f3fa10"
+    ]
+  },
+  {
+    "number": 77,
+    "name": "SaaS Showcase — Media Left",
+    "defaults": [
+      "2980c337583798027965aeb51e4c9678f2bdcbf958ce342ed41f7d2f2f450478",
+      "2038109a9e62b7ab63c3dcb9ec8b298b279040f516b16a6d7734283d0765b211",
+      "9a19aaf39e2507c9730ccfcd65acee681945b2efdb91feb0054b4e0098d56006"
+    ]
+  },
+  {
+    "number": 78,
+    "name": "SaaS Showcase — Media Right",
+    "defaults": [
+      "2134220c0a9cc967b7f33a00516a1240eab3f66aee72fa6f3cc79f7cb7efda25",
+      "f876086674bca8ce31fa4847b544b8c84efe7bd3bd34c4f82073c112d9ee128b",
+      "321063b2c1b5aa84484272c85dfa4a3feb4dc5c86061de7e286a86a04cf079cd"
+    ]
+  },
+  {
+    "number": 79,
+    "name": "SaaS Analytics Showcase",
+    "defaults": [
+      "12840adb6d124fca4502ac30ea150227550c2ba5b1521eb655d24e65883ad797",
+      "c6d32bdf6cfb628cdc7396b9645b019f0da14467ae66885fb4d7f06160f903b1",
+      "67d7d06417882a3eab75db77620e7f71e64f737888b3d11da75e0232c224502f"
+    ]
+  },
+  {
+    "number": 80,
+    "name": "SaaS Packages",
+    "defaults": [
+      "b32aa6c1b3bbe2f2f1234ce70b5a4e7fe11e3348e84a414cd80afb7a8bf1b4c6",
+      "731d01e5d0870323a0b31ad9a8902d9771b52e3f5f62f2a6c5f59b12035aaacb",
+      "633a36c96bcaf0ed7476329f8a19d07ffd50b6b5ef2b887bdd4840f1f14464f5"
+    ]
+  },
+  {
+    "number": 81,
+    "name": "SaaS Add-ons",
+    "defaults": [
+      "e9327ae4efa73b6e2ca37d58c3fe7918dc34b29c8e3bf843924a8127f4ab5265",
+      "94fef259f244e47817fcb2944b4ba28742f3842bcf51f2174a32d56bdc937490",
+      "7e9c64ee65e2da446035996aacf4e79c25e2b4aa8f08693a41bfbb3552cc4aae"
+    ]
+  },
+  {
+    "number": 82,
+    "name": "SaaS Split FAQ",
+    "defaults": [
+      "af95a04bf13709b9ffd49a30d6e04f7527598913f136966310a4f2ba43dfe7ea",
+      "2d46fe5256db1aacd029ab54ce94dcd9eee8e89b946aac1829af231f1753cfc0",
+      "33e0c1e2405c14e304ad8ac1878cf6838fc4dc6c354ef1ca7475502853959c2b"
+    ]
+  },
+  {
+    "number": 83,
+    "name": "SaaS Closing CTA",
+    "defaults": [
+      "7fbfd0f94f5cd1a4f2966d7809e308d270080f244d8361419af91c31348686b0",
+      "e62af285abded40a8eb97ec76a66793e6d04f015655640f1cf25701ceadb30ba",
+      "c153706b5dd03017520f9ca0c4d661e9365e461511a747d657e06a5f9ff85b14"
+    ]
+  },
+  {
+    "number": 84,
+    "name": "Industrial Container Hero",
+    "defaults": [
+      "22d42d91234c9a29b50cce8fc0726453dee8ed8923264a5870734daa5df60d46",
+      "5f46f40f182a6ff06e3c04596e95709388b8f38fb7636032da04d009ca4fc36f",
+      "4388b9907ea753e94aea4d284d98d5cea9a2b8dec09903d6ba80a7f1475c5707"
+    ]
+  },
+  {
+    "number": 85,
+    "name": "Industrial Service Cards",
+    "defaults": [
+      "8d85f264e41ebb6e140f67bc5adf920c8c5b564110efed5acf6ed9b7921bf02b",
+      "c6513fe5ca73bb565c5ba1a620a8db65a68f81e7f7988f308f3695c4d97d8bdd",
+      "972716989c494f70baec5a632029e066b6c375ee7f69a8d490a1cf298fd51c65"
+    ]
+  },
+  {
+    "number": 86,
+    "name": "Industrial Workflow",
+    "defaults": [
+      "bea42e0eecdd70436beab0a294f61ba19f636dd58ead6e7af8cae889015bbe2e",
+      "64ec2eb35e5b4d3b682fd056fdf7ec5ef458a54ec7c88304c821ec708ce47780",
+      "74d7340951db6e67dfbeddd2ba35a8f6c41947b22f52c8849a6fb8d65116ce84"
+    ]
+  },
+  {
+    "number": 87,
+    "name": "Industrial FAQ",
+    "defaults": [
+      "b8ba7dc44093581f56abf139c7e8d70a2746a017af1772bc0ee266fac4a57cd4",
+      "89ab2044bccc8d5c64aaabb6d25f834854814a1f80e4dd7548bee85ff71a60a5",
+      "64562f6638fbc17c5a1f75d208ee35c511ad4e96d98ed39671b1aabead3ffb1b"
+    ]
+  },
+  {
+    "number": 88,
+    "name": "Promotion Highlights",
+    "defaults": [
+      "70d50ed5ece44a5fef991c8bb9d399feaf522bc4b135517651b2bfc87239c414",
+      "f3c85c632db6e181a03ccb0e930c2e2a12b95e377b6405c669f451118ea73558",
+      "7cdef6c039990b441b08c6eaf0e14c53e1665f51d7f401a3e7a7affdacc18650"
+    ]
+  },
+  {
+    "number": 89,
+    "name": "Collection Banners",
+    "defaults": [
+      "5444067e815207196429480db9a04b59748bbb8b9d71f2abc9b5e53a05e9b80c",
+      "af4fd2e988d820580e9d6e6bb555c062ea153da55aaf21b1a0b5415b0bd86c57",
+      "d08129a8d6a0e5f56fb25c1fe7884f359e4b9dc1696790a734e756b5200b7e35"
+    ]
+  },
+  {
+    "number": 90,
+    "name": "Shop Navigation",
+    "defaults": [
+      "d7df5a9afb881cb2e3e7c31a82b8309814ac8ad83cc410428d7423a7ad68dae1",
+      "6bc4921bbe8962428d55eaa1e20edf6fcdca77864097a9a2861c9c241c347a5a",
+      "af81ae8ee016ed9f23ebd02183d2ba79f19e1ac2634b5f8ead02a7a6442dccca"
+    ]
+  },
+  {
+    "number": 91,
+    "name": "Editorial Overlay Slider",
+    "defaults": [
+      "65bf38a2743a95a65b6bd180e89ed4762eee6bcee1f02345ea011fd8235bb52f",
+      "7f1bd77c64bd22b974075c2f3424d74c12adf670a6c19ebaf18b7669c3580657",
+      "cdaf73def1ed1c7317b9eca36f0b84e94655b0b3c5ea5cd1d933dd2fa44f5cd4"
+    ]
+  },
+  {
+    "number": 92,
+    "name": "Hero Billboard & Video Banner",
+    "defaults": [
+      "7cfb6f5a820e1e4bf0a67a656da163f5129c915fdbc2a3bdbf26b305c35a1751",
+      "04fa0918392c15856a3c3ea0516f7725b5f0610adb2be75217431fe7c0b7a5cf",
+      "07befad9578a4c05829e0c4d99ef2e0c50334004152cae704285b013dadd6a1f"
+    ]
+  },
+  {
+    "number": 93,
+    "name": "Full Banner Background Slider",
+    "defaults": [
+      "f46e35adca8f3007c5f572d274f57fedf1d98d869a532e307d407c49270c55a1",
+      "0e65b578ce94d8acf327453b779a1b2c4e4a62e833d7f152ca505fe6de8aacf2",
+      "0b9920808d41e2893e749b5ea3a16cf5a8e4480ce27b9a276c197d031a590940"
+    ]
+  },
+  {
+    "number": 94,
+    "name": "Split Hero with Floating Product",
+    "defaults": [
+      "41415a0657dc5ce63b258f844d474f674ef1b2500a6d39e720309020ef8ca318",
+      "94372d37a4ae137a81ea0aabc2642c25e1402f6534f69dc76b57d0274753a5c7",
+      "eafdf5df9f4788d0b6c4d8ce1547c6b2b94e216ba9bbc7197e8556b11f9ca276"
+    ]
+  },
+  {
+    "number": 95,
+    "name": "Marquee Announcement & Ticker Bar",
+    "defaults": [
+      "d9994e7b3d43e2f2fd9d509eebcd69090ad68afe63eadc681924f1ed93de115b",
+      "ce0f77ab3e02f2e07b44296b2c94195b066425b5be0949d556b9e61962dcee01",
+      "997d0dee3003576cfc4e27b81d719a5507ed211716ad230762ebe5652612530a"
+    ]
+  },
+  {
+    "number": 96,
+    "name": "Media & Story Split",
+    "defaults": [
+      "4961dfc0c0ec060cb3914e8595244e27117356a014a252f64a185f95777ea17d",
+      "ef5df5a4cf651bb19fa0d311ae2a9d35d8634904b841f510a6df5d53a96f8fba",
+      "78a64a9d913de2275d232d165160fc2df53f3a52936667ffbee64d88cb04d2e8"
+    ]
+  },
+  {
+    "number": 97,
+    "name": "Editorial Text & Quote",
+    "defaults": [
+      "dac4d5052f94d3d4bace2f73b6f2876f173887446561b8102edfd0c6d04059fa",
+      "8de9783e27b6b2b629da49477fafa6da028e5e7a9de014a1a8ffa053255cef36",
+      "6974ff93497cd041058cd84d8511549db24c60da07cb0a0acea431ae086e532a"
+    ]
+  },
+  {
+    "number": 98,
+    "name": "Brand Milestone & Heritage Timeline",
+    "defaults": [
+      "da52763160b1785c23a76a519e66c955853e523ef56ae74ae015ca7b7d5cb65c",
+      "e7bfdb85b0708a78ed43a9d28d7b1fce557cdd282995e87281a801f03e82a1e3",
+      "659a2c9f84282de7097585a9995b280f42296871e09b6a60fd0c0c18e73e8af6"
+    ]
+  },
+  {
+    "number": 99,
+    "name": "Impact Numbers & Metric Counters",
+    "defaults": [
+      "f43e0840a854a38db1a18b4400d769a6f3febe1c132ef5193aff7149c02fdb31",
+      "44f86c3f88a6512e27d2056001f513095a57c0b75e1252faf73f18fdcab885aa",
+      "dff20d6774cfe4556f3e787926c1e7981c8d60098b2f8c0eab933e00a3d770b0"
+    ]
+  },
+  {
+    "number": 100,
+    "name": "Skin Need Cards",
+    "defaults": [
+      "0c1d1e1f8cffb19aa2bb457cc92926bf579c6ab58a640fab57e97c6d71628207",
+      "2b5e2196f8f4c2fc01699196135e7c9cc3b4de753a1bdfa4abbb8262fc6661fd",
+      "944ac55bdce1c0413ac9aeef46f04b3ebd1b566c60041a2a0830167831a73343"
+    ]
+  },
+  {
+    "number": 101,
+    "name": "Ingredient Caption Cards",
+    "defaults": [
+      "3a4c435e518ea9e79b86243ee0826a427b865e34d89173634fbc346d52128fc5",
+      "bfc5d8744b529c6663555ccaa555eda37fbf1fefb96aae1cbb6537bc43f6d29b",
+      "92bb71e367bb744cd66b1e6458c41cc1f5218712ad12f4d33c1844ffa7089e25"
+    ]
+  },
+  {
+    "number": 102,
+    "name": "Beauty Essentials",
+    "defaults": [
+      "708405b286931f4211464fd925612e376c49575dbc73ed528df819383bbf5608",
+      "cd90e6ffa9fa0d7021864f286dce588ec86fdc2ff1eeb674410b1d38a6f09894",
+      "af549f8e6600edb01b27af002fc47c22311a3fcd9332352e5f47dd9b8ce78d1a"
+    ]
+  },
+  {
+    "number": 103,
+    "name": "Routine Photo Steps",
+    "defaults": [
+      "5c30758d383f629da56207c2f52e698121ae76fab771b0ad2867c1b0cb1d8983",
+      "452269a45512e59ebc6093539879a9f295cfbb494dd2e27101d834f12d5410a5",
+      "e3571c9f18833f5dee90fe1d42b649c0c7e2395b95bb1391f4cd32470e9b35b4"
+    ]
+  },
+  {
+    "number": 104,
+    "name": "Flush Split Story",
+    "defaults": [
+      "3260ee59c6970895663e3fb91b49f869fe7c708b9e35e8b14dd5c587fc33a1af",
+      "80307af66b0e87a32a9aa0c3b1279609193f49d5f3579710d4f8bba200e9f44b",
+      "c2b2107614f0d3e55b1d8c3bbabf4bf810261631ba0d1e8a83e47a74dbbca3f3"
+    ]
+  },
+  {
+    "number": 105,
+    "name": "Catalog Caption Cards",
+    "defaults": [
+      "c1aac0648a28434d4485c23bd4c3d379a81a987181d4f6116e4ed2e40178c214",
+      "ca7d06a4c2490f23e47059abf6aa55f659a17ebb913c626f40ae53bcccb5c78f",
+      "fa1163bd3894c4c3e25f7c09069a0e5cbb248637a482742f9cf227dc266543ca"
+    ]
+  },
+  {
+    "number": 106,
+    "name": "Recipe Cards",
+    "defaults": [
+      "02dcc30495cce0ff738ba52ee616d166ac710f04e0eaffe399b40f5575c5fb12",
+      "f23509568218beab0e74e6cfcba3af402700b23d8ac7943e3b4e97f8bd958e19",
+      "ab89054d617aea5d0c8d9a6af4424e84ee5b9d17ac3c7e47cdc0317ac55d2e45"
+    ]
+  },
+  {
+    "number": 107,
+    "name": "Pantry Shop Grid",
+    "defaults": [
+      "0d23e25d83de2e229c7c8ce8d52258352d794b47fe3bc86386655f76de8636f8",
+      "52734375f076ac648d3603f513695a2bfc59ed57ca362c51a573313fcd7701d6",
+      "69b39edf70fdf97e737b7dced649d52cb82b732627cd5bc8dcb537de20e8b88c"
+    ]
+  },
+  {
+    "number": 108,
+    "name": "Pantry Occasion Tabs",
+    "defaults": [
+      "b798ed8ee67c26b4f78a05b57cb1a2b512b8ae0ee3e5e9a4ed845115310790f2",
+      "033488e4f3d18e6879e7ba538788e93be420411ed63410cb612ee9dba8b7acd4",
+      "6c4e77d520833fa511a70a5c64a6d762bdef63eb950c07d5fda37a680a25ed8b"
+    ]
+  },
+  {
+    "number": 109,
+    "name": "Producer Story",
+    "defaults": [
+      "82825feebde651ee45348d8945307dcc7bdde910a31939d51f032d1c47db4699",
+      "b508baeddfd66dd4101160e4d50af94350232cc95cc1d4512b4c3db12ce518cf",
+      "bf902fcb98c38cb914d0a2848d29255fec1f8464fb277f8359907a3fbfbec125"
+    ]
+  },
+  {
+    "number": 110,
+    "name": "Inline Newsletter Strip",
+    "defaults": [
+      "83fcfb0b2d4ce1d40d09a117b3bd2d025d3da95ef3a24db6ede198dd4436e179",
+      "b0fd6ebf5b462f218d43f62714c86219f4ddf86bee71514ec461060ef64d37c4",
+      "9cccaa712f19db482fdc218513b130311dcc4b6b69ccaa3b0ee08c7007794bba"
+    ]
+  },
+  {
+    "number": 111,
+    "name": "Product Showcase Grid",
+    "defaults": [
+      "8bfbc2507bcb2e7f48d0b93663131056e03d290b5673766edfd8ccc60216896a",
+      "79e497e5d72cb5bfea00c8a4dd73e5386893088b3d5aa71bfe22b5725f188e5d",
+      "60582312abdfc3d607f9d3a90509dcf8f6b7c629067403bf90946d24c70a25e3"
+    ]
+  },
+  {
+    "number": 112,
+    "name": "Editorial Product Tabs",
+    "defaults": [
+      "2d1dd0bfaa1060c58c0274786b1e61be99138c05b22a8bbbd809b5544843c16d",
+      "6b29120595aedc07f2d0b65d7c6228f5df66394b835e5965255063f776ba3162",
+      "5cff7c0784a3fe5946ea5a5f2829952c358af2dd1588eb616948142d06e830f1"
+    ]
+  },
+  {
+    "number": 113,
+    "name": "Editorial Product Grid",
+    "defaults": [
+      "b446b48d040942959cc3e6e65648d42d7ca2247fb9cbbc42b729a1a3ba3adf37",
+      "f00386a10fcca4522463066989ad020dbcc74558086fd8ef8b7daff302fd2e4d",
+      "8b7672f5d0197c1a2f1d85ba7b102d6ab56001f17edb8057be31ef9ccbe68570"
+    ]
+  },
+  {
+    "number": 114,
+    "name": "Product Listing Carousel",
+    "defaults": [
+      "967de236ab69842c8343bfc08e0416530b2008cfa2b2e4a75ae02d132567fa44",
+      "5b1ea29e6ae6c68fa97413cf7e14cc09fab250d6a3a0740c3f50b910bc61e5ec",
+      "919733892b24214e4cc0b281db99dc7a4425238b82acd02c6ae2651e7129ca02"
+    ]
+  },
+  {
+    "number": 115,
+    "name": "Category & Collection Tab Showcase",
+    "defaults": [
+      "17bf43cf923c8864deb76ebdaeda2bdbef2e80f5642b41b5d4610776f989bff2",
+      "7e1f6ce90243584f33c9ff8c470309755ed66a6f40cd018fd94a8f495b9eab3a",
+      "1036258e5b9b2599968df2538bae995e7396dc18b87bbea8568a48f4d16d0e08"
+    ]
+  },
+  {
+    "number": 116,
+    "name": "Flash Deal & Product Spotlight",
+    "defaults": [
+      "d4bcc6c24e96c217fa38d508dc4663c330da0c2215027fc8a7c45a0a178fd772",
+      "97a4be1890569c801716a3c3fca37b28e6e532aa0d62e4c34026300faf02bed7",
+      "a45b21ccecb9e223d58ce9531e81fbaef869714d197b39d3dfecbeffc03e6dc8"
+    ]
+  },
+  {
+    "number": 117,
+    "name": "Tiered Pricing & Plan Comparison",
+    "defaults": [
+      "03853c0763a66f7cbe20c9a62564ad2d41ad96aa28cf280e3c6d8ea6e46c3c48",
+      "6f88daa116a316282eb73be3a093b0ccb89f46842b0b60edee70244dc3cd04aa",
+      "0587508d0b6d7582305debfa75886a997c3d61b48a1eb91ea2cb24096d57e71d"
+    ]
+  },
+  {
+    "number": 118,
+    "name": "Visual Lookbook Gallery",
+    "defaults": [
+      "10931c7cc8c84a1b5f76d443cd0d08f77ea2e17561483de95dda51ffe493505a",
+      "041d1bc41a4886e37cdf1ab6dc8217b529969078eba9f432c8f96bb473d8c2e9",
+      "77ebcc66f292c31d026b60ad43d2e97b61d8f74b2cd6b2518211c2b47898a96d"
+    ]
+  },
+  {
+    "number": 119,
+    "name": "Video Stream Player Embed",
+    "defaults": [
+      "089c1f8daf7dfd0898ce2fd6081a824d46ee7d128f46d07765b5d8e3090c1ea7",
+      "ef082dd01c518057a1ec82416cdcb4e35d4bb6fb32f424e81a2d1f0c6a9e2ecb",
+      "0efab1245718c0c64b2842c0c37485c52c6873ba7d83368e50b964e64125523d"
+    ]
+  },
+  {
+    "number": 120,
+    "name": "Interactive Before & After Slider",
+    "defaults": [
+      "e7f1f88051036234d191f75da41df9b7de6a2e3aa08ff32857ceb75414b20169",
+      "b1dc4cb00abed4d02ad5f161283957426e8b75453becd9c11e21c6930cbc3654",
+      "daef770e9a4ac7ce516cce17e6326303aa1f97348fa871df688bc53f9f6345d1"
+    ]
+  },
+  {
+    "number": 121,
+    "name": "Shoppable Social Grid & UGC Wall",
+    "defaults": [
+      "8ca6449958f2111b2d60ad4c44769fae2d2aa7938049ba12fc7db003ba8505b7",
+      "4547d57bd5c82702794c0e02f52d6d9c66a9f1a9c9009c5c8fe233ec9ce99633",
+      "d8f153a049b75aa209859138bb18dcf403e1e540ebfae98fdb79ca774059829c"
+    ]
+  },
+  {
+    "number": 122,
+    "name": "Values List",
+    "defaults": [
+      "e631801d2798b4c218d4b692e52dc6efee6c4db1906ff7e79b12c51fa4d62d0a",
+      "bde9087130d406792dc67f10fff51cecf57d21e2c4e8e7bee7863e1ef1b27879",
+      "291ec22fc3c4042efee3d4f369ff6084d8ab0b19d7f56b399739b8aeedab9d95"
+    ]
+  },
+  {
+    "number": 123,
+    "name": "Value Proposition & Feature Cards",
+    "defaults": [
+      "3e89241526c9ab10fa7bad413d45adac5bbd6473a07d329e6ba6045f14335360",
+      "322991f458b8ceb282483ea604e580ea752a54764abf32318a29fb39c4c7d933",
+      "d4942bd9cdec68fd4ce6e5478ceb8abb4bf816eef5554198fd5bfd6e8976530e"
+    ]
+  },
+  {
+    "number": 124,
+    "name": "Horizontal Trust Badges & Guarantee Row",
+    "defaults": [
+      "78afe73d0dcfc48a46cfe94cf270c3ea1278ee886b1f68fc1fc2279027800982",
+      "411f4afade9787103e04d8959c0b683ff6356712172869f56a59376466b7db91",
+      "e06babe82287b122f0a1c91dea7cb1d6873b6ad2586a4a360a8fd2dc0c1df8b3"
+    ]
+  },
+  {
+    "number": 125,
+    "name": "Product Feature vs Competitor Matrix",
+    "defaults": [
+      "c6f75a830e24519af88450f59f04e0ebb5f8b4d86e9aa804b63a6160ec474b36",
+      "99bc514108dd07be719837ddaf91f975c1de4cc6441eaefa0befc63c41673090",
+      "2a842c24c9e18e83f2f444327b3c9e3ffd147cf36b189f652f07ae242af9ab5e"
+    ]
+  },
+  {
+    "number": 126,
+    "name": "FAQ & Accordion List",
+    "defaults": [
+      "a58e4ff5044da89a5652f5e7ae65ee3f7ed8d4683ff9f3020bf024eae6a2f89a",
+      "a1b93ccdd0640078cede3be5d48c05c44a1376bddd749c180926693a2bef81bf",
+      "f0a26890d2a70696f4d4c1b13def1eacc9333c9fe40c7148253844b8f601b035"
+    ]
+  },
+  {
+    "number": 127,
+    "name": "Enquiry Form",
+    "defaults": [
+      "586ad1f92a57a581786cc21fb8a3df5b3a92d6f9722660ea7e45732a75c83795",
+      "4b7bea18f5d919fbb19322af9ad4e1de2d048ae50ce278927a96e868100fe28b",
+      "302cc2259890bf9966d343610a3ce123078aefdce9a3c639d5eaddafe50a1b17"
+    ]
+  },
+  {
+    "number": 128,
+    "name": "Location & Map",
+    "defaults": [
+      "057bf373f90ee961267249368203b2224c0714547ca949eb219ef80b71e65d13",
+      "af1db2c6619f032532e14191a82883052ad7dcce83cd4148b6f8dee2c3dc8b38",
+      "077d7f6e57b7c26236e3d27fb041493ba70a76737bc272d4597d589374455a7f"
+    ]
+  },
+  {
+    "number": 129,
+    "name": "Interactive Support & Inquiries Form",
+    "defaults": [
+      "23d4ba481f52b48a50ce381c4c711e0dfc46195239bf4e0aaf83bb5dc2a97d90",
+      "9d75306464bb0640bdb7f712cd9859c261f6a987ecf365e1d8ec5e0c9390f926",
+      "19d2549d6f05cba2692f5c8fe83d92261d92928b8143b07ebd5d0cce0359ff84"
+    ]
+  },
+  {
+    "number": 130,
+    "name": "Flagship Atelier & Store Locator",
+    "defaults": [
+      "1ae703b99143b4d0316115347bc1b8693007841274487de8a9ac68f33bf180f4",
+      "1fee7b927c146219427d5e9e81bb950c8fcbd28359d5a792acedb5ff58ca32af",
+      "bed14b60e4fe466eaa357453f4e13f506bf20699fb58206f239e0931ff1b48fa"
+    ]
+  },
+  {
+    "number": 131,
+    "name": "Customer Reviews & Rating Cards",
+    "defaults": [
+      "24d4c840b6017c595561c6043487575858709f03420dc0a4494b022627de08f2",
+      "ff9b4c8eb3d619db55db756a4392ac6a463047b0451a463d2ce59b1f792154b2",
+      "2eb34a1464c9f89379c310c6101ce3b52dc188eecbe2dfde3d4339f07df24e65"
+    ]
+  },
+  {
+    "number": 132,
+    "name": "Partner Logos",
+    "defaults": [
+      "2d80965b7d95796d0b2b049b1200debd43f0e0d143e5b82d7c23c037faff0e7f",
+      "fe0f0de9497f84e11b4b8f918ac0e9cbde74a98aa7fe4e1795c36eb2032bd7b1",
+      "83cb20e504e1683d094cdccb8cac245415d988239dfb6cc03cba8fad0e4fb585"
+    ]
+  },
+  {
+    "number": 133,
+    "name": "Editorial Image Banner",
+    "defaults": [
+      "83018fc18785d0fc6b9f24c121eabcc88eaca03ad40bcdea4637d8dd1b6aa9de",
+      "725ebcde074ee3b5e8043fb24368ac6e5f972df43013a9042dbc6949fa3374fc",
+      "f2073c88cc06cd027d0a4bf91b764ab9279486748fb6f257f87268ae7ad27c54"
+    ]
+  },
+  {
+    "number": 134,
+    "name": "Call to Action & Banner",
+    "defaults": [
+      "2d681e886dba707a0eddda1a39ee86ebeb63fa71b2226c1fcc5af3b67b2b7411",
+      "0c1ee572707da243b77a1b1b341968e85edf8ff5d6b3f09d194f248ceab1e27f",
+      "764485bfb536272d3005e80fd24a0dd816c697d52cfb2e2363fe28cc5c67f839"
+    ]
+  },
+  {
+    "number": 135,
+    "name": "Lead Capture & VIP Newsletter Strip",
+    "defaults": [
+      "4e94cc538cc2e017bd5de30c4c4c9c9d5abd2416aaf2f8b17bb94ee0848e59bd",
+      "ede370aad8231060050955ba78ad1c5d9d88647f01ca01e2c6198228858e6a38",
+      "33fbcf49e1d5d429dcdae3fd3b40f9614789d4aba75404917eab90a80e6ebcd4"
+    ]
+  },
+  {
+    "number": 136,
+    "name": "Editorial Montage",
+    "defaults": [
+      "d9d5a5214eb07825587264efc7d6a4c47af66d9bfd5470c315f942b039557a6d",
+      "bd940d27e9b642b2e5a315a61b77ab6dbc96e4cb21dda005c63e253c88c87ed1",
+      "b411465cdd9e4b7a50637158a27325246ea587de07868ed4f58d54b76d7f86d5"
+    ]
+  },
+  {
+    "number": 137,
+    "name": "Editorial Image Cards",
+    "defaults": [
+      "a8dbb6bb699a3e18e7e03b271e20bea3f28922ebefa6e5116e6b1dae49a8d773",
+      "40fe371304359fe86bcb3891d7a617a88d1eb70134aed3462e59b88481091f70",
+      "fc63ea27087ab9dea44c9e5d1e1ec808c2adcb6a54bea02a952ae76831abc840"
+    ]
+  },
+  {
+    "number": 138,
+    "name": "Editorial Text Columns",
+    "defaults": [
+      "d89f82f452fff6e50abe65f1a25168b304fe043fba3f1c2a3980278ae0c1ce28",
+      "751ac44726d2b64347e3004cc9f73d5a385f30c28bb7eae5cac0b47180eeaa22",
+      "ebab9915c00a94b3669c9918c7df0da5ea814c57d7f2c54b3206b0f1d40d2f69"
+    ]
+  },
+  {
+    "number": 139,
+    "name": "Editorial Cover",
+    "defaults": [
+      "97ce43569011c0a6366cd44bf04cf952ebbcd46b54be59c883340f8cccd10b35",
+      "2ba6ac3e66e75c78f71e78da319147625113b433020706f5fa4708076ccc1e1b",
+      "f61184e16dae68eafe0dca95231ac6b19bcd6f5031c5186ffe0d40f939fc2a75"
+    ]
+  },
+  {
+    "number": 140,
+    "name": "Chapter Navigation",
+    "defaults": [
+      "3b4afb5edc22b48aed30198ad5863998b8c92efee0d7acad598268edd490254e",
+      "ab4e4e89f162c6b89609ac3d6a527af4d1494708e48879162dd1fac1e921368d",
+      "6e845952a65e5a52fc2949ec05da7161e9389dc6204ea35c6738af6f835fcf48"
+    ]
+  },
+  {
+    "number": 141,
+    "name": "Chapter Process",
+    "defaults": [
+      "13ed5673b0d15c71ca746b828ccb4afd41ac2e85a2147104a3ce9efc82d84417",
+      "c03eb8a6daad78fed67f0c80cecb85ddf17b676092f710eb597c37b2e5ef644d",
+      "00b3b4e788c628e7933e695699a87adf9a09326487804f718dbbeb42f08d1d0e"
+    ]
+  },
+  {
+    "number": 142,
+    "name": "Chapter Delivery",
+    "defaults": [
+      "9770281738090085015e4a9bdb57100f720f815ee521233d3e580442570d1198",
+      "39c380dd329a8ff8c31aed0e3ef9f62afc5a0b316e495d4fc6b3d2238e31ad5f",
+      "8eef01df1cf446b6b35d4ba791aed5f2a4a8afdd64a512fc343fff3bdab23bd9"
+    ]
+  },
+  {
+    "number": 143,
+    "name": "Chapter Actions",
+    "defaults": [
+      "6d9844e8750f62d0cd2bd794b2d57d529564db3172c4b531c0f33abad2ab2d58",
+      "e98361c1929b5e1d9965f0156d1d1884c4fcbf06b7691e48ae24cf254e107fdf",
+      "5944627a91b03f3b0c3be9e46cb99519421d50c3bb9cf39098349d667eb73b22"
+    ]
+  },
+  {
+    "number": 144,
+    "name": "Chapter Story",
+    "defaults": [
+      "5c4259aafca85db0fb97586ea84b71171034abbb371b44f55b1ada94e5fdcbb6",
+      "902a9591533bb86f2d69f5100b340a0012101588546c687b54df5dc9732dbd18",
+      "64aad99768929c894f5988de87ab7d30889b4e544d4d191e7289c08d75769aee"
+    ]
+  },
+  {
+    "number": 145,
+    "name": "Chapter Perspective",
+    "defaults": [
+      "c0d45954868a469c0f0adab45ce51211a6aa629fef1fa92b1d85184f5fca2a09",
+      "9639d3270812409eae97074942c9f6fa4f795e3f1c884855cc393f09cfcc61ec",
+      "b3f5c577d4f8b182bba22bbc324a6c64de1f4a065f010040ae6d17b7f28e7bf4"
+    ]
+  },
+  {
+    "number": 146,
+    "name": "Chapter Principles",
+    "defaults": [
+      "716403f939d4dad404e30ff0d755f9eb8bfe70a4f6e430d218633d8b93daabff",
+      "f1887460026f605c7178fe9517f082e028ddbca2f79fdc26624d25308d105768",
+      "fd44c9b8e9ad9660eb8d9be313e122316235c00bd112fa31e99f9e5ef031d459"
+    ]
+  },
+  {
+    "number": 147,
+    "name": "Editorial CTA Band",
+    "defaults": [
+      "d84ac5611de7a932862cabd0053a538d5d8acf927deaee42d1a6ef0bdc0c9ace",
+      "8a61283a3b9decafc68a681882fcaf899ccd00562dbf36458ae7657cd5ee9f57",
+      "f0649e11bbcc3311f4ed5834a85abc3eec319765a6aeb1741b35270208a30e8b"
+    ]
+  },
+  {
+    "number": 148,
+    "name": "Service Highlights",
+    "defaults": [
+      "db0f40326a81ce7c5034956e6928a61d8952293e53ab10d024626f324f43d2b9",
+      "3bca49c7f2ba0976de269c2abbda1e164b20058221fa1a411bef9efed9e861dd",
+      "e4e38efe52cf213d9a290300ae429f5e7b3e54e07eb7ecb5f45ae24f902b12bf"
+    ]
+  },
+  {
+    "number": 149,
+    "name": "Delivery Table",
+    "defaults": [
+      "09810480510e104e28ceda92586d26276100be52473011dc4df353bd2193841a",
+      "a28fc13bc401e59082d14b381b6c8acbbf75b694de387e029bb183f49016003c",
+      "14debad0829894938e2eb7406565f65bbfc7afae40a6f53ec6bebdc6b1532846"
+    ]
+  },
+  {
+    "number": 150,
+    "name": "Story with Steps",
+    "defaults": [
+      "5d9d85d3b241ce02f32f370bfb123dbbdc53fd0b5b841d41ec0a1ebbbb5391e4",
+      "331b2f635cac5f13a315866c36d26317048ad83a826a85d416b5632a83cb8167",
+      "729a54b89d0728c0553b07c9a8cdb056b4ef1319d61db61bc9bc13d5d9efac84"
+    ]
+  },
+  {
+    "number": 151,
+    "name": "Minimal FAQ",
+    "defaults": [
+      "5dec15e8a6c68c5979ebbec798ea1f1f92c2ca2688b39defb034b77a1d03fe64",
+      "9760d9f8148316a72c841f990b7e547189a23820d50c951d2165fd1694c13d4e",
+      "ce7954ff612113b0d2bc7ff5a2692667cffa83ec5461be9bd6b7d7029c27e827"
+    ]
+  },
+  {
+    "number": 152,
+    "name": "Help Panel",
+    "defaults": [
+      "27da61dec772395583cc90d126e3a56c108e319f7142f762652a450d4df3475e",
+      "e9e3ad7339829ae906d226f3cf956ed4ffdcdf95b5c6bdfd7ec3cfae5cccbdad",
+      "90c38c4faf8bebe2fff05e35f21b1f2ccfd1dad70a3abc51582690689cb24659"
+    ]
+  },
+  {
+    "number": 153,
+    "name": "Policy Guidelines",
+    "defaults": [
+      "f2ffb31198f0cf432ccdb26b69c692a677f3fe09e5be0a9dcff05be8167dfaad",
+      "d5a080c4f61d351f1b4d4b2d1da19c3e77059a9a88e9c20f2466b448d1946faf",
+      "922491007c8c957c8888be4f6f408d9278874b859382d1bf72a56d3dc91fd597"
+    ]
+  },
+  {
+    "number": 154,
+    "name": "Policy Choice cards",
+    "defaults": [
+      "1433c71f6408c9e43be2fa63f6118906975d63a7868b64f215d1c312abdb580e",
+      "eaefd3a74acd491d26fc4406ff6ac313d1bf9f93777ac98533fc7413851819bd",
+      "673d3d846cf60b94e1e7d494c54025c55ad62ccaa90c091529a670782e7675ce"
+    ]
+  },
+  {
+    "number": 155,
+    "name": "Policy Numbered steps",
+    "defaults": [
+      "0b9824ad98637c72623e8a71b98fadbde568f9fb19099707f6e494f572847552",
+      "b70284ca1145199f9c446d3f640cbd8204af41acc12868f9bf747e6fb34a61b8",
+      "a9f97b58640e893990d3b5c5d6f7f9781e01cb555c680a56c1a871b9e31a9772"
+    ]
+  },
+  {
+    "number": 156,
+    "name": "Policy Process flow",
+    "defaults": [
+      "92bc01e21fd563e2daf487288aff7a716993ff3b515df850354afe0691666e1c",
+      "251fc82b2f99d731cd10af2bf110e2d13a6840c3be951c41ab66124034aded31",
+      "accd83624459e1018fe8a1e47bc9d4856ddf3081067f53a459a66ac33487a817"
+    ]
+  },
+  {
+    "number": 157,
+    "name": "Policy Timeline",
+    "defaults": [
+      "3c3af71872d7c149d23f140fa23069bff367f6a0ab64665225bc6afa8ca4db9d",
+      "0af390f4bf1d7b5783feb12ec78e48cda74303f09ec57811a0d51e1d78165fa5",
+      "32c776c3cea9b117892ee5cea5279f7724324106fafafca6b6b277a28bf2000b"
+    ]
+  },
+  {
+    "number": 158,
+    "name": "Policy Tabbed guidelines",
+    "defaults": [
+      "33243a57543692ab7aaa4278b52b098dbf65a623b504e2eeafd78249b35cf8eb",
+      "61ed6d3bfcdd5e6b8a7c38d37d53afec240b53c7a0843b10126f7e312ae2360e",
+      "fe14202f57790f26f9a3e1f86a7881b2dd8ea421a2986637d533811df73612f9"
+    ]
+  },
+  {
+    "number": 159,
+    "name": "Policy Editorial columns",
+    "defaults": [
+      "4f7046c6f6a8c22c414e29e71495b25f7c22d94add97c5367a96f5ef5bae4545",
+      "568538c1fa0f5d5671b22b7b7949d63e71fa5f8f92fbca85fd7770806ddd65cb",
+      "aef858b2a9f8fc8ad8a7bea2915c1306ddc821b1d9d65db55d05ecbef937b7c3"
+    ]
+  },
+  {
+    "number": 160,
+    "name": "Policy Document",
+    "defaults": [
+      "25be5fef162d05d8519cda38f0aba9de3683aa559e25d63eab170bdbc107b6f7",
+      "117175b7614853d00ab1f4ae667a1dcae2b2d5a7bda820b8d4d5990ef9c18210",
+      "a8e8bd4002606cc9ecf37c2476787219a61cb4a5ffb801732608141c674fdf67"
+    ]
+  },
+  {
+    "number": 161,
+    "name": "Policy Directory",
+    "defaults": [
+      "d0f7d43a6ec72447bb4ec28bb33b359bfa663aeb4cf618184d17fab80b2b378f",
+      "4480ec363ea938421f2c6124f03aafd27fa4ab60753ae23bd78bcc3585c68050",
+      "ea7613ee46611da2d523ab1636925847d75d93f025ac2d8e053bf18066c5bc03"
+    ]
+  }
+]

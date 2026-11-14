@@ -1,3 +1,4 @@
+import {SectionEyebrow} from './SectionEyebrow';
 import React from 'react';
 import {ArrowRight} from 'lucide-react';
 import type {PageSection} from '../../types';
@@ -13,7 +14,7 @@ export function PromotionHighlights({section,offers,editing=false}:{section:Page
  return <div data-promotion-highlights data-layout={section.promotionLayout??'side'} className={`@container w-full px-6 @min-[750px]:px-10 ${section.paddingY==='spacious'?'py-16':section.paddingY==='normal'?'py-10':'py-7'}`} style={{color:colors?.titleColor??'#f7f6ef',fontFamily:'Arial, sans-serif'}}>
   <div className={`grid gap-7 items-center ${section.promotionLayout!=='above'?'@min-[750px]:grid-cols-[1fr_2.1fr]':''}`}>
    <MotionItem className={section.promotionLayout==='above'?'max-w-[450px]':''}>
-    {section.subtitle&&<p data-cms-text="eyebrow" className="text-[10px] tracking-widest mb-3" style={{color:colors?.eyebrowColor,...typographyStyle(section,'eyebrow')}}>{section.subtitle}</p>}
+    {<SectionEyebrow section={section}/>}
     <h2 data-cms-text="title" className="font-serif font-normal text-[32px] leading-[1.08] tracking-[-.02em] whitespace-pre-line mb-[18px]" style={{fontFamily:'Georgia, serif',color:colors?.titleColor,textAlign:section.textAlignment,...typographyStyle(section,'title')}}>{section.title}</h2>
     {section.content&&<p data-cms-text="content" className="text-[13px] leading-[1.6] whitespace-pre-line" style={{color:colors?.contentColor??'#f7f6ef',textAlign:section.textAlignment,...typographyStyle(section,'content')}}>{section.content}</p>}
    </MotionItem>
@@ -26,7 +27,7 @@ export function PromotionHighlights({section,offers,editing=false}:{section:Page
       <h3 data-cms-item={item.id} data-cms-text="itemTitle" className="font-normal text-[23px] leading-[1.08] mb-2.5 whitespace-pre-line break-words" style={{fontFamily:'Georgia, serif',...typographyStyle(section,'itemTitle')}}>{item.title||offer.name}</h3>
       {(item.description||offer.description)&&<p data-cms-item={item.id} data-cms-text="itemContent" className="text-[11px] leading-[1.45] mb-[13px] whitespace-pre-line text-[#5a5e54]" style={typographyStyle(section,'itemContent')}>{item.description||offer.description}</p>}
       <p data-cms-source className="text-[10px] leading-relaxed text-[#5a5e54] mb-3 break-words">{section.showOfferBadges===false&&<>{offer.benefit} · </>}Use {offer.code}{offer.minimumSpend&&<> · Minimum spend {offer.minimumSpend}</>}{offer.endsAt&&<> · Until {new Date(offer.endsAt).toLocaleDateString('en-MY',{timeZone:'Asia/Kuala_Lumpur',day:'numeric',month:'short',year:'numeric'})}</>}</p>
-      {item.buttonText&&item.linkUrl&&<a data-cms-action="link" data-cms-item={item.id} href={item.linkUrl} onClick={e=>{if(editing)e.preventDefault()}} className="inline-flex items-center gap-[9px] text-[11px] underline underline-offset-4" style={{color:colors?.secondaryBtnText??'#292b24'}}>{item.buttonText}<ArrowRight size={13} aria-hidden="true"/></a>}
+      {item.buttonText&&item.linkUrl&&<a data-cms-button="primary" data-cms-button-kind="link" data-cms-action="link" data-cms-item={item.id} href={item.linkUrl} onClick={e=>{if(editing)e.preventDefault()}} className="inline-flex items-center gap-[9px] text-[11px] underline underline-offset-4" style={{color:colors?.secondaryBtnText??'#292b24'}}>{item.buttonText}<ArrowRight size={13} aria-hidden="true"/></a>}
      </div>
     </MotionItem>)}
     {!cards.length&&editing&&<p data-cms-source className="col-span-full border border-dashed border-white/40 p-6 text-xs leading-relaxed">No eligible promotions. Choose an active offer in Content. This section is hidden from customers until an eligible offer is available.</p>}

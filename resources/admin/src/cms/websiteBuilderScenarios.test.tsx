@@ -14,9 +14,9 @@ describe('Website business scenarios',()=>{
   const s=websiteBuilderScenarios('f01',['/business.webp','/services.webp','/catalogue.webp']);
   expect(s.type).toBe('media_gallery');expect(s.galleryPreset).toBe('corporate-scenarios');
   expect(s.containerMode).toBe('page');expect(s.motionPreset).toBe('subtle-lift');
-  expect(sectionContentFields(s)).toEqual(['title','content']);
+  expect(sectionContentFields(s)).toEqual(['eyebrow','title','content']);
   expect(repeatedItemFields(s)).toEqual(['title','icon','imageUrl']);
-  expect(textRoles(s)).toEqual(['title','content','itemTitle']);expect(supportsMediaWidth(s)).toBe(false);
+  expect(textRoles(s)).toEqual(['eyebrow','title','content','itemTitle']);expect(supportsMediaWidth(s)).toBe(false);
   expect(imageTargets(s).map(t=>t.url)).toEqual(['/business.webp','/services.webp','/catalogue.webp']);
   expect(s.items?.map(i=>i.title)).toEqual(['Business websites','Service showcases','Product catalogues']);
  });

@@ -1,0 +1,32 @@
+
+> jwstudio-admin@0.0.0 build
+> node scripts/export-ai-copy-contract.mjs --check && vite build && node scripts/build-ssr.mjs
+
+PASS Inspector copy capability parity
+vite v6.4.3 building for production...
+transforming...
+
+/fonts/sample/baby-dmsans-variable.ttf referenced in /fonts/sample/baby-dmsans-variable.ttf didn't resolve at build time, it will remain unchanged to be resolved at runtime
+
+/images/themes/logistics/hero.png referenced in /images/themes/logistics/hero.png didn't resolve at build time, it will remain unchanged to be resolved at runtime
+
+/fonts/sample/universal-dm-sans.ttf referenced in /fonts/sample/universal-dm-sans.ttf didn't resolve at build time, it will remain unchanged to be resolved at runtime
+
+/fonts/sample/universal-manrope.ttf referenced in /fonts/sample/universal-manrope.ttf didn't resolve at build time, it will remain unchanged to be resolved at runtime
+✓ 3280 modules transformed.
+rendering chunks...
+computing gzip size...
+../../public/build-admin/manifest.json                               1.16 kB │ gzip:   0.34 kB
+../../public/build-admin/assets/Inventory48Runtime-DNZXllWr.css     19.73 kB │ gzip:   4.67 kB
+../../public/build-admin/assets/main-lwU9mrON.css                  152.49 kB │ gzip:  28.83 kB
+../../public/build-admin/assets/index-D9pWgzgC.css                 422.30 kB │ gzip:  54.88 kB
+../../public/build-admin/assets/public-page-CtOZHk7A.js              0.31 kB │ gzip:   0.24 kB
+../../public/build-admin/assets/Inventory48Runtime-CWNVLyNF.js     424.04 kB │ gzip:  89.68 kB
+../../public/build-admin/assets/index-SGghekfX.js                  809.40 kB │ gzip: 208.42 kB
+../../public/build-admin/assets/main-DC09Cndr.js                 4,042.01 kB │ gzip: 942.18 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 23.33s

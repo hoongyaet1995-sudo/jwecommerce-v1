@@ -192,6 +192,7 @@ export interface Collection {
   slug: string;
   description?: string;
   subtitle?: string;
+  eyebrow?: string;
   badge?: string;
   coverImage?: string;
   type: 'manual' | 'dynamic';
@@ -607,6 +608,7 @@ export interface SectionItem {
   id: string;
   title: string;
   subtitle?: string;
+  eyebrow?: string;
   description?: string;
   caption?: string;
   thirdButtonText?: string;
@@ -682,13 +684,18 @@ export interface PageSection {
   showOfferBadges?: boolean;
   imageSlots?: SectionImageSlot[];
   typography?: SectionTypography;
-  surface?: 'light' | 'contrast';
+  colorOverrides?:Array<keyof SectionColorConfig>;
+  buttonRadius?:0|6|999;
+  buttonSize?:'compact'|'normal'|'large';
+  buttonColors?:import('../cms/actionAppearance').ButtonColors;
+  surface?: 'page' | 'light' | 'contrast';
   brandPalette?: BrandPalette;
   motionPreset?: SectionMotionPreset;
   id: string;
   type: PageSectionType;
   title: string;
   subtitle?: string;
+  eyebrow?: string;
   content?: string; // Rich editorial paragraph / markdown
   quote?: string;
   authorName?: string;

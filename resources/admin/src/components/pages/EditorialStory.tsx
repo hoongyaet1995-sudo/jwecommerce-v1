@@ -1,3 +1,4 @@
+import {SectionEyebrow} from './SectionEyebrow';
 import {MediaWidthRegion} from './MediaWidthRegion';
 import {typographyStyle} from '../../cms/inspectorCapabilities';
 import React from 'react';
@@ -19,7 +20,7 @@ export function EditorialStory({section,isEditingMode}:{section:PageSection;isEd
         <SectionImage section={section} className={ratio==='auto'?'':'h-full'} />
       </MotionMedia></MediaWidthRegion>}
       <div className={`max-w-xl min-w-0 ${fullMedia?'order-1':left?'@min-[1024px]:order-2':'@min-[1024px]:order-1'}`}>
-        {section.subtitle && <MotionItem><span data-cms-text="eyebrow" style={{...({color:colors?.eyebrowColor}),...typographyStyle(section,'eyebrow')}} className="block text-xs font-bold uppercase tracking-widest text-indigo-600 mb-6">{section.subtitle}</span></MotionItem>}
+        {<MotionItem><SectionEyebrow section={section}/></MotionItem>}
         <MotionItem><h2 data-cms-text="title" style={{...({color:colors?.titleColor}),...typographyStyle(section,'title')}} className="text-3xl @min-[640px]:text-4xl @min-[1024px]:text-5xl font-extrabold leading-[1.08] tracking-tight whitespace-pre-line break-words">{section.title}</h2></MotionItem>
         {paragraphs.length>0 && <div className="mt-6 space-y-5 text-base leading-relaxed">{paragraphs.map((paragraph,index)=><MotionItem key={index}><p data-cms-text="content" style={{...({color:colors?.contentColor}),...typographyStyle(section,'content')}} className="whitespace-pre-line break-words text-neutral-500">{paragraph}</p></MotionItem>)}</div>}
         {section.layoutPreset==='story-with-steps'&&<div className="mt-8 grid grid-cols-1 @min-[480px]:grid-cols-2 @min-[1024px]:grid-cols-3 gap-4">{section.items?.map((item,i)=><MotionItem key={item.id} independentReveal><div className={i?'border-l border-neutral-200 pl-4':''}><span style={{color:colors?.titleColor}} className="block font-bold text-3xl">{String(i+1).padStart(2,'0')}</span><h3 data-cms-text="itemTitle" data-cms-item={item.id} style={{color:colors?.titleColor,...typographyStyle(section,'itemTitle')}} className="mt-2 text-base leading-snug whitespace-pre-line">{item.title}</h3><p data-cms-text="itemContent" data-cms-item={item.id} style={{color:colors?.contentColor,...typographyStyle(section,'itemContent')}} className="mt-1 text-sm leading-relaxed">{item.description}</p></div></MotionItem>)}</div>}

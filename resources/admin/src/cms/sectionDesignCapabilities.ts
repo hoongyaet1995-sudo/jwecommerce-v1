@@ -9,6 +9,7 @@ import {isConnectedRows,connectedRowsPassport} from './connectedFeatureRows';
 import {isImageHighlights,imageHighlightsPassport} from './imageHighlights';
 import {isFixedImageCards,imageCardsThreePassport} from './imageCardsThree';
 import type {PageSection} from '../types';
+import {layoutControlCapabilities} from './layoutControls';
 /** Bounded renderer capabilities. Hidden authored values remain available on layout switches. */
 export function renderedColorFields(s:PageSection):readonly string[]|undefined {
  if(isFramedFaq(s))return ['customBgColor','eyebrowColor','titleColor','contentColor','primaryBtnBg','secondaryBtnBg'];
@@ -33,6 +34,8 @@ export function renderedColorFields(s:PageSection):readonly string[]|undefined {
  if(s.type==='cta_strip'&&s.ctaPreset==='gradient-panel')return [...text,'primaryBtnBg','primaryBtnText'];
 }
 export function supportsDesignField(s:PageSection,key:string):boolean {
+ if(key==='paddingY')return layoutControlCapabilities(s).spacing;
+ if(key==='textAlignment')return layoutControlCapabilities(s).alignment.length>1;
  if((isPlanComparison(s)||isFramedFaq(s))&&key==='textAlignment')return false;
  if(isFocusedSteps(s)&&key==='textAlignment')return false;
  if(isScrollStackCards(s)&&['motionPreset','textAlignment'].includes(key))return false;

@@ -2,10 +2,10 @@ import React from 'react';
 import {ArrowRight} from 'lucide-react';
 import type {PageSection} from '../../types';
 import {MotionButton} from './motion/CmsMotionWrapper';
-export function EditorialSectionAction({section,isEditingMode}:{section:PageSection;isEditingMode:boolean}) {
+export function EditorialSectionAction({section,isEditingMode,actionChannel='primary'}:{section:PageSection;isEditingMode:boolean;actionChannel?:'primary'|'secondary'}) {
   if(!section.buttonText || !section.buttonLink) return null;
   const link=section.buttonStyle==='text-link';
-  return <MotionButton><a href={section.buttonLink} data-editorial-action={link?'text-link':'button'} onClick={e=>{if(isEditingMode)e.preventDefault();else if(section.buttonLink==='#storefront-support-widget'){const launcher=document.getElementById('sf-support-launcher');if(launcher){e.preventDefault();launcher.click();}}}}
+  return <MotionButton><a data-cms-button={actionChannel} data-cms-button-kind={link?'link':'button'} href={section.buttonLink} data-editorial-action={link?'text-link':'button'} onClick={e=>{if(isEditingMode)e.preventDefault();else if(section.buttonLink==='#storefront-support-widget'){const launcher=document.getElementById('sf-support-launcher');if(launcher){e.preventDefault();launcher.click();}}}}
     style={link?{color:section.customColors?.primaryBtnBg}:{backgroundColor:section.customColors?.primaryBtnBg,color:section.customColors?.primaryBtnText}}
     className={link?'inline-flex items-center gap-3 text-sm font-semibold text-indigo-600 underline underline-offset-4 transition-opacity hover:opacity-80':'inline-flex items-center gap-3 px-6 py-3 rounded-lg bg-indigo-600 text-white text-sm font-bold transition-opacity hover:opacity-90'}>
     {section.buttonText}<ArrowRight className="w-4 h-4" />

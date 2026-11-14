@@ -1,0 +1,204 @@
+
+   WARN  Tests\Unit\Domain\Cms\ActionAppearanceContractTest
+  ! owned action colors preserve legacy colors and text metadata → file_get_contents(C:\Users\User\.codex\workt… 4.36s
+  ! action color rejects css payloads → file_get_contents(C:\Users\User\.codex\worktrees\passport-release-20261… 0.71s
+
+   WARN  Tests\Unit\Domain\Cms\AddonPricingReferenceTest
+  ! addon reference preserves authoritative charge and terms → file_get_contents(C:\Users\User\.codex\worktrees… 0.61s
+
+   WARN  Tests\Unit\Domain\Cms\BeautyTemplateTest
+  ! beauty snapshot and sparse presets round trip → file_get_contents(C:\Users\User\.codex\worktrees\passport-r… 0.17s
+
+   WARN  Tests\Unit\Domain\Cms\ConnectedFeatureRowsTest
+  ! bounded preset round trip and legacy layout data retention → file_get_contents(C:\Users\User\.codex\worktre… 0.09s
+  ! gallery preset cannot be saved on a hero → file_get_contents(C:\Users\User\.codex\worktrees\passport-releas… 0.09s
+
+   WARN  Tests\Unit\Domain\Cms\ConnectedShowcaseTemplatesTest
+  ! bundled assets do not expand arbitrary local media access → file_get_contents(C:\Users\User\.codex\worktree… 0.11s
+  ! all six portable snapshots are canonical and have no database price reference → file_get_contents(C:\Users… 0.31s
+
+   WARN  Tests\Unit\Domain\Cms\ContactTemplatesTest
+  ! all three templates and location changes round trip → file_get_contents(C:\Users\User\.codex\worktrees\pass… 0.12s
+  ! location fields cannot be added to unrelated sections → file_get_contents(C:\Users\User\.codex\worktrees\pa… 0.08s
+
+   WARN  Tests\Unit\Domain\Cms\CorporatePresetsTest
+  ! gradient cta is generic and preserves text and action across layouts → file_get_contents(C:\Users\User\.cod… 0.09s
+  ! connected features preserve owned illustrations copy and cta destinations → file_get_contents(C:\Users\User… 0.10s
+  ! illustrated steps preserve independent images titles and descriptions → file_get_contents(C:\Users\User\.co… 0.08s
+  ! scenarios keeps owned independent images icons and names → file_get_contents(C:\Users\User\.codex\worktrees… 0.09s
+  ! section story accepts sparse data and preserves labels and image slots → file_get_contents(C:\Users\User\.c… 0.09s
+  ! builder overview keeps independent icon labels and image across switches → file_get_contents(C:\Users\User… 0.10s
+  ! split composite hero preserves copy actions and owned image slot → file_get_contents(C:\Users\User\.codex\w… 0.08s
+  ! marketplace sparse and benefit content survives layout switches → file_get_contents(C:\Users\User\.codex\wo… 0.10s
+  ! courier preset accepts sparse data and owned logo image slots → file_get_contents(C:\Users\User\.codex\work… 0.09s
+  ! payment preset accepts logo slots and preserves layout switches → file_get_contents(C:\Users\User\.codex\wo… 0.08s
+  ! support network keeps owned items and managed photo slot → file_get_contents(C:\Users\User\.codex\worktrees… 0.09s
+  ! sparse corporate presets round trip and keep page width → file_get_contents(C:\Users\User\.codex\worktrees… 0.17s
+
+   WARN  Tests\Unit\Domain\Cms\EditorialIllustratedCtaTest
+  ! round trip and hidden media retention → file_get_contents(C:\Users\User\.codex\worktrees\passport-release-2… 0.09s
+  ! wrong preset owner is rejected → file_get_contents(C:\Users\User\.codex\worktrees\passport-release-20261114… 0.09s
+
+   WARN  Tests\Unit\Domain\Cms\FocusedStepsPresetTest
+  ! three image preset preserves independent assets alt and hidden layout data → file_get_contents(C:\Users\Use… 0.08s
+
+   WARN  Tests\Unit\Domain\Cms\FoodTemplateTest
+  ! food snapshot and all sparse presets round trip → file_get_contents(C:\Users\User\.codex\worktrees\passport… 0.11s
+
+   WARN  Tests\Unit\Domain\Cms\IllustratedCtaTest
+  ! round trip and hidden media retention → file_get_contents(C:\Users\User\.codex\worktrees\passport-release-2… 0.11s
+  ! wrong preset owner is rejected → file_get_contents(C:\Users\User\.codex\worktrees\passport-release-20261114… 0.09s
+
+   WARN  Tests\Unit\Domain\Cms\ImageCardsFourMosaicTest
+  ! bounded preset round trip and legacy layout data retention → file_get_contents(C:\Users\User\.codex\worktre… 0.10s
+  ! gallery preset cannot be saved on a hero → file_get_contents(C:\Users\User\.codex\worktrees\passport-releas… 0.08s
+
+   WARN  Tests\Unit\Domain\Cms\ImageCardsThreeTest
+  ! bounded preset round trip and legacy layout data retention → file_get_contents(C:\Users\User\.codex\worktre… 0.08s
+  ! gallery preset cannot be saved on a hero → file_get_contents(C:\Users\User\.codex\worktrees\passport-releas… 0.08s
+
+   WARN  Tests\Unit\Domain\Cms\ImageFlowPresetTest
+  ! three image preset preserves independent assets alt and hidden layout data → file_get_contents(C:\Users\Use… 0.08s
+
+   WARN  Tests\Unit\Domain\Cms\ImageHighlightsTest
+  ! bounded preset round trip and legacy layout data retention → file_get_contents(C:\Users\User\.codex\worktre… 0.08s
+  ! gallery preset cannot be saved on a hero → file_get_contents(C:\Users\User\.codex\worktrees\passport-releas… 0.07s
+
+   WARN  Tests\Unit\Domain\Cms\IndustrialDetailTemplateTest
+  ! detail and gallery snapshots round trip with owned fields → file_get_contents(C:\Users\User\.codex\worktree… 0.11s
+  ! gallery controls cannot be saved on other section types → file_get_contents(C:\Users\User\.codex\worktrees… 0.12s
+
+   WARN  Tests\Unit\Domain\Cms\JewelryTemplateTest
+  ! jewelry template and sparse artisan survive canonical round trip → file_get_contents(C:\Users\User\.codex\w… 0.12s
+
+   WARN  Tests\Unit\Domain\Cms\KidsTemplateTest
+  ! kids template and sparse presets survive canonical round trip → file_get_contents(C:\Users\User\.codex\work… 0.15s
+
+   WARN  Tests\Unit\Domain\Cms\KnowledgeTriptychPresetTest
+  ! three image preset preserves independent assets alt and hidden layout data → file_get_contents(C:\Users\Use… 0.12s
+
+   WARN  Tests\Unit\Domain\Cms\LogisticsTemplateTest
+  ! logistics template round trips through canonical ownership contract → file_get_contents(C:\Users\User\.code… 0.14s
+  ! industrial presets reject wrong section owners → file_get_contents(C:\Users\User\.codex\worktrees\passport-… 0.14s
+
+   WARN  Tests\Unit\Domain\Cms\PageDocumentContractTest
+  ! market template preserves editable cards and layout switches → file_get_contents(C:\Users\User\.codex\workt… 0.14s
+  ! fashion template preserves layouts actions and owned lookbook images → file_get_contents(C:\Users\User\.cod… 0.13s
+  ! home deco factory snapshot preserves json object fields → file_get_contents(C:\Users\User\.codex\worktrees… 0.15s
+  ! media layout switch retains owned image slots → file_get_contents(C:\Users\User\.codex\worktrees\passport-r… 0.11s
+  ! owned dormant cta and slider poster slots survive switches → file_get_contents(C:\Users\User\.codex\worktre… 0.11s
+  ! editorial product grid manual selection round trip → file_get_contents(C:\Users\User\.codex\worktrees\passp… 0.12s
+  ! collection banners canonical round trip and wrong owner rejection → file_get_contents(C:\Users\User\.codex… 0.13s
+  ! shop navigation source and image slot round trip → file_get_contents(C:\Users\User\.codex\worktrees\passpor… 0.09s
+  ! editorial slider and caption round trip without loosening preset validation → file_get_contents(C:\Users\Us… 0.12s
+  ! typography numeric ranges accept integer json and fractional values → file_get_contents(C:\Users\User\.code… 0.10s
+  ! shared typography round trips and rejects unsafe or unbounded overrides → file_get_contents(C:\Users\User\.… 0.11s
+  ! chapter fields and image slots are owned by their layout → file_get_contents(C:\Users\User\.codex\worktrees… 0.09s
+  ! editorial collection fields are owned and bounded → file_get_contents(C:\Users\User\.codex\worktrees\passpo… 0.08s
+  ! page container presets are optional and bounded → file_get_contents(C:\Users\User\.codex\worktrees\passport… 0.09s
+  ! shared borders are saved on every section type and reject invalid positions → file_get_contents(C:\Users\Us… 0.09s
+  ! cta banner preset and background slot are owned and validated → file_get_contents(C:\Users\User\.codex\work… 0.08s
+  ! standalone values list controls round trip and reject wrong owners and values → file_get_contents(C:\Users… 0.08s
+  ! values list fields are bounded and owned by feature cards → file_get_contents(C:\Users\User\.codex\worktree… 0.08s
+  ! manifesto preset is owned only by rich text and rejects unknown values → file_get_contents(C:\Users\User\.c… 0.07s
+  ! image slots reject unknown targets duplicates and locked geometry → file_get_contents(C:\Users\User\.codex… 0.08s
+  ! editorial hero rejects unsupported presets and crop positions → file_get_contents(C:\Users\User\.codex\work… 0.09s
+  ! all known fields round trip without loss → file_get_contents(C:\Users\User\.codex\worktrees\passport-releas… 0.11s
+  ! unknown fields are rejected instead of removed → file_get_contents(C:\Users\User\.codex\worktrees\passport-… 0.08s
+  ! unknown section types are rejected → file_get_contents(C:\Users\User\.codex\worktrees\passport-release-2026… 0.09s
+  ! nested unknown fields are rejected with their exact path → file_get_contents(C:\Users\User\.codex\worktrees… 0.09s
+  ! scalar fields reject a value with the wrong json type → file_get_contents(C:\Users\User\.codex\worktrees\pa… 0.08s
+  ! object fields reject a non empty json list → file_get_contents(C:\Users\User\.codex\worktrees\passport-rele… 0.09s
+  ! data urls are rejected with the media field path → file_get_contents(C:\Users\User\.codex\worktrees\passpor… 0.08s
+  ! media hostname policy matches shared raw authority parity vectors → file_get_contents(C:\Users\User\.codex… 0.16s
+  ! visible empty publish required fields fail with their exact path → file_get_contents(C:\Users\User\.codex\w… 0.09s
+  ! hidden empty publish required fields do not block publication → file_get_contents(C:\Users\User\.codex\work… 0.10s
+  ! all visible fixture section types can publish when runtime facts are valid → file_get_contents(C:\Users\Use… 0.08s
+  ! hidden sections without a public renderer do not block publication → file_get_contents(C:\Users\User\.codex… 0.09s
+  ! runtime requirement failure uses the declared section field path → file_get_contents(C:\Users\User\.codex\w… 0.09s
+
+   WARN  Tests\Unit\Domain\Cms\PartnerLogoContractTest
+  ! partner settings and owned logo slots round trip and reject out of range sizes → file_get_contents(C:\Users… 0.12s
+
+   WARN  Tests\Unit\Domain\Cms\PrivacyTemplatesTest
+  ! all three privacy templates round trip → file_get_contents(C:\Users\User\.codex\worktrees\passport-release-… 0.09s
+
+   WARN  Tests\Unit\Domain\Cms\ReturnsTemplatesTest
+  ! all registered returns templates and image controls round trip → file_get_contents(C:\Users\User\.codex\wor… 0.09s
+  ! process flow round trips without changing items → file_get_contents(C:\Users\User\.codex\worktrees\passport… 0.10s
+  ! policy presets reject unknown values and wrong section owners → file_get_contents(C:\Users\User\.codex\work… 0.09s
+
+   WARN  Tests\Unit\Domain\Cms\SaasPackagesContractTest
+  ! saas document round trips → file_get_contents(C:\Users\User\.codex\worktrees\passport-release-20261114\jwst… 0.08s
+  ! pricing fields reject wrong owner → file_get_contents(C:\Users\User\.codex\worktrees\passport-release-20261… 0.09s
+  ! negative pricing is rejected → file_get_contents(C:\Users\User\.codex\worktrees\passport-release-20261114\j… 0.08s
+  ! incomplete draft is not publishable → file_get_contents(C:\Users\User\.codex\worktrees\passport-release-202… 0.09s
+
+   WARN  Tests\Unit\Domain\Cms\ScrollStackCardsPresetTest
+  ! three image preset preserves independent assets alt and hidden layout data → file_get_contents(C:\Users\Use… 0.11s
+
+   WARN  Tests\Unit\Domain\Cms\SectionEyebrowContractTest
+  ! canonical eyebrow and explicit empty values round trip without overwriting legacy text → file_get_contents(… 0.09s
+
+   WARN  Tests\Unit\Domain\Cms\StyleInheritanceContractTest
+  ! explicit page inheritance and local buttons round trip → file_get_contents(C:\Users\User\.codex\worktrees\p… 0.09s
+
+   WARN  Tests\Unit\Domain\Cms\TeamStoryOverviewPresetTest
+  ! three image preset preserves independent assets alt and hidden layout data → file_get_contents(C:\Users\Use… 0.09s
+
+   WARN  Tests\Unit\Domain\Cms\TechTemplateTest
+  ! tech template and sparse presets survive canonical round trip → file_get_contents(C:\Users\User\.codex\work… 0.10s
+
+   WARN  Tests\Unit\Domain\Cms\TermsTemplatesTest
+  ! all three terms templates round trip → file_get_contents(C:\Users\User\.codex\worktrees\passport-release-20… 0.10s
+  ! document layout cannot be attached to rich text → file_get_contents(C:\Users\User\.codex\worktrees\passport… 0.11s
+
+   WARN  Tests\Unit\Domain\Cms\WeddingTemplateTest
+  ! editorial quote requires quote content while default testimonial still requires title → file_get_contents(C… 0.15s
+  ! bundled asset allowlist does not allow arbitrary local paths → file_get_contents(C:\Users\User\.codex\workt… 0.11s
+  ! portfolio template survives canonical validation without commerce → file_get_contents(C:\Users\User\.codex… 0.19s
+
+   FAIL  Tests\Feature\Admin\CmsActionAppearanceAcceptanceTest
+  ⨯ all 161 text action appearance edits save reload and reach customer runtime without publication             18.18s
+
+   FAIL  Tests\Feature\Admin\CmsLayoutControlsAcceptanceTest
+  ⨯ all 161 layout control edits save reload and reach customer runtime without publication                      0.16s
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\Admin\CmsActionAppearanceAcceptanceTest > all 161 text action appea…  MissingAppKeyException
+  No application encryption key has been specified.
+
+  at vendor\laravel\framework\src\Illuminate\Encryption\EncryptionServiceProvider.php:83
+     79▕     protected function key(array $config)
+     80▕     {
+     81▕         return tap($config['key'], function ($key) {
+     82▕             if (empty($key)) {
+  ➜  83▕                 throw new MissingAppKeyException;
+     84▕             }
+     85▕         });
+     86▕     }
+     87▕ }
+
+  1   vendor\laravel\framework\src\Illuminate\Encryption\EncryptionServiceProvider.php:83
+  2   vendor\laravel\framework\src\Illuminate\Support\helpers.php:393
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\Admin\CmsLayoutControlsAcceptanceTest > all 161 layout control edit…  MissingAppKeyException
+  No application encryption key has been specified.
+
+  at vendor\laravel\framework\src\Illuminate\Encryption\EncryptionServiceProvider.php:83
+     79▕     protected function key(array $config)
+     80▕     {
+     81▕         return tap($config['key'], function ($key) {
+     82▕             if (empty($key)) {
+  ➜  83▕                 throw new MissingAppKeyException;
+     84▕             }
+     85▕         });
+     86▕     }
+     87▕ }
+
+  1   vendor\laravel\framework\src\Illuminate\Encryption\EncryptionServiceProvider.php:83
+  2   vendor\laravel\framework\src\Illuminate\Support\helpers.php:393
+
+
+  Tests:    2 failed, 95 warnings (484 assertions)
+  Duration: 41.47s

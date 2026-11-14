@@ -1,3 +1,4 @@
+import {SectionEyebrow} from './SectionEyebrow';
 import React,{useEffect,useState} from 'react';
 import type {PageSection} from '../../types';
 import {typographyStyle} from '../../cms/inspectorCapabilities';
@@ -29,7 +30,7 @@ export function PolicyDocument({section,isEditingMode=false,embedded=false}:{sec
    </aside>:null}
    <div className={`min-w-0 ${directory?'':'max-w-[800px] mx-auto'}`}>
     {section.showSectionHeading!==false&&<header className={embedded?'mb-8':'mb-8 rounded-lg bg-neutral-500/5 p-6'}>
-   {!embedded&&section.subtitle&&<p data-cms-text="eyebrow" style={style('eyebrow')} className="text-xs font-bold uppercase tracking-widest mb-4">{section.subtitle}</p>}
+   {<SectionEyebrow section={section}/>}
    <h2 data-cms-text="title" style={style('title')} className="text-3xl font-extrabold tracking-tight whitespace-pre-line">{section.title}</h2>
    {section.content&&<div data-cms-text="content" style={style('content')} className="mt-4 text-base leading-relaxed whitespace-pre-line">{section.content}</div>}
   </header>}

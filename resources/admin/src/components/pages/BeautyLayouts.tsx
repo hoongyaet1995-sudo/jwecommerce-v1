@@ -1,3 +1,4 @@
+import {SectionEyebrow} from './SectionEyebrow';
 import React from 'react';
 import './CorporateSections.css';
 import {ArrowRight} from 'lucide-react';
@@ -8,7 +9,7 @@ import {resolveShopCard} from '../../cms/shopNavigation';
 import {ScopedImage} from './ScopedImage';
 import {MotionItem} from './motion/CmsMotionWrapper';
 export function BeautySectionHeading({section,editing=false}:{section:PageSection;editing?:boolean}) {
- return section.showSectionHeading===false?null:<header className={`flex gap-4 mb-5 ${section.textAlignment==='center'?'flex-col items-center':section.textAlignment==='right'?'flex-col items-end':'flex-wrap justify-between items-end'}`}><div style={{textAlign:section.textAlignment}}><h2 data-cms-text="title" className="font-serif text-3xl whitespace-pre-line" style={typographyStyle(section,'title')}>{section.title}</h2>{section.subtitle&&<p data-cms-text="eyebrow" className="uppercase text-[10px] tracking-[.15em] mt-2" style={typographyStyle(section,'eyebrow')}>{section.subtitle}</p>}{section.content&&<p data-cms-text="content" className="text-sm mt-3 whitespace-pre-line" style={typographyStyle(section,'content')}>{section.content}</p>}</div>{section.buttonText&&section.buttonLink&&<a data-cms-action="button" href={section.buttonLink} onClick={e=>{if(editing)e.preventDefault()}} className="text-xs inline-flex items-center gap-2">{section.buttonText}<ArrowRight size={14}/></a>}</header>;
+ return section.showSectionHeading===false?null:<header className={`flex gap-4 mb-5 ${section.textAlignment==='center'?'flex-col items-center':section.textAlignment==='right'?'flex-col items-end':'flex-wrap justify-between items-end'}`}><div style={{textAlign:section.textAlignment}}><SectionEyebrow section={section}/><h2 data-cms-text="title" className="font-serif text-3xl whitespace-pre-line" style={typographyStyle(section,'title')}>{section.title}</h2>{section.content&&<p data-cms-text="content" className="text-sm mt-3 whitespace-pre-line" style={typographyStyle(section,'content')}>{section.content}</p>}</div>{section.buttonText&&section.buttonLink&&<a data-cms-button="primary" data-cms-button-kind="link" data-cms-action="button" href={section.buttonLink} onClick={e=>{if(editing)e.preventDefault()}} className="text-xs inline-flex items-center gap-2">{section.buttonText}<ArrowRight size={14}/></a>}</header>;
 }
 export function ImageCaptionNavigation({section,catalog,editing=false}:{section:PageSection;catalog:PageRuntimePayload['catalog'];editing?:boolean}) {
  const light=section.shopNavigationPreset==='image-caption';const cols=section.columnsCount??4;
@@ -19,7 +20,7 @@ export function RoutineSteps({section,editing=false}:{section:PageSection;editin
  if(section.galleryPreset==='corporate-illustrated-steps'){
   const items=section.items??[];
   return <div className="corp corp-illustrated-steps" data-stacked={items.length>4?'true':undefined} style={{'--corp-step-count':Math.max(1,items.length),'--corp-space':section.paddingY==='compact'?'32px':section.paddingY==='spacious'?'96px':'64px'} as React.CSSProperties}>
-   <header className="corp-steps-heading"><h2 data-cms-text="title" style={{color:section.customColors?.titleColor,...typographyStyle(section,'title')}}>{section.title}</h2>{section.content&&<p data-cms-text="content" style={{color:section.customColors?.contentColor,...typographyStyle(section,'content')}}>{section.content}</p>}</header>
+   <header className="corp-steps-heading"><><SectionEyebrow section={section}/><h2 data-cms-text="title" style={{color:section.customColors?.titleColor,...typographyStyle(section,'title')}}>{section.title}</h2></>{section.content&&<p data-cms-text="content" style={{color:section.customColors?.contentColor,...typographyStyle(section,'content')}}>{section.content}</p>}</header>
    <ol className="corp-steps-grid">{items.map((item,i)=><li key={item.id} className="corp-step" data-cms-item={item.id}>
     <div className="corp-step-art">{item.imageUrl?<ScopedImage section={section} targetId={`item:${item.id}:imageUrl`} src={item.imageUrl} alt={item.title} className="w-full h-full object-contain"/>:editing?<p>Add step illustration</p>:null}</div>
     <span className="corp-step-number" data-step-number={i+1} aria-hidden="true">{String(i+1).padStart(2,'0')}</span>

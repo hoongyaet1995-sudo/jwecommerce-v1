@@ -1,3 +1,4 @@
+import {SectionEyebrow} from './SectionEyebrow';
 import {isFocusedSteps} from '../../cms/focusedSteps';
 import {FocusedSteps} from './FocusedSteps';
 import {isScrollStackCards} from '../../cms/scrollStackCards';
@@ -24,7 +25,7 @@ const columns=(count:number)=>count===2?'@min-[640px]:grid-cols-2':count===4?'@m
 function Heading({section,hero=false}:{section:PageSection;hero?:boolean}) {
  const Tag=hero?'h1':'h2';
  return section.showSectionHeading===false?null:<div className={`mb-8 ${section.textAlignment==='left'?'text-left':section.textAlignment==='right'?'text-right':'text-center'}`}>
-  {section.subtitle&&<MotionItem><p data-cms-text="eyebrow" style={{...({color:section.customColors?.eyebrowColor}),...typographyStyle(section,'eyebrow')}} className="text-xs font-bold tracking-widest uppercase mb-3">{section.subtitle}</p></MotionItem>}
+  {<MotionItem><SectionEyebrow section={section}/></MotionItem>}
   <MotionItem><Tag data-cms-text="title" style={{...({color:section.customColors?.titleColor}),...typographyStyle(section,'title')}} className={`${hero?'text-4xl @min-[640px]:text-5xl @min-[1024px]:text-6xl':'text-3xl @min-[640px]:text-4xl'} font-bold leading-[1.1] tracking-tight whitespace-pre-line break-words`}>{section.title}</Tag></MotionItem>
   {section.content&&<MotionItem><div data-cms-text="content" style={{...({color:section.customColors?.contentColor}),...typographyStyle(section,'content')}} className={`mt-4 text-base @min-[640px]:text-lg leading-relaxed ${section.textAlignment==='left'?'':'mx-auto'} max-w-2xl space-y-2`}>{section.content.split(/\r?\n[ \t]*\r?\n+/).map((p,i)=><p key={i} className="whitespace-pre-line break-words">{p}</p>)}</div></MotionItem>}
  </div>;
@@ -40,7 +41,7 @@ export function EditorialGallery({section,authoredSection,editing=false}:{sectio
    <MotionMedia className="corp-connection-art">{item.imageUrl?<ScopedImage section={section} targetId={`item:${item.id}:imageUrl`} src={item.imageUrl} alt={item.title} className="w-full h-full object-contain"/>:editing?<p>Add feature illustration</p>:null}</MotionMedia>
    <div className="corp-connection-copy"><h3 data-cms-text="itemTitle" data-cms-item={item.id} style={{color:section.customColors?.titleColor,...typographyStyle(section,'itemTitle'),...(['staggered-focus-cards','image-cards-contrast'].includes(section.galleryPreset??'')?{color:authoredSection?.typography?.itemTitle?.color??'var(--card-copy-ink)'}:{})}}>{item.title}</h3>
     {item.description&&<p data-cms-text="itemContent" data-cms-item={item.id} style={{color:section.customColors?.contentColor,...typographyStyle(section,'itemContent'),...(['staggered-focus-cards','image-cards-contrast'].includes(section.galleryPreset??'')?{color:authoredSection?.typography?.itemContent?.color??'var(--card-copy-ink)'}:{})}}>{item.description}</p>}
-    {!isFixedImageCards(section)&&item.buttonText&&shopNavigationHref(item.linkUrl??'')&&<a data-cms-action="button" data-cms-item={item.id} className="corp-primary corp-connection-button" href={shopNavigationHref(item.linkUrl??'')} onClick={e=>editing&&e.preventDefault()}>{item.buttonText}<ArrowRight size={17} aria-hidden="true"/></a>}
+    {!isFixedImageCards(section)&&item.buttonText&&shopNavigationHref(item.linkUrl??'')&&<a data-cms-button="primary" data-cms-button-kind="button" data-cms-action="button" data-cms-item={item.id} className="corp-primary corp-connection-button" href={shopNavigationHref(item.linkUrl??'')} onClick={e=>editing&&e.preventDefault()}>{item.buttonText}<ArrowRight size={17} aria-hidden="true"/></a>}
    </div>
   </article>)}</div>
  </div>;
@@ -56,7 +57,7 @@ export function EditorialGallery({section,authoredSection,editing=false}:{sectio
  const montage=section.galleryPreset==='editorial-montage';
  return <div data-editorial-gallery={section.galleryPreset} className={`@container w-full ${spacing(section)}`}>
   <Heading section={section} hero={montage}/>
-  {portfolio&&section.buttonText&&shopNavigationHref(section.buttonLink??'')&&<a data-cms-action="button" className="block mb-5 text-right text-xs" href={shopNavigationHref(section.buttonLink??'')} onClick={e=>editing&&e.preventDefault()}>{section.buttonText} →</a>}
+  {portfolio&&section.buttonText&&shopNavigationHref(section.buttonLink??'')&&<a data-cms-button="primary" data-cms-button-kind="link" data-cms-action="button" className="block mb-5 text-right text-xs" href={shopNavigationHref(section.buttonLink??'')} onClick={e=>editing&&e.preventDefault()}>{section.buttonText} →</a>}
   <MediaWidthRegion section={section}><div className={`grid grid-cols-1 gap-7 items-start ${montage&&(section.columnsCount??3)===3?'@min-[640px]:grid-cols-[minmax(0,1fr)_minmax(0,.82fr)_minmax(0,1fr)]':columns(section.columnsCount??3)}`}>
    {(section.items??[]).map((item,index)=>{
     const target=`item:${item.id}:imageUrl`;
@@ -64,7 +65,7 @@ export function EditorialGallery({section,authoredSection,editing=false}:{sectio
      <MotionMedia className={`overflow-hidden ${montage?(index%3===2?'aspect-[3/4]':index%3===1?'aspect-[6/11]':'aspect-[2/3]'):triptych?'aspect-[4/3]':portfolio?'aspect-[16/9]':'aspect-[4/3]'}`} style={imageSlotFrameStyle(section,target)}>
       {item.imageUrl&&(portfolio&&shopNavigationHref(item.linkUrl??'')?<a href={shopNavigationHref(item.linkUrl??'')} className="block w-full h-full" onClick={event=>editing&&event.preventDefault()}><ScopedImage section={section} targetId={target} src={item.imageUrl} alt={item.title} className="w-full h-full object-cover"/></a>:<ScopedImage section={section} targetId={target} src={item.imageUrl} alt={item.title} className="w-full h-full object-cover"/>)}
      </MotionMedia>
-     {!montage&&!triptych&&<MotionItem><div className="mt-4"><h3 data-cms-text="itemTitle" data-cms-item={item.id} style={{...({color:section.customColors?.titleColor}),...typographyStyle(section,'itemTitle')}} className="text-base font-semibold leading-snug break-words">{item.title}</h3>{item.description&&<p data-cms-text="itemContent" data-cms-item={item.id} style={{...({color:section.customColors?.contentColor}),...typographyStyle(section,'itemContent')}} className="mt-1 text-sm leading-relaxed whitespace-pre-line break-words">{item.description}</p>}{portfolio&&item.buttonText&&shopNavigationHref(item.linkUrl??'')&&<a data-cms-action="button" data-cms-item={item.id} className="inline-flex items-center gap-2 mt-3 text-xs" href={shopNavigationHref(item.linkUrl??'')} onClick={e=>editing&&e.preventDefault()}>{item.buttonText}<ArrowRight size={13}/></a>}</div></MotionItem>}
+     {!montage&&!triptych&&<MotionItem><div className="mt-4"><h3 data-cms-text="itemTitle" data-cms-item={item.id} style={{...({color:section.customColors?.titleColor}),...typographyStyle(section,'itemTitle')}} className="text-base font-semibold leading-snug break-words">{item.title}</h3>{item.description&&<p data-cms-text="itemContent" data-cms-item={item.id} style={{...({color:section.customColors?.contentColor}),...typographyStyle(section,'itemContent')}} className="mt-1 text-sm leading-relaxed whitespace-pre-line break-words">{item.description}</p>}{portfolio&&item.buttonText&&shopNavigationHref(item.linkUrl??'')&&<a data-cms-button="primary" data-cms-button-kind="link" data-cms-action="button" data-cms-item={item.id} className="inline-flex items-center gap-2 mt-3 text-xs" href={shopNavigationHref(item.linkUrl??'')} onClick={e=>editing&&e.preventDefault()}>{item.buttonText}<ArrowRight size={13}/></a>}</div></MotionItem>}
     </div>;
    })}
   </div></MediaWidthRegion>

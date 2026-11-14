@@ -1,3 +1,4 @@
+import {isButtonColors} from './actionAppearance';
 import {builderNavigationHref} from './builderNavigation';
 import {resolvePlanComparison,isPlanComparisonFacts,type PlanComparisonFacts} from './planComparison';
 import {resolveStarterPricing,isStarterPricing,type StarterPricing} from './websiteBuilderStarterFaq';
@@ -235,7 +236,7 @@ const sectionTypes = new Set([
 ]);
 
 const sectionItemStringFields = ['pricingMode','pricingLabel','billingLabel','highlightLabel',
-  'deliveryEstimate', 'deliveryFee', 'subtitle', 'description', 'icon', 'imageUrl', 'videoUrl', 'linkUrl', 'badge',
+  'deliveryEstimate', 'deliveryFee', 'subtitle', 'eyebrow', 'description', 'icon', 'imageUrl', 'videoUrl', 'linkUrl', 'badge',
   'author', 'authorRole', 'authorAvatar', 'date', 'category', 'value', 'handle',
   'sourceId', 'sourceType', 'caption', 'thirdButtonText', 'thirdButtonLink', 'metricLabel', 'buttonText', 'secondaryButtonText', 'secondaryButtonLink',
 ];
@@ -261,8 +262,12 @@ type PageSectionFieldRule =
 export const PAGE_SECTION_BOOTSTRAP_FIELD_RULES = {
  pricingPreset:{kind:'optional-enum',values:['default','saas-packages','plan-comparison']},pricingCurrency:{kind:'optional-string'},
   newsletterPreset:{kind:'optional-enum',values:['default','inline-signup']},
-  surface:{kind:'optional-enum',values:['light','contrast']},
+  surface:{kind:'optional-enum',values:['page','light','contrast']},
   brandPalette:{kind:'nested'},
+  colorOverrides:{kind:'nested'},
+  buttonColors:{kind:'nested'},
+  buttonRadius:{kind:'optional-enum',values:[0,6,999]},
+  buttonSize:{kind:'optional-enum',values:['compact','normal','large']},
   imageSlots: {kind: 'nested'},
   promotionSource:{kind:'optional-enum',values:['automatic','manual']},
   promotionLayout:{kind:'optional-enum',values:['side','above']},
@@ -273,6 +278,7 @@ export const PAGE_SECTION_BOOTSTRAP_FIELD_RULES = {
   type: {kind: 'section-type'},
   title: {kind: 'required-string'},
   subtitle: {kind: 'optional-string'},
+  eyebrow: {kind: 'optional-string'},
   content: {kind: 'optional-string'},
   quote: {kind: 'optional-string'},
   authorName: {kind: 'optional-string'},
@@ -534,6 +540,8 @@ const isPageSection = (value: unknown): value is PageSection => {
       && typeof item.id === 'string'
       && typeof item.label === 'string'
     )))) return false;
+  if ('colorOverrides' in value&&(!Array.isArray(value.colorOverrides)||!value.colorOverrides.every(k=>['eyebrowColor','titleColor','contentColor','primaryBtnBg','primaryBtnText','secondaryBtnBg','secondaryBtnText','customBgColor'].includes(k))))return false;
+  if ('buttonColors' in value && !isButtonColors(value.buttonColors)) return false;
   if ('typography' in value && !isTypography(value.typography)) return false;
   if ('brandPalette' in value && !isPalette(value.brandPalette)) return false;
   if ('imageSlots' in value) {

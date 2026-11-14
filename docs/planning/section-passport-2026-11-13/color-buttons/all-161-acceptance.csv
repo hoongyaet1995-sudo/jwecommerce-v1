@@ -1,0 +1,162 @@
+﻿number,section,actual_buttons,action_links,inspector_edits,save_reload_runtime,default_preserved
+1,Industrial Split Introduction,False,False,3,PASS 22 states,PASS 4 modes
+2,Industrial Media Mosaic,True,False,14,PASS 22 states,PASS 4 modes
+3,Industrial Process Split,False,False,6,PASS 22 states,PASS 4 modes
+4,Industrial Related Containers,True,False,13,PASS 22 states,PASS 4 modes
+5,Industrial Outline CTA,True,True,14,PASS 22 states,PASS 4 modes
+6,Album Browser,True,False,14,PASS 22 states,PASS 4 modes
+7,Editorial Gradient Hero,True,True,14,PASS 22 states,PASS 4 modes
+8,Photo Marquee,False,False,1,PASS 22 states,PASS 4 modes
+9,Portfolio Cards,False,True,7,PASS 22 states,PASS 4 modes
+10,Numbered Process,False,False,5,PASS 22 states,PASS 4 modes
+11,Editorial Quote,False,False,5,PASS 22 states,PASS 4 modes
+12,Artisan Story,True,False,12,PASS 22 states,PASS 4 modes
+13,Nursery & Playtime Banners,True,False,14,PASS 22 states,PASS 4 modes
+14,Age Guide Cards,False,False,5,PASS 22 states,PASS 4 modes
+15,Little Essentials Grid,False,True,6,PASS 22 states,PASS 4 modes
+16,Little Milestones,False,False,7,PASS 22 states,PASS 4 modes
+17,"Play, Rest & Outdoors Tabs",False,True,6,PASS 22 states,PASS 4 modes
+18,Tech Device Grid,True,True,13,PASS 22 states,PASS 4 modes
+19,Featured Device,True,True,16,PASS 22 states,PASS 4 modes
+20,Device Comparison,False,True,7,PASS 22 states,PASS 4 modes
+21,Tech Interest Tabs,True,True,13,PASS 22 states,PASS 4 modes
+22,Market Hero,True,False,16,PASS 22 states,PASS 4 modes
+23,Market Offers,True,True,17,PASS 22 states,PASS 4 modes
+24,Fashion Hero,True,True,14,PASS 22 states,PASS 4 modes
+25,Fashion Banners,False,True,6,PASS 22 states,PASS 4 modes
+26,Product Lookbook,False,True,8,PASS 22 states,PASS 4 modes
+27,Editorial Hero,True,True,15,PASS 22 states,PASS 4 modes
+28,Editorial Story,True,False,12,PASS 22 states,PASS 4 modes
+29,Editorial Story Cards,False,True,7,PASS 22 states,PASS 4 modes
+30,Editorial Journal Rows,False,True,7,PASS 22 states,PASS 4 modes
+31,Payment Cards,False,False,5,PASS 22 states,PASS 4 modes
+32,Payment List,False,False,5,PASS 22 states,PASS 4 modes
+33,Connected Feature Rows,True,False,14,PASS 22 states,PASS 4 modes
+34,Image & Highlights,False,False,5,PASS 22 states,PASS 4 modes
+35,Image Cards — Four Mosaic,False,False,5,PASS 22 states,PASS 4 modes
+36,Image Cards — Three,False,False,5,PASS 22 states,PASS 4 modes
+37,Editorial Illustrated CTA,True,False,12,PASS 22 states,PASS 4 modes
+38,Illustrated CTA Panel — Image Right,True,False,12,PASS 22 states,PASS 4 modes
+39,Illustrated CTA Panel,True,False,12,PASS 22 states,PASS 4 modes
+40,Gradient CTA Panel,True,False,12,PASS 22 states,PASS 4 modes
+41,Pricing Card & FAQ,True,False,15,PASS 22 states,PASS 4 modes
+42,Pricing Band & FAQ,True,False,15,PASS 22 states,PASS 4 modes
+43,Pricing Card & FAQ,True,False,15,PASS 22 states,PASS 4 modes
+44,Website Connected Features,True,False,14,PASS 22 states,PASS 4 modes
+45,Website Illustrated Steps,False,False,5,PASS 22 states,PASS 4 modes
+46,Business Website Scenarios,False,False,4,PASS 22 states,PASS 4 modes
+47,Website Section Story,False,False,4,PASS 22 states,PASS 4 modes
+48,Staggered Focus Cards,False,False,5,PASS 22 states,PASS 4 modes
+49,Contrast Image Cards,False,False,5,PASS 22 states,PASS 4 modes
+50,Inset Surface Panel,False,False,3,PASS 22 states,PASS 4 modes
+51,Three Images — Staggered,False,False,5,PASS 22 states,PASS 4 modes
+52,Wide Visual — Centered Header,False,False,3,PASS 22 states,PASS 4 modes
+53,Split Visual — Surface Panel,False,False,3,PASS 22 states,PASS 4 modes
+54,Wide Visual — Centered Media Panel,False,False,3,PASS 22 states,PASS 4 modes
+55,Wide Visual — Contained Media Panel,False,False,3,PASS 22 states,PASS 4 modes
+56,Wide Visual — Editorial Header,False,False,3,PASS 22 states,PASS 4 modes
+57,Website Builder Overview,False,False,4,PASS 22 states,PASS 4 modes
+58,Plan Comparison,True,False,15,PASS 22 states,PASS 4 modes
+59,Framed FAQ,False,False,5,PASS 22 states,PASS 4 modes
+60,Focused Steps,False,False,6,PASS 22 states,PASS 4 modes
+61,Scroll Stack Cards,False,False,5,PASS 22 states,PASS 4 modes
+62,Team Story Overview,False,False,4,PASS 22 states,PASS 4 modes
+63,Editorial Knowledge Triptych,False,False,5,PASS 22 states,PASS 4 modes
+64,Image Flow,False,False,3,PASS 22 states,PASS 4 modes
+65,Centered Composite Hero,True,False,15,PASS 22 states,PASS 4 modes
+66,Split Image Hero,True,False,15,PASS 22 states,PASS 4 modes
+67,Corporate Marketplace,True,False,14,PASS 22 states,PASS 4 modes
+68,Corporate Courier,True,False,12,PASS 22 states,PASS 4 modes
+69,Corporate Payments,True,False,12,PASS 22 states,PASS 4 modes
+70,Corporate AI Support,True,False,17,PASS 22 states,PASS 4 modes
+71,Corporate Marketing Studio,True,False,17,PASS 22 states,PASS 4 modes
+72,Corporate Centered Hero,True,False,15,PASS 22 states,PASS 4 modes
+73,Product Preview Tabs,False,True,7,PASS 22 states,PASS 4 modes
+74,Corporate Feature Story,True,False,17,PASS 22 states,PASS 4 modes
+75,SaaS Product Hero,True,False,15,PASS 22 states,PASS 4 modes
+76,SaaS Module Strip,False,True,7,PASS 22 states,PASS 4 modes
+77,SaaS Showcase — Media Left,True,False,15,PASS 22 states,PASS 4 modes
+78,SaaS Showcase — Media Right,True,False,15,PASS 22 states,PASS 4 modes
+79,SaaS Analytics Showcase,True,False,15,PASS 22 states,PASS 4 modes
+80,SaaS Packages,True,False,17,PASS 22 states,PASS 4 modes
+81,SaaS Add-ons,False,True,6,PASS 22 states,PASS 4 modes
+82,SaaS Split FAQ,False,False,5,PASS 22 states,PASS 4 modes
+83,SaaS Closing CTA,True,False,15,PASS 22 states,PASS 4 modes
+84,Industrial Container Hero,True,False,15,PASS 22 states,PASS 4 modes
+85,Industrial Service Cards,False,True,8,PASS 22 states,PASS 4 modes
+86,Industrial Workflow,False,False,6,PASS 22 states,PASS 4 modes
+87,Industrial FAQ,False,False,5,PASS 22 states,PASS 4 modes
+88,Promotion Highlights,False,True,7,PASS 22 states,PASS 4 modes
+89,Collection Banners,True,False,14,PASS 22 states,PASS 4 modes
+90,Shop Navigation,False,True,6,PASS 22 states,PASS 4 modes
+91,Editorial Overlay Slider,True,False,12,PASS 22 states,PASS 4 modes
+92,Hero Billboard & Video Banner,True,False,15,PASS 22 states,PASS 4 modes
+93,Full Banner Background Slider,True,False,15,PASS 22 states,PASS 4 modes
+94,Split Hero with Floating Product,True,False,16,PASS 22 states,PASS 4 modes
+95,Marquee Announcement & Ticker Bar,False,False,1,PASS 22 states,PASS 4 modes
+96,Media & Story Split,True,False,12,PASS 22 states,PASS 4 modes
+97,Editorial Text & Quote,False,False,3,PASS 22 states,PASS 4 modes
+98,Brand Milestone & Heritage Timeline,False,False,6,PASS 22 states,PASS 4 modes
+99,Impact Numbers & Metric Counters,False,False,3,PASS 22 states,PASS 4 modes
+100,Skin Need Cards,False,True,7,PASS 22 states,PASS 4 modes
+101,Ingredient Caption Cards,False,True,7,PASS 22 states,PASS 4 modes
+102,Beauty Essentials,True,True,13,PASS 22 states,PASS 4 modes
+103,Routine Photo Steps,False,True,7,PASS 22 states,PASS 4 modes
+104,Flush Split Story,True,False,12,PASS 22 states,PASS 4 modes
+105,Catalog Caption Cards,False,True,7,PASS 22 states,PASS 4 modes
+106,Recipe Cards,False,True,8,PASS 22 states,PASS 4 modes
+107,Pantry Shop Grid,True,True,13,PASS 22 states,PASS 4 modes
+108,Pantry Occasion Tabs,True,True,13,PASS 22 states,PASS 4 modes
+109,Producer Story,True,False,14,PASS 22 states,PASS 4 modes
+110,Inline Newsletter Strip,True,False,12,PASS 22 states,PASS 4 modes
+111,Product Showcase Grid,True,False,12,PASS 22 states,PASS 4 modes
+112,Editorial Product Tabs,False,True,6,PASS 22 states,PASS 4 modes
+113,Editorial Product Grid,False,True,6,PASS 22 states,PASS 4 modes
+114,Product Listing Carousel,True,False,12,PASS 22 states,PASS 4 modes
+115,Category & Collection Tab Showcase,True,False,12,PASS 22 states,PASS 4 modes
+116,Flash Deal & Product Spotlight,True,False,12,PASS 22 states,PASS 4 modes
+117,Tiered Pricing & Plan Comparison,False,False,5,PASS 22 states,PASS 4 modes
+118,Visual Lookbook Gallery,False,False,5,PASS 22 states,PASS 4 modes
+119,Video Stream Player Embed,False,False,3,PASS 22 states,PASS 4 modes
+120,Interactive Before & After Slider,False,False,3,PASS 22 states,PASS 4 modes
+121,Shoppable Social Grid & UGC Wall,False,False,3,PASS 22 states,PASS 4 modes
+122,Values List,False,False,2,PASS 22 states,PASS 4 modes
+123,Value Proposition & Feature Cards,False,False,6,PASS 22 states,PASS 4 modes
+124,Horizontal Trust Badges & Guarantee Row,False,False,3,PASS 22 states,PASS 4 modes
+125,Product Feature vs Competitor Matrix,False,False,6,PASS 22 states,PASS 4 modes
+126,FAQ & Accordion List,False,False,5,PASS 22 states,PASS 4 modes
+127,Enquiry Form,True,False,12,PASS 22 states,PASS 4 modes
+128,Location & Map,False,False,5,PASS 22 states,PASS 4 modes
+129,Interactive Support & Inquiries Form,True,False,12,PASS 22 states,PASS 4 modes
+130,Flagship Atelier & Store Locator,False,False,5,PASS 22 states,PASS 4 modes
+131,Customer Reviews & Rating Cards,False,False,5,PASS 22 states,PASS 4 modes
+132,Partner Logos,False,False,2,PASS 22 states,PASS 4 modes
+133,Editorial Image Banner,True,False,15,PASS 22 states,PASS 4 modes
+134,Call to Action & Banner,True,False,15,PASS 22 states,PASS 4 modes
+135,Lead Capture & VIP Newsletter Strip,True,False,12,PASS 22 states,PASS 4 modes
+136,Editorial Montage,False,False,3,PASS 22 states,PASS 4 modes
+137,Editorial Image Cards,False,False,2,PASS 22 states,PASS 4 modes
+138,Editorial Text Columns,False,False,2,PASS 22 states,PASS 4 modes
+139,Editorial Cover,False,False,4,PASS 22 states,PASS 4 modes
+140,Chapter Navigation,False,False,1,PASS 22 states,PASS 4 modes
+141,Chapter Process,False,False,6,PASS 22 states,PASS 4 modes
+142,Chapter Delivery,False,False,6,PASS 22 states,PASS 4 modes
+143,Chapter Actions,True,True,13,PASS 22 states,PASS 4 modes
+144,Chapter Story,False,False,4,PASS 22 states,PASS 4 modes
+145,Chapter Perspective,False,False,4,PASS 22 states,PASS 4 modes
+146,Chapter Principles,False,False,3,PASS 22 states,PASS 4 modes
+147,Editorial CTA Band,True,False,12,PASS 22 states,PASS 4 modes
+148,Service Highlights,False,False,2,PASS 22 states,PASS 4 modes
+149,Delivery Table,False,False,5,PASS 22 states,PASS 4 modes
+150,Story with Steps,True,False,14,PASS 22 states,PASS 4 modes
+151,Minimal FAQ,False,False,5,PASS 22 states,PASS 4 modes
+152,Help Panel,True,False,12,PASS 22 states,PASS 4 modes
+153,Policy Guidelines,True,True,14,PASS 22 states,PASS 4 modes
+154,Policy Choice cards,True,True,14,PASS 22 states,PASS 4 modes
+155,Policy Numbered steps,True,False,14,PASS 22 states,PASS 4 modes
+156,Policy Process flow,True,True,14,PASS 22 states,PASS 4 modes
+157,Policy Timeline,True,True,14,PASS 22 states,PASS 4 modes
+158,Policy Tabbed guidelines,True,True,14,PASS 22 states,PASS 4 modes
+159,Policy Editorial columns,True,True,14,PASS 22 states,PASS 4 modes
+160,Policy Document,True,True,14,PASS 22 states,PASS 4 modes
+161,Policy Directory,True,True,14,PASS 22 states,PASS 4 modes

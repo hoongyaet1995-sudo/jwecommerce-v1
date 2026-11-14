@@ -3,7 +3,7 @@ import {imageFlow} from './imageFlow';import {EditorialGallery} from '../compone
 describe('Image Flow passport',()=>{
  it('has only editable section copy and three independent image slots, including sparse input',()=>{
   const s=imageFlow('generic');expect(s.type).toBe('media_gallery');expect(s.customColors).toBeUndefined();expect(s.items).toHaveLength(3);
-  expect(sectionContentFields(s)).toEqual(['title','content']);expect(repeatedItemFields(s)).toEqual(['imageUrl']);expect(textRoles(s)).toEqual(['title','content']);
+  expect(sectionContentFields(s)).toEqual(['eyebrow','title','content']);expect(repeatedItemFields(s)).toEqual(['imageUrl']);expect(textRoles(s)).toEqual(['eyebrow','title','content']);
   expect(imageTargets({...s,items:[]})).toHaveLength(3);expect(JSON.stringify(s)).not.toMatch(/JW Studio|\/pages\//);
  });
  it('renders only three replaceable images, unique theme-driven SVG connectors and no baked text editors',()=>{

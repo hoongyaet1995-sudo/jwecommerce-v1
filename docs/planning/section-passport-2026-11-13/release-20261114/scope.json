@@ -1,0 +1,732 @@
+[
+  {
+    "file": "docs/planning/section-passport-2026-11-13/checkpoint.md",
+    "sourceSha256": "6e365882eb8c388e65e41102bd893cced2e6f1d65b72c05258fdd087f4454744",
+    "changedFromMain": true
+  },
+  {
+    "file": "docs/planning/section-passport-2026-11-13/color-buttons/acceptance.md",
+    "sourceSha256": "dc72c95aab668c6063f905b96e8a113c8d84c537953f27e5c04ee9b552adab0c",
+    "changedFromMain": true
+  },
+  {
+    "file": "docs/planning/section-passport-2026-11-13/color-buttons/all-161-acceptance.csv",
+    "sourceSha256": "c928e4562ea77e8aa0e1c2fb1abcb96ae7c3bb32dd5d41019beb28fd9fb3c22b",
+    "changedFromMain": true
+  },
+  {
+    "file": "docs/planning/section-passport-2026-11-13/color-buttons/api-reloaded.json",
+    "sourceSha256": "2d173173e3fabb7d71b958994f10b8d9e8a35889ae6ef26a6dc523a66f929cb8",
+    "changedFromMain": true
+  },
+  {
+    "file": "docs/planning/section-passport-2026-11-13/color-buttons/browser-acceptance.json",
+    "sourceSha256": "9960975a4e36f05d719ebe3b84f89aa574d4235c8cf9fd53b59a413e44d5f721",
+    "changedFromMain": true
+  },
+  {
+    "file": "docs/planning/section-passport-2026-11-13/color-buttons/default-baseline.json",
+    "sourceSha256": "483eebf197ae1cf5de4c558f7c098df6f3d1a27ec843097b7a51d773e70bbb36",
+    "changedFromMain": true
+  },
+  {
+    "file": "docs/planning/section-passport-2026-11-13/color-buttons/edit-fixtures.json",
+    "sourceSha256": "0e29cc84a882908fd7e01310b9a411bc3180c776aed89834abd00cfb4f3fe94c",
+    "changedFromMain": true
+  },
+  {
+    "file": "docs/planning/section-passport-2026-11-13/color-buttons/reload-rendering.json",
+    "sourceSha256": "0e180c8c534c0293ed70f040f69c2beda4155d9bae85a393e59b3c8115bd3d5e",
+    "changedFromMain": true
+  },
+  {
+    "file": "docs/planning/section-passport-2026-11-13/color-buttons/runtime-facts.json",
+    "sourceSha256": "205ee6921016e367a17570bab440026808dad38a74e6f2a52492f5a7561e0398",
+    "changedFromMain": true
+  },
+  {
+    "file": "docs/planning/section-passport-2026-11-13/controls-integration/acceptance.md",
+    "sourceSha256": "13f9d0a382be57d94105b32bb02ce98c50e7c9c7a0e19b355773c19e98ef62fb",
+    "changedFromMain": true
+  },
+  {
+    "file": "docs/planning/section-passport-2026-11-13/controls-integration/pre-resolved.json",
+    "sourceSha256": "fd070472b52cd44a62da104780896384e39ebbd36d07c3de17d71afad7e61cc8",
+    "changedFromMain": true
+  },
+  {
+    "file": "docs/planning/section-passport-2026-11-13/integration/acceptance.md",
+    "sourceSha256": "4f123d424522b36ede316f1a6220536b352312ab6510744d904d38885d35394b",
+    "changedFromMain": true
+  },
+  {
+    "file": "docs/planning/section-passport-2026-11-13/spacing-alignment/acceptance.md",
+    "sourceSha256": "cfabc06fb0a4cff15424f9ee3af1691ec5480ddfa8da87e67e8175a081c482d2",
+    "changedFromMain": true
+  },
+  {
+    "file": "docs/planning/section-passport-2026-11-13/spacing-alignment/api-reloaded.json",
+    "sourceSha256": "4d1f0799d04a369c43516a3aa3dde3b8d08970dec255d6b47bdf4b40fde43884",
+    "changedFromMain": true
+  },
+  {
+    "file": "docs/planning/section-passport-2026-11-13/spacing-alignment/edit-fixtures.json",
+    "sourceSha256": "75cf17956f9d901a8d9e020bc7fc6bbf74fdee0c7f39e4c0143898bed9a8c92c",
+    "changedFromMain": true
+  },
+  {
+    "file": "docs/planning/section-passport-2026-11-13/spacing-alignment/renderer-evidence.json",
+    "sourceSha256": "0dace0dd98ca93fc71c2fe2c7f6301bb453dfcfdfcf65045d7ff65f5b428f103",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/scripts/export-ai-copy-contract.mjs",
+    "sourceSha256": "617601d1581c49b08667a1b4f0ec87837991cd9b92f899ecbe56053d441cc504",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/cms/PageRuntimeContext.tsx",
+    "sourceSha256": "00b4492cb7431db3b3301dab140f9885a261c278974f843a12281b2c1491cbab",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/cms/__tests__/sectionInspectorVisibility.test.ts",
+    "sourceSha256": "e565596d9e5ddea2c726144ad88dfd53029b2c92fdb6b264b25f983a06caec4e",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/cms/actionAppearance.acceptance.test.tsx",
+    "sourceSha256": "54c16707ad81fd2161132cdc322434af59f024070a4995aed5333883de399235",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/cms/actionAppearance.baseline.test.tsx",
+    "sourceSha256": "fb79b641440d531c817d89f791483229fd6730d696236942a6cecdf7fa5c8afb",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/cms/actionAppearance.reload.test.tsx",
+    "sourceSha256": "801491fc006eefc2f6dece181bfe595fa0669456c7eb143999bd839bd738b740",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/cms/actionAppearance.test.ts",
+    "sourceSha256": "c7e52a2ddb0549c3f71562377e69b302a54460abadd0922581d03348780d942b",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/cms/actionAppearance.ts",
+    "sourceSha256": "5842c25a48723f48d9e23cce888c24192d706a099ca01a864f48f84000395148",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/cms/actionAppearanceMatrix.json",
+    "sourceSha256": "d8a365dd45cb2d14611904edfaad3c93347070694f027054927ebac87ee81447",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/cms/aiCopyContract.test.ts",
+    "sourceSha256": "70a6318cf6a94ad85a9035379714e4ec3a84f636df1c3d87d74cd2111f527401",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/cms/aiCopyContract.ts",
+    "sourceSha256": "9acba55f62d8fbb79d8adc6db9ac78c40ff9e18dda5a6d3c18d5cef6cb3f301f",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/cms/connectedFeatureRows.test.tsx",
+    "sourceSha256": "730ced2f5d1946a69d86430a205108a6ae423c53c25408d9ea0997cd58a406cf",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/cms/containedWideCentered.test.tsx",
+    "sourceSha256": "f99c5bc613e50cc96059fff1ebc394e9946cdad818f48bfef89e18060372c458",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/cms/containedWideVisual.test.tsx",
+    "sourceSha256": "6a56f594ff71720f51852bb000b4582448b5e3f4f4341ba86277e878b59105eb",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/cms/contentCapabilities.ts",
+    "sourceSha256": "7d7b33e733aece405f9243cffc6c4ff927a01e588b8eef0aec5bb32ecbfec486",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/cms/contrastRhythm.test.tsx",
+    "sourceSha256": "30cce3b27624a8758e88906fba95a622d90a1a8dd952656b0edf859eda4d6c13",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/cms/controlsLegacyParity.test.ts",
+    "sourceSha256": "9cfaf06513ed5d4db58b67f31ad947f580ef56eca343b33d8637cbf7f23d651f",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/cms/editorialIllustratedCta.test.tsx",
+    "sourceSha256": "c76fd31e3eb59bee9f43f359dca9dc3fed0123e88818393850637e60f15f645b",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/cms/focusedSteps.test.tsx",
+    "sourceSha256": "fe4ca965450a54741a69c992f3333ae240a4bb86ad37b93873c522ed35ca48f8",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/cms/gradientClosing.test.tsx",
+    "sourceSha256": "fa816f6d155724ef7a107d74fbe2734766094f10787549a603e5b68d6b156dca",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/cms/illustratedCta.test.tsx",
+    "sourceSha256": "0bd671ba773424de0a49277faad872905b57e1bd9185e996927580a0681035a7",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/cms/illustratedCtaRight.test.tsx",
+    "sourceSha256": "ffd723eaf79fc15b8195318646821d61fdbd6951af49af85de666b6079bf6669",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/cms/imageCardsFourMosaic.test.tsx",
+    "sourceSha256": "f35240ee5b790be24233b00a1ab0017d74b2d2c96079fef462d0c1bfac5f737e",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/cms/imageCardsThree.test.tsx",
+    "sourceSha256": "21c7454bd41b7f11b842d0b7d273d6288b53d28cbb27b342fb1c3c448d210024",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/cms/imageFlow.test.tsx",
+    "sourceSha256": "2d6b30aa931f22d12f2c17ba4ede29a06ad44c1a1b60dc9958b683a2153dc7ab",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/cms/imageHighlights.test.tsx",
+    "sourceSha256": "6013a578a1299a093569efc8e5dfe711ba8a118d627ab7a1a144960390b7592d",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/cms/inspectorCapabilities.test.ts",
+    "sourceSha256": "c196291811260f71b1e33edb345566423152a36dec72ec14b7d0c3211b5efba5",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/cms/inspectorCapabilities.ts",
+    "sourceSha256": "b3c650be0e7747c4b26ab5564e1073d232fc6930b0c50bdc22106870f2156a2c",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/cms/knowledgeTriptych.test.tsx",
+    "sourceSha256": "4481967271797f5dbadbe8821f8b5dff68b9b4e01124a247bd0c5d2f2c703003",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/cms/layoutControlMatrix.json",
+    "sourceSha256": "da6f3c1201432d3c5f19b8ea5050a8fb6c12e10cd61afe5d8fbf798614dfa136",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/cms/layoutControls.acceptance.test.tsx",
+    "sourceSha256": "5ee2d4241575a8723930c000b9d70b80d2a83c286f347aadfe7553ceab368fff",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/cms/layoutControls.reload.test.tsx",
+    "sourceSha256": "038fe0321b8222b20c8492724543fec902e6fd80b0ebf52e90676c1b0642f7e0",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/cms/layoutControls.test.tsx",
+    "sourceSha256": "6f1988a806750a7d5990e0e5a81f370fa573da1c766f6d2708660cd5bc419399",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/cms/layoutControls.ts",
+    "sourceSha256": "ebcf5a882f75a77c3e6d0c222a0b71f568e768af4f3b7ff1e1b6a40639e4d886",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/cms/pageStyle.ts",
+    "sourceSha256": "bff47b326aa45fd29c50a1145a5efb000742040c35b12290326b6c28b187a88a",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/cms/passportScan.test.tsx",
+    "sourceSha256": "24b0a1591bbb7df353899798c8b2bbf37128d2a5728e8d23dd49c5ea27b12beb",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/cms/planComparison.test.ts",
+    "sourceSha256": "756156d1060eb6615c69296e15824a639bb96226c3beb7f1b84035a35e3c093b",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/cms/pricingBandFaq.test.tsx",
+    "sourceSha256": "0e8b08088c1e2412d731aaf280c6228cce72c3b986eeee3601960409be6e60f3",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/cms/repeatedItemContract.ts",
+    "sourceSha256": "8904fe74730eaab2cd89f69f346b04fe5952a1a684457134ce8bbf490dc696cb",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/cms/scrollStackCards.test.tsx",
+    "sourceSha256": "8b8f837a79e61db49981417301cbb0a3f21838ad5a3b8e736eec95911e94340b",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/cms/sectionDesignCapabilities.ts",
+    "sourceSha256": "df0fc862ae3218c30c3a75613e95c41737dd178c0217386032896517016bfd9b",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/cms/sectionHeading.test.ts",
+    "sourceSha256": "c4302dd7f376008b459eb61c3f5cf8b8018d77cffa9059fddfe4aa9f80c0cfbc",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/cms/sectionHeading.ts",
+    "sourceSha256": "e41433fd25f240217c4ede9899f9990ec41677352d14ee7cf49d231db77a59c7",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/cms/sectionPassport.ts",
+    "sourceSha256": "58fd5ea562f6d9dac27b756f23903f37f6efe48d6a5bb1f716294d612dc432a4",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/cms/styleInheritance.test.ts",
+    "sourceSha256": "3dff7ad0ace213a384a9fd7b47393cb08aa33e353dd96c54d86c6fbd0660018e",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/cms/styleInheritance.ts",
+    "sourceSha256": "ef54f7e983ad2606d68cd2fae8db9dd01261a0626682c05765ca015f184d3c64",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/cms/teamStoryOverview.test.tsx",
+    "sourceSha256": "65d83476dfe5a29c59f35a3444994bb03fa44b51bf5d8834b3e17bc023726117",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/cms/websiteBuilderConnections.test.tsx",
+    "sourceSha256": "373deef93d81811fbb6bee3d04f7492d1efe8b4d8b5d5a2887c1e76cd6c8392e",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/cms/websiteBuilderHero.test.tsx",
+    "sourceSha256": "42f8fa2e285353047a76870b5cb3876872700cbca738056103da3d2f958c1a65",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/cms/websiteBuilderOverview.test.tsx",
+    "sourceSha256": "5a9245b3f894fc91b628d506a60ea08523dbaf7b7e0c71ddaa46aab39cccd2b8",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/cms/websiteBuilderScenarios.test.tsx",
+    "sourceSha256": "7dc3988acdd0052595f83e8073db32607e5537c0b42e4be684bc34179fde4e5d",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/cms/websiteBuilderStarterFaq.test.tsx",
+    "sourceSha256": "669a6cfcd5d8dd457ee2947b5af4a2facfada3849d691f922d493589184c7d4b",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/cms/websiteBuilderStory.test.tsx",
+    "sourceSha256": "f571c9a211a434eb0d58ac54999cd8cbce77e5d24cc0e30705f0bcbbac147429",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/cms/websiteBuilderWorkflow.test.tsx",
+    "sourceSha256": "ff96e37e0fa28934a42f4fb3e77091815cb5477e1f2fdf8c8b9c0f25d2ae7c14",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/cms/wideVisualEditorial.test.tsx",
+    "sourceSha256": "ec72a99ce12496f4f16a6a35bc74b525b91a9da0f5a5126f57e7cc1d394c2345",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/ActionAppearance.red.test.tsx",
+    "sourceSha256": "022f477d8bf512316898b9499ac7e80a6f363c0fd9e4762f2eda7253d74fc5da",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/ArtisanStory.tsx",
+    "sourceSha256": "93d86f56c2d5828897ae6044a3ce5d91c02a63788ecda556c3a3e7f946736213",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/BeautyLayouts.tsx",
+    "sourceSha256": "5c50ca868b9ed3318cb41928ada221de969f3c508a00e30b79cbbb2d5ce10b84",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/BeautyPurchaseAction.tsx",
+    "sourceSha256": "f6ed17503ab104619199818583f5ccf0b30892623edc0bfa3550d99d2a4c79f6",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/CanonicalEyebrowInspector.test.tsx",
+    "sourceSha256": "cc53fb9b634c5740a82b8c5fdba6f0deab9f84f540d9df803cedd0cfae826996",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/ChapterSections.tsx",
+    "sourceSha256": "e810987951eb113efaf370cc82c156938f9276a2dfd114ff14bbab0435356433",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/CollectionBannerSettings.tsx",
+    "sourceSha256": "cfbadc4aa82377f357ebe969fea34287d24f989bb755389b910ebc9448263c63",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/CollectionBanners.tsx",
+    "sourceSha256": "b1d5400901ed93720450e4c0bb73280b248614dfb7f2289701a668281717fc35",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/ContactSections.tsx",
+    "sourceSha256": "b6b9e08a7fce7dba4ccf047f8c6e0789d347f1f1b4dd4700b9428a04bed20206",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/CorporateSections.tsx",
+    "sourceSha256": "c3efcc20cb281ec2a4d2dd961ac58d67caf14663d91eafd89af42ce812503357",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/EditorialCollections.tsx",
+    "sourceSha256": "cdef770cca120fcd5b0209e7ac3b3ef5a88e1bcac05cee1e922fc2d91afd5040",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/EditorialHero.tsx",
+    "sourceSha256": "3d3e6e2f46c7afef2eb4a95722093ab47a4924c5c91f3f4b911b269b89d172f8",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/EditorialIllustratedCta.tsx",
+    "sourceSha256": "55bf145789459df5a81af4fe6b3fdda454b7ddde9efdd6f065ef7a47b9625b85",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/EditorialOverlaySlider.tsx",
+    "sourceSha256": "ca806034855902526431422965ecedbedf6f4232d1a9ee8b7d4e143032a2999c",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/EditorialProductGrid.tsx",
+    "sourceSha256": "b71b28e0cba903b0f07915408491839d1bcb8ea8da736a46c108bfc06a6b1378",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/EditorialProductTabs.tsx",
+    "sourceSha256": "8c2af64e002cdbebcb226361fa4540bc6ca783a4a3952a73a5962d07813b3aae",
+    "changedFromMain": false
+  },
+  {
+    "file": "resources/admin/src/components/pages/EditorialSectionAction.tsx",
+    "sourceSha256": "96d03277e0a68fa05d4f6bdb809fda6ee4f21b3f0dc7f3977d6466cd328775ac",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/EditorialStory.tsx",
+    "sourceSha256": "2d5ffaece61188178619e614ea220302a39fb59be8fb690cfda74d002643b10f",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/EditorialStoryCards.tsx",
+    "sourceSha256": "107e26cf2500e913deab1b00d94200a3d2ee487a2d2fd1b2463c4eab24075d29",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/FlushSplit.tsx",
+    "sourceSha256": "40658abdd5e7720147112b6e46309102e9f3862fd2611fb2137f0b9767b4aa3d",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/FocusedSteps.tsx",
+    "sourceSha256": "c5f14740ab51db06a95f4190058c4117584603093195a97f979dfa0c117ae709",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/ImageBanner.tsx",
+    "sourceSha256": "a4e6a37009f4d7fa33b2b98bd8be0bfef12eee1100a8100fefe6702d507522f1",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/ImageFlow.tsx",
+    "sourceSha256": "ad2fca5f7c0e8c1902b73db2a0f7908c8e23d0bc46b810b8b8a61ed3ab59d01a",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/IndustrialDetailSections.tsx",
+    "sourceSha256": "24fef53e92ac38133faff8e729d4e2ead269eeea9f37e49ed6b5a1c232a33118",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/IndustrialRelatedProducts.tsx",
+    "sourceSha256": "c6d0464de7899242e162b49617d6f300a433179f6a0d4c990812d77d2baf0e18",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/IndustrialSections.tsx",
+    "sourceSha256": "5c53bda7500bc906f9fb842a006e3d2b7ce2128c530a0a1cd280f464e5af0a7b",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/InlineNewsletter.tsx",
+    "sourceSha256": "fa32c3b393bdf302107f9e9c91387418c758cab304393f29bfc6649647549bb9",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/KidsLayouts.tsx",
+    "sourceSha256": "8e368bfa1c34bef04cc2cda07ada5f5759fa4b259ca4cb1e154ed1e990924cb6",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/KnowledgeTriptych.tsx",
+    "sourceSha256": "1466151a99f1f62cce188cd05da9374d567f86d1fb9cc2b7815368ccd3039454",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/Manifesto.tsx",
+    "sourceSha256": "833303402500edac94e4d89973547a71547a1c0888b6ab17b88af17002ca4449",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/MarketNavigation.tsx",
+    "sourceSha256": "f9b7848ce60013c8f691e4d8c3272b50a0466370ed5535462a04d5f85c7d1f45",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/PageAdmin.tsx",
+    "sourceSha256": "3dc751ddfb6572a7639be84a3375f9167357dfa1fe376401397a2f6d702eeb53",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/PageStyleSettings.test.tsx",
+    "sourceSha256": "385c720ae3928bc99f31558cefaafa6e209aba8dd2ccd4f7f5720f22ff859b0b",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/PageStyleSettings.tsx",
+    "sourceSha256": "fd121608daa910459eb162b0a577061f413330b644f128a5c559b015cd314e9b",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/PantryNavigation.tsx",
+    "sourceSha256": "23301b4546566be124485845dbfe129ab04dbb09387eb5fedccb531773263c8f",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/PartnerLogos.tsx",
+    "sourceSha256": "7a00f3f60ad1372c06ff5e3aa80b57c63d7363ed6162aac9a87e64b24263472f",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/PhotoMarquee.tsx",
+    "sourceSha256": "b6f55d179ec3b6c0e84b1a36c3d2156c836fa8e84c46cf8d0d87777a7c1dac99",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/PlanComparison.tsx",
+    "sourceSha256": "582f9edc000a015b6fae8eac3e0506ee8331fd44850d2c656ac23167c771b676",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/PolicyContent.tsx",
+    "sourceSha256": "650a41fcce937cbffc8e7be2769687344b330c2eaff477802fcc06f303466547",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/PolicyDocument.tsx",
+    "sourceSha256": "449d77e1e9d3b1104dd30a3d033707d8a4d45931e81557ef5f7028df6b589a14",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/ProductLookbook.tsx",
+    "sourceSha256": "233c868df387217c5707d24dce76b15bfd6e1d315079fbd93dbcc2169ec56980",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/PromotionHighlights.tsx",
+    "sourceSha256": "cefd609ddee8a9c480e97f5c656cba45c78dc5f30e5fcdbc68522046b4a2897e",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/SaasPackages.tsx",
+    "sourceSha256": "69e55e216b76fc8853c72e4e6bc139d4bf94c135e7f50dee7f076244bc2bfb9a",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/SaasSections.tsx",
+    "sourceSha256": "2f27ddd894f9169d6a0742118cd41d267d7b75a2d0c582805bb800f7d9a4609f",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/ScrollStackCards.tsx",
+    "sourceSha256": "a7c256a583eb69783a6220a39dd9bd1d6007784052fbb74538bf9592e5e9b79c",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/SectionActionSettings.tsx",
+    "sourceSha256": "8dd8912e3261506bf8602d89cfc9e475bbf4837e6ffea20c446c0b5c3313cec2",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/SectionButtonSettings.tsx",
+    "sourceSha256": "e8656554ff6649608b591fa83cba436cec11d4b45452776622cc3a0d25c1e387",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/SectionEyebrow.css",
+    "sourceSha256": "156fa57173665a033977ce6e56a08b108a05e407917a22f5c003186b585bef86",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/SectionEyebrow.test.tsx",
+    "sourceSha256": "abca81c14ef3f6703ff47d7a29ea43d3c156d8dccc1fc4f14a78c574fcf9724a",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/SectionEyebrow.tsx",
+    "sourceSha256": "92c7fa9fa083155e81f9b26800c2dc0d822328aee41bf0959d49c0b4e40702d6",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/SectionInspector.tsx",
+    "sourceSha256": "99afa1fa96540a7b3dd6e451ba3bef27f44d3423f154bb930cb668073247f273",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/SectionLayoutControls.test.tsx",
+    "sourceSha256": "1b7385cc99cfcdf54c451cd0d65792d7351ec7432a33f2b5eefc4cb2297bfcae",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/SectionLayoutControls.tsx",
+    "sourceSha256": "0c9b0bb680221efd83dd5df3abc5a475c4c9f9a9deb1628753fed25d453b93a8",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/SectionRenderer.tsx",
+    "sourceSha256": "ae6f512f66ef75d62686f9e03e5e261b90fcc13bdcf268118952d83eae8d5602",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/SectionStyleSettings.tsx",
+    "sourceSha256": "576f5a8291140a137af0d9808b6a7678956617f94721752b6ff9747a4191d8d3",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/ShippingChapterBody.tsx",
+    "sourceSha256": "555568c114c22c32f2776031e60de98ec9419cfb36007229d029a2d5e3ff8fad",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/ShippingSections.tsx",
+    "sourceSha256": "d296a57b67cb959a5dc09c9b1e7f4d7327db830982732ba8191be5c0531df21f",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/ShopNavigation.tsx",
+    "sourceSha256": "f2f691568c0156a89d31719535d5fb8d4e12340de0dc7205855cce2fb9de3d61",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/SurfaceCards.tsx",
+    "sourceSha256": "d47fbea42db830ee2f508837c48c2ddac39b80030b85df8a19c8a4aa60a3b532",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/TechLayouts.tsx",
+    "sourceSha256": "95860cbde116c54bdb16d2124fcaaf98041fd369dc8c4c2df76daac4699bbcea",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/TypographySettings.tsx",
+    "sourceSha256": "9f8bef15546314735fe48e76e731c39d2c89ba2e3da62d9a556aa22cbcf0167f",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/UnifiedInspectorRendering.test.tsx",
+    "sourceSha256": "92fbb36228de2f5ba8b068f170c50fa2535803b256dd4c5a329f2f85b886f4bd",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/UnifiedStyleControls.test.tsx",
+    "sourceSha256": "11bb20f43987bd8c9984181d7a85dc20605ab1b2cd16823a8998b99f568574c3",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/ValuesList.tsx",
+    "sourceSha256": "d9eca7c1365ec1a39bbb0821e0b4900faa2b30794f9657e1deee18746389982a",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/WeddingEditorial.tsx",
+    "sourceSha256": "cffecc8d3e56f2a378a2749f286cdee7ae9986f8375d0213eb8040f1211c09ef",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/components/pages/WideVisualEditorial.tsx",
+    "sourceSha256": "654c7e3d7fb9c78c5dcc937515cbd2aa103027d8c77585faecf4f1af4cb2e972",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/admin/src/types/index.ts",
+    "sourceSha256": "4ce900c758276b162f2d68fa7c593fbede61795beb5b4e6156fc135ba56f25c5",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/cms/ai-copy-capabilities.v1.json",
+    "sourceSha256": "165385aecf076c08b96ce1121b3c030d043e0a368ec3a98612200e9d643348d3",
+    "changedFromMain": true
+  },
+  {
+    "file": "resources/cms/page-contract.v1.json",
+    "sourceSha256": "2f42dcd6186be31bb25aaf7987c42da8f3fa797292730a8c5fc2221882c6bc3d",
+    "changedFromMain": true
+  },
+  {
+    "file": "tests/Feature/Admin/CmsActionAppearanceAcceptanceTest.php",
+    "sourceSha256": "361aabe6ab4d9feb07bf0576d3de6ff360a282362b156691c76c5ac83699c34f",
+    "changedFromMain": true
+  },
+  {
+    "file": "tests/Feature/Admin/CmsLayoutControlsAcceptanceTest.php",
+    "sourceSha256": "0e44e009e5f081e9641555d49abd18a33fbb95ca595f11905dc739044779e475",
+    "changedFromMain": true
+  },
+  {
+    "file": "tests/Unit/Domain/Cms/ActionAppearanceContractTest.php",
+    "sourceSha256": "5545aeceb4f857a71370136efcdbff981b0bce6a12d407f8127ffbbe7cdbd3f8",
+    "changedFromMain": true
+  },
+  {
+    "file": "tests/Unit/Domain/Cms/SectionEyebrowContractTest.php",
+    "sourceSha256": "964c8eaa8e716da1837f76dc1dfe231eb974b99c48bd9c669cf6b332fc84ff39",
+    "changedFromMain": true
+  },
+  {
+    "file": "tests/Unit/Domain/Cms/StyleInheritanceContractTest.php",
+    "sourceSha256": "9f235d2cdfc3074955e073be3ec0d892d138fbcad90600c85e90d7d975fa73c6",
+    "changedFromMain": true
+  },
+  {
+    "file": "scripts/releases/install-passport-public-20261114.php",
+    "sourceSha256": "1d5c82091a5c204c9c8e3590aa4d24d1435c7ca4e8e9032e610c1a54b624988e",
+    "changedFromMain": true
+  }
+]

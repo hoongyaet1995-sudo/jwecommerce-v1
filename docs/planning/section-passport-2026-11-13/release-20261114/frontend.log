@@ -1,0 +1,24 @@
+
+ RUN  v3.2.7 C:/Users/User/.codex/worktrees/passport-release-20261114/jwstudio-ecommerce/resources/admin
+
+·······x·························
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/components/pages/SectionEyebrow.test.tsx > places every applicable Eyebrow before its heading across surfaces and optional heading states
+Error: ENOENT: no such file or directory, open 'C:\Users\User\.codex\worktrees\passport-release-20261114\jwstudio-ecommerce\docs\planning\section-passport-2026-11-13\order-fix\renderer-order.json'
+ ❯ src/components/pages/SectionEyebrow.test.tsx:45:2
+     43|   if(!ordered)gaps.push(t.name+' / '+surface+' / '+(enabled?'heading e…
+     44|  }
+     45|  writeFileSync(resolve(process.cwd(),'../../docs/planning/section-pass…
+       |  ^
+     46|  expect(gaps).toEqual([]);
+     47| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 9 passed (10)
+      Tests  1 failed | 32 passed (33)
+   Start at  11:02:27
+   Duration  82.90s (transform 4.59s, setup 0ms, collect 17.90s, tests 95.54s, environment 10.79s, prepare 2.26s)

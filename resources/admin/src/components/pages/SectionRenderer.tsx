@@ -1,3 +1,6 @@
+import {actionAppearanceCss} from '../../cms/actionAppearance';
+import {slideEyebrow} from '../../cms/sectionHeading';
+import {SectionEyebrow} from './SectionEyebrow';
 import {containedSurfaceBackground} from '../../cms/containedSurface';
 import {WideVisualEditorial} from './WideVisualEditorial';
 import {sectionAnchorOffset} from '../../cms/sectionAnchorOffset';
@@ -17,7 +20,7 @@ import {RoutineSteps} from './BeautyLayouts';
 import {FlushSplit} from './FlushSplit';
 import {EditorialProductTabs} from './EditorialProductTabs';
 import {EditorialStoryCards} from './EditorialStoryCards';
-import {resolveStyledSection,resolvePageStyle} from '../../cms/pageStyle';
+import {resolveStyledSection,resolvePageStyle,stylePresets} from '../../cms/pageStyle';
 import {loadCmsFonts} from '../../cms/fontCatalog';
 import {PromotionHighlights} from './PromotionHighlights';
 import {resolvePromotionCards} from '../../cms/promotionHighlights';
@@ -109,7 +112,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
   viewport = 'desktop'
 }) => {
   const runtime = usePageRuntime();
-  const section=resolveStyledSection(rawSection,resolvePageStyle(runtime.page.document.style,runtime.context.themePalette));
+  const section=resolveStyledSection(rawSection,resolvePageStyle(runtime.page.document.style,runtime.context.themePalette)??(rawSection.surface==='page'?{palette:runtime.context.themePalette??stylePresets[0].palette}:undefined));
   useEffect(()=>loadCmsFonts(),[]);
   const runtimeSection = usePageSectionRuntime(section.id);
   const [productListingIdx, setProductListingIdx] = useState(0);
@@ -275,7 +278,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
 
   const getBgStyle = () => {
     if (section.backgroundColor === 'custom' && section.customColors?.customBgColor) {
-      return runtime.page.document.style||rawSection.surface||rawSection.brandPalette?(section.textColor==='light'?'text-white':'text-neutral-900'):'text-white';
+      return runtime.page.document.style&&!runtime.page.document.style.preserveLayout||rawSection.surface||rawSection.brandPalette?(section.textColor==='light'?'text-white':'text-neutral-900'):'text-white';
     }
     switch (section.backgroundColor) {
       case 'bg-neutral-950': return 'bg-neutral-950 text-white';
@@ -293,7 +296,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
   // Compute CSS Variables & Section-level Inline Styles for customizable branding
   const customColors = section.customColors;
   const sectionRootStyle: React.CSSProperties = {
-    ...(runtime.page.document.style||rawSection.surface||rawSection.brandPalette?{color:customColors?.titleColor}:{}),
+    ...(runtime.page.document.style&&!runtime.page.document.style.preserveLayout||rawSection.surface||rawSection.brandPalette?{color:customColors?.titleColor}:{}),
     ...(customColors?.eyebrowColor ? { '--sec-eyebrow': customColors.eyebrowColor } : {}),
     ...(customColors?.titleColor ? { '--sec-title': customColors.titleColor } : {}),
     ...(customColors?.contentColor ? { '--sec-desc': customColors.contentColor } : {}),
@@ -377,13 +380,8 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
         <div data-cms-hero-safe className={`relative z-10 w-full py-20 ${section.containerMode==='full-bleed'?'max-w-[var(--cms-page-width)] mx-auto px-6 @min-[640px]:px-10 @min-[1024px]:px-16':''} ${
           section.textAlignment === 'left' ? 'text-left' : section.textAlignment === 'right' ? 'text-right' : 'text-center'
         }`}>
-          {section.subtitle && (
-            <MotionItem><span data-cms-text="eyebrow"
-              style={{...(getEyebrowStyle()),...typographyStyle(section,'eyebrow')}}
-              className="inline-block px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-widest bg-white/10 text-white backdrop-blur-md mb-4 border border-white/20"
-            >
-              {section.subtitle}
-            </span></MotionItem>
+          {(
+            <MotionItem><SectionEyebrow section={section}/></MotionItem>
           )}
           <MotionItem><h1 data-cms-text="title"
             style={{...(getTitleStyle()),...typographyStyle(section,'title')}}
@@ -404,7 +402,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
             section.textAlignment === 'left' ? 'justify-start' : section.textAlignment === 'right' ? 'justify-end' : 'justify-center'
           }`}>
             {section.buttonText && (
-              <MotionButton><a data-cms-action="button"
+              <MotionButton><a data-cms-button="primary" data-cms-button-kind="button" data-cms-action="button"
                 href={section.buttonLink || '#'}
                 onClick={e => isEditingMode && e.preventDefault()}
                 style={getPrimaryBtnStyle()}
@@ -414,7 +412,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
               </a></MotionButton>
             )}
             {section.secondaryButtonText && (
-              <MotionButton><a data-cms-action="button"
+              <MotionButton><a data-cms-button="secondary" data-cms-button-kind="button" data-cms-action="button"
                 href={section.secondaryButtonLink || '#'}
                 onClick={e => isEditingMode && e.preventDefault()}
                 style={getSecondaryBtnStyle()}
@@ -435,13 +433,8 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
         {/* Text Left */}
         <div className="lg:col-span-6 space-y-6">
-          {section.subtitle && (
-            <MotionItem><span data-cms-text="eyebrow"
-              style={{...(getEyebrowStyle()),...typographyStyle(section,'eyebrow')}}
-              className="text-xs font-bold uppercase tracking-widest text-indigo-400 block"
-            >
-              {section.subtitle}
-            </span></MotionItem>
+          {(
+            <MotionItem><SectionEyebrow section={section}/></MotionItem>
           )}
           <MotionItem><h1 data-cms-text="title"
             style={{...(getTitleStyle()),...typographyStyle(section,'title')}}
@@ -460,7 +453,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
 
           <div className="flex flex-wrap items-center gap-4 pt-2">
             {section.buttonText && (
-              <MotionButton><a data-cms-action="button"
+              <MotionButton><a data-cms-button="primary" data-cms-button-kind="button" data-cms-action="button"
                 href={section.buttonLink || '#'}
                 onClick={e => isEditingMode && e.preventDefault()}
                 style={getPrimaryBtnStyle()}
@@ -470,7 +463,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
               </a></MotionButton>
             )}
             {section.secondaryButtonText && (
-              <MotionButton><a data-cms-action="button"
+              <MotionButton><a data-cms-button="secondary" data-cms-button-kind="button" data-cms-action="button"
                 href={section.secondaryButtonLink || '#'}
                 onClick={e => isEditingMode && e.preventDefault()}
                 style={getSecondaryBtnStyle()}
@@ -494,8 +487,8 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
             {/* Dynamic Floating card customizable via Section Inspector */}
             <MotionItem className="absolute bottom-6 left-6 right-6 p-4.5 rounded-2xl bg-neutral-950/85 backdrop-blur-md border border-white/15 text-white shadow-xl flex items-center justify-between gap-3">
               <div className="min-w-0">
-                <span data-cms-text="eyebrow"
-                  style={{...(getEyebrowStyle()),...typographyStyle(section,'eyebrow')}}
+                <span data-cms-text="label"
+                  style={{...(getEyebrowStyle()),...typographyStyle(section,'label')}}
                   className="text-[10px] font-bold uppercase tracking-wider text-indigo-400 block truncate"
                 >
                   {section.cardBadge || 'Flagship Model'}
@@ -527,10 +520,10 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
     {
       id: 'slide-1',
       title: section.title || 'Experience Pure Acoustic Fidelity',
-      subtitle: section.subtitle || 'NEW TITANIUM FLAGSHIP SERIES',
+      subtitle: section.subtitle ?? '',
       description: section.content || 'Custom 50mm beryllium transducers engineered with active damping for zero-distortion listening.',
       imageUrl: section.mediaUrl || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=1600&auto=format&fit=crop&q=80',
-      badge: 'Exclusive Launch',
+      badge: '',
       buttonText: section.buttonText || 'Explore Collection',
       linkUrl: section.buttonLink || '/collections/all',
       secondaryButtonText: section.secondaryButtonText || 'Watch Atelier Film',
@@ -542,7 +535,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
       subtitle: 'STUDIO-GRADE ISOLATION',
       description: 'Adaptive algorithmic cancellation eliminating 99.6% of ambient frequency interference for uninterrupted immersion.',
       imageUrl: 'https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=1600&auto=format&fit=crop&q=80',
-      badge: 'Adaptive ANC',
+      badge: '',
       buttonText: 'Discover ANC Series',
       linkUrl: '/products/aurora-anc',
       secondaryButtonText: 'Compare Models',
@@ -554,7 +547,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
       subtitle: 'ATELIER LEATHER & TITANIUM',
       description: 'Aerospace-grade structural chassis paired with supple top-grain leather earcups for fatigue-free luxury.',
       imageUrl: 'https://images.unsplash.com/photo-1484704849700-f032a568e944?w=1600&auto=format&fit=crop&q=80',
-      badge: 'Artisan Heritage',
+      badge: '',
       buttonText: 'Explore the Atelier',
       linkUrl: '/pages/craftsmanship',
       secondaryButtonText: 'Find Nearest Lounge',
@@ -647,20 +640,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
         <div data-cms-hero-safe className={`relative z-10 w-full py-20 ${section.containerMode==='full-bleed'?'max-w-[var(--cms-page-width)] mx-auto px-6 @min-[640px]:px-10 @min-[1024px]:px-16':''} w-full transition-all duration-500 ${
           section.textAlignment === 'left' ? 'text-left' : section.textAlignment === 'right' ? 'text-right' : 'text-center'
         }`}>
-          {/* Eyebrow Tag / Badge */}
-          {(currentSlide.badge || currentSlide.subtitle || section.subtitle) && (
-            <MotionItem className={`flex items-center gap-2 mb-4 ${
-              section.textAlignment === 'left' ? 'justify-start' : section.textAlignment === 'right' ? 'justify-end' : 'justify-center'
-            }`}>
-              <span data-cms-text="eyebrow"
-                style={{...(getEyebrowStyle()),...typographyStyle(section,'eyebrow')}}
-                className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-widest bg-white/10 hover:bg-white/15 text-white backdrop-blur-md border border-white/20 shadow-lg transition-all"
-              >
-                <Sparkles data-cms-text="eyebrow" className="w-3.5 h-3.5" style={{...(getEyebrowStyle()),...typographyStyle(section,'eyebrow')}} />
-                {currentSlide.badge || currentSlide.subtitle || section.subtitle}
-              </span>
-            </MotionItem>
-          )}
+          {slideEyebrow(section,currentSlide)&&<MotionItem className={`flex ${section.textAlignment==='left'?'justify-start':section.textAlignment==='right'?'justify-end':'justify-center'}`}><SectionEyebrow section={section} item={currentSlide}/></MotionItem>}
 
           {/* Primary Headline */}
           <MotionItem><h1 data-cms-text="title" data-cms-item={currentSlide.id}
@@ -687,7 +667,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
             section.textAlignment === 'left' ? 'justify-start' : section.textAlignment === 'right' ? 'justify-end' : 'justify-center'
           }`}>
             {(currentSlide.buttonText || section.buttonText) && (
-              <MotionButton><a data-cms-action="button"
+              <MotionButton><a data-cms-button="primary" data-cms-button-kind="button" data-cms-action="button"
                 href={currentSlide.linkUrl || section.buttonLink || '#'}
                 onClick={e => isEditingMode && e.preventDefault()}
                 style={getPrimaryBtnStyle()}
@@ -698,7 +678,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
               </a></MotionButton>
             )}
             {(currentSlide.secondaryButtonText || section.secondaryButtonText) && (
-              <MotionButton><a data-cms-action="button"
+              <MotionButton><a data-cms-button="secondary" data-cms-button-kind="button" data-cms-action="button"
                 href={currentSlide.secondaryButtonLink || section.secondaryButtonLink || '#'}
                 onClick={e => isEditingMode && e.preventDefault()}
                 style={getSecondaryBtnStyle()}
@@ -803,13 +783,8 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
     <div className={`w-full ${getPaddingClass()} ${
       section.textAlignment === 'left' ? 'text-left' : section.textAlignment === 'right' ? 'text-right' : 'text-center'
     }`}>
-      {section.subtitle && (
-        <MotionItem><span data-cms-text="eyebrow"
-          style={{...(getEyebrowStyle()),...typographyStyle(section,'eyebrow')}}
-          className="text-xs font-bold uppercase tracking-widest text-indigo-400 block mb-3"
-        >
-          {section.subtitle}
-        </span></MotionItem>
+      {(
+        <MotionItem><SectionEyebrow section={section}/></MotionItem>
       )}
       <MotionItem><h2 data-cms-text="title"
         style={{...(getTitleStyle()),...typographyStyle(section,'title')}}
@@ -860,13 +835,8 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
         <div className={`grid grid-cols-1 ${section.mediaContainerMode==='full-bleed'?'':'lg:grid-cols-12'} gap-8 lg:gap-12 items-center`}>
           {/* Text Column */}
           <div className={`space-y-6 ${section.mediaContainerMode==='full-bleed'?'order-1':isMediaRight ? 'lg:col-span-6 lg:order-1' : 'lg:col-span-6 lg:order-2'}`}>
-            {section.subtitle && (
-              <MotionItem><span data-cms-text="eyebrow"
-                style={{...(getEyebrowStyle()),...typographyStyle(section,'eyebrow')}}
-                className="text-xs font-bold uppercase tracking-widest text-indigo-400 block"
-              >
-                {section.subtitle}
-              </span></MotionItem>
+            {(
+              <MotionItem><SectionEyebrow section={section}/></MotionItem>
             )}
             <MotionItem><h2 data-cms-text="title"
               style={{...(getTitleStyle()),...typographyStyle(section,'title')}}
@@ -887,8 +857,8 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
               <div className="space-y-3 pt-2">
                 {section.items.map((it, idx) => (
                   <MotionItem key={it.id || idx} className="flex items-start gap-3">
-                    <div data-cms-text="eyebrow"
-                      style={{...(customColors?.eyebrowColor ? { color: customColors.eyebrowColor } : {}),...typographyStyle(section,'eyebrow')}}
+                    <div data-cms-text="label"
+                      style={{...(customColors?.eyebrowColor ? { color: customColors.eyebrowColor } : {}),...typographyStyle(section,'label')}}
                       className="p-1 rounded-lg bg-indigo-500/20 text-indigo-400 mt-0.5"
                     >
                       <CheckCircle2 className="w-4 h-4" />
@@ -904,7 +874,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
 
             {section.buttonText && (
               <div className="pt-2">
-                <MotionButton><a data-cms-action="button"
+                <MotionButton><a data-cms-button="primary" data-cms-button-kind="button" data-cms-action="button"
                   href={section.buttonLink || '#'}
                   onClick={e => isEditingMode && e.preventDefault()}
                   style={getPrimaryBtnStyle()}
@@ -937,13 +907,8 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
   const renderTimelineStory = () => (
     <div className={`w-full ${getPaddingClass()}`}>
       <div className={`mb-12 ${section.textAlignment === 'left' ? 'text-left' : 'text-center'}`}>
-        {section.subtitle && (
-          <MotionItem><span data-cms-text="eyebrow"
-            style={{...(getEyebrowStyle()),...typographyStyle(section,'eyebrow')}}
-            className="text-xs font-bold uppercase tracking-widest text-indigo-400 block mb-2"
-          >
-            {section.subtitle}
-          </span></MotionItem>
+        {(
+          <MotionItem><SectionEyebrow section={section}/></MotionItem>
         )}
         <MotionItem><h2 data-cms-text="title"
           style={{...(getTitleStyle()),...typographyStyle(section,'title')}}
@@ -971,8 +936,8 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
             />
 
             {/* Date Tag */}
-            <div data-cms-text="eyebrow" data-cms-item={item.id}
-              style={{...(getEyebrowStyle()),...typographyStyle(section,'eyebrow')}}
+            <div data-cms-text="label" data-cms-item={item.id}
+              style={{...(getEyebrowStyle()),...typographyStyle(section,'label')}}
               className="sm:absolute sm:-left-32 sm:top-1 text-xs font-bold text-indigo-400 tracking-wider mb-1 sm:mb-0"
             >
               {item.date || `Phase ${idx + 1}`}
@@ -1003,8 +968,8 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
             >
               {item.value || '99%'}
             </div>
-            <div data-cms-text="eyebrow" data-cms-item={item.id}
-              style={{...(getEyebrowStyle()),...typographyStyle(section,'eyebrow')}}
+            <div data-cms-text="label" data-cms-item={item.id}
+              style={{...(getEyebrowStyle()),...typographyStyle(section,'label')}}
               className="text-xs font-bold uppercase tracking-wider text-indigo-400 mb-1 truncate"
             >
               {item.title}
@@ -1025,13 +990,8 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
         <div className={`mb-10 ${
           section.textAlignment === 'left' ? 'text-left' : section.textAlignment === 'right' ? 'text-right' : 'text-center'
         }`}>
-          {section.subtitle && (
-            <MotionItem><span data-cms-text="eyebrow"
-              style={{...(getEyebrowStyle()),...typographyStyle(section,'eyebrow')}}
-              className="text-xs font-bold uppercase tracking-widest text-indigo-400 block mb-2"
-            >
-              {section.subtitle}
-            </span></MotionItem>
+          {(
+            <MotionItem><SectionEyebrow section={section}/></MotionItem>
           )}
           <MotionItem><h2 data-cms-text="title"
             style={{...(getTitleStyle()),...typographyStyle(section,'title')}}
@@ -1155,13 +1115,8 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
         {/* Section Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
           <div className={`${section.textAlignment === 'center' ? 'text-center md:text-left' : section.textAlignment === 'right' ? 'text-right' : 'text-left'}`}>
-            {section.subtitle && (
-              <MotionItem><span data-cms-text="eyebrow"
-                style={{...(getEyebrowStyle()),...typographyStyle(section,'eyebrow')}}
-                className="text-xs font-bold uppercase tracking-widest text-indigo-400 block mb-2"
-              >
-                {section.subtitle}
-              </span></MotionItem>
+            {(
+              <MotionItem><SectionEyebrow section={section}/></MotionItem>
             )}
             <MotionItem><h2 data-cms-text="title"
               style={{...(getTitleStyle()),...typographyStyle(section,'title')}}
@@ -1417,13 +1372,8 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
     return (
       <div className={`w-full ${getPaddingClass()}`}>
         <div className={`mb-8 ${section.textAlignment === 'left' ? 'text-left' : 'text-center'}`}>
-          {section.subtitle && (
-            <MotionItem><span data-cms-text="eyebrow"
-              style={{...(getEyebrowStyle()),...typographyStyle(section,'eyebrow')}}
-              className="text-xs font-bold uppercase tracking-widest text-indigo-400 block mb-2"
-            >
-              {section.subtitle}
-            </span></MotionItem>
+          {(
+            <MotionItem><SectionEyebrow section={section}/></MotionItem>
           )}
           <MotionItem><h2 data-cms-text="title"
             style={{...(getTitleStyle()),...typographyStyle(section,'title')}}
@@ -1499,7 +1449,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
                   referrerPolicy="no-referrer"
                 />
                 <div className="flex-1 min-w-0">
-                  <span data-cms-text="eyebrow" style={{...(getEyebrowStyle()),...typographyStyle(section,'eyebrow')}} className="text-[10px] font-bold text-indigo-400 uppercase truncate block">
+                  <span data-cms-text="label" style={{...(getEyebrowStyle()),...typographyStyle(section,'label')}} className="text-[10px] font-bold text-indigo-400 uppercase truncate block">
                     {currentTabLabel}
                   </span>
                   <h4 data-cms-text="itemTitle" style={{...(getTitleStyle()),...typographyStyle(section,'itemTitle')}} className="text-sm font-bold text-white truncate">{prod.title}</h4>
@@ -1533,13 +1483,8 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
               </span>
             </MotionItem>
 
-            {section.subtitle && (
-              <MotionItem><span data-cms-text="eyebrow"
-                style={{...(getEyebrowStyle()),...typographyStyle(section,'eyebrow')}}
-                className="text-xs font-bold uppercase tracking-widest text-indigo-400 block"
-              >
-                {section.subtitle}
-              </span></MotionItem>
+            {(
+              <MotionItem><SectionEyebrow section={section}/></MotionItem>
             )}
 
             <MotionItem><h2 data-cms-text="title"
@@ -1576,7 +1521,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
             </MotionItem>
 
             <div className="pt-2">
-              <MotionButton><a data-cms-action="button"
+              <MotionButton><a data-cms-button="primary" data-cms-button-kind="button" data-cms-action="button"
                 href={section.buttonLink || '#'}
                 onClick={e => isEditingMode && e.preventDefault()}
                 style={getPrimaryBtnStyle()}
@@ -1610,13 +1555,8 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
   const renderPricingTable = () => (
     <div className={`w-full ${getPaddingClass()}`}>
       <div className={`mb-12 ${section.textAlignment === 'left' ? 'text-left' : 'text-center'}`}>
-        {section.subtitle && (
-          <MotionItem><span data-cms-text="eyebrow"
-            style={{...(getEyebrowStyle()),...typographyStyle(section,'eyebrow')}}
-            className="text-xs font-bold uppercase tracking-widest text-indigo-400 block mb-2"
-          >
-            {section.subtitle}
-          </span></MotionItem>
+        {(
+          <MotionItem><SectionEyebrow section={section}/></MotionItem>
         )}
         <MotionItem><h2 data-cms-text="title"
           style={{...(getTitleStyle()),...typographyStyle(section,'title')}}
@@ -1709,13 +1649,8 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
       <div className={`mb-12 ${
         section.textAlignment === 'left' ? 'text-left' : section.textAlignment === 'right' ? 'text-right' : 'text-center'
       }`}>
-        {section.subtitle && (
-          <MotionItem><span data-cms-text="eyebrow"
-            style={{...(getEyebrowStyle()),...typographyStyle(section,'eyebrow')}}
-            className="text-xs font-bold uppercase tracking-widest text-indigo-400 block mb-2"
-          >
-            {section.subtitle}
-          </span></MotionItem>
+        {(
+          <MotionItem><SectionEyebrow section={section}/></MotionItem>
         )}
         <MotionItem><h2 data-cms-text="title"
           style={{...(getTitleStyle()),...typographyStyle(section,'title')}}
@@ -1760,13 +1695,8 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
   // 13. Video Embed Player
   const renderVideoEmbed = () => (
     <div className={`w-full ${getPaddingClass()} text-center`}>
-      {section.subtitle && (
-        <MotionItem><span data-cms-text="eyebrow"
-          style={{...(getEyebrowStyle()),...typographyStyle(section,'eyebrow')}}
-          className="text-xs font-bold uppercase tracking-widest text-indigo-400 block mb-2"
-        >
-          {section.subtitle}
-        </span></MotionItem>
+      {(
+        <MotionItem><SectionEyebrow section={section}/></MotionItem>
       )}
       <MotionItem><h2 data-cms-text="title"
         style={{...(getTitleStyle()),...typographyStyle(section,'title')}}
@@ -1808,13 +1738,8 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
   const renderBeforeAfter = () => (
     <div className={`w-full ${getPaddingClass()}`}>
       <div className={`mb-10 ${section.textAlignment === 'left' ? 'text-left' : 'text-center'}`}>
-        {section.subtitle && (
-          <MotionItem><span data-cms-text="eyebrow"
-            style={{...(getEyebrowStyle()),...typographyStyle(section,'eyebrow')}}
-            className="text-xs font-bold uppercase tracking-widest text-indigo-400 block mb-2"
-          >
-            {section.subtitle}
-          </span></MotionItem>
+        {(
+          <MotionItem><SectionEyebrow section={section}/></MotionItem>
         )}
         <MotionItem><h2 data-cms-text="title"
           style={{...(getTitleStyle()),...typographyStyle(section,'title')}}
@@ -1889,13 +1814,8 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
   const renderInstagramFeed = () => (
     <div className={`w-full ${getPaddingClass()}`}>
       <div className={`mb-10 ${section.textAlignment === 'left' ? 'text-left' : 'text-center'}`}>
-        {section.subtitle && (
-          <MotionItem><span data-cms-text="eyebrow"
-            style={{...(getEyebrowStyle()),...typographyStyle(section,'eyebrow')}}
-            className="text-xs font-bold uppercase tracking-widest text-indigo-400 block mb-2"
-          >
-            {section.subtitle}
-          </span></MotionItem>
+        {(
+          <MotionItem><SectionEyebrow section={section}/></MotionItem>
         )}
         <MotionItem><h2 data-cms-text="title"
           style={{...(getTitleStyle()),...typographyStyle(section,'title')}}
@@ -1946,13 +1866,8 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
       <div className={`mb-12 ${
         section.textAlignment === 'left' ? 'text-left' : section.textAlignment === 'right' ? 'text-right' : 'text-center'
       }`}>
-        {section.subtitle && (
-          <MotionItem><span data-cms-text="eyebrow"
-            style={{...(getEyebrowStyle()),...typographyStyle(section,'eyebrow')}}
-            className="text-xs font-bold uppercase tracking-widest text-indigo-400 block mb-2"
-          >
-            {section.subtitle}
-          </span></MotionItem>
+        {(
+          <MotionItem><SectionEyebrow section={section}/></MotionItem>
         )}
         <MotionItem><h2 data-cms-text="title"
           style={{...(getTitleStyle()),...typographyStyle(section,'title')}}
@@ -1977,8 +1892,8 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
             className="p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-indigo-500/40 transition-all flex flex-col justify-between min-w-0"
           >
             <div>
-              <div data-cms-text="eyebrow" data-cms-item={item.id}
-                style={{...(customColors?.eyebrowColor ? { color: customColors.eyebrowColor } : {}),...typographyStyle(section,'eyebrow')}}
+              <div data-cms-text="label" data-cms-item={item.id}
+                style={{...(customColors?.eyebrowColor ? { color: customColors.eyebrowColor } : {}),...typographyStyle(section,'label')}}
                 className="w-12 h-12 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center mb-4 ring-1 ring-indigo-500/30 shrink-0"
               >
                 {renderIcon(item.icon)}
@@ -2009,8 +1924,8 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
       <div className={`grid ${getGridColsClass(section.columnsCount || 4)} gap-4 sm:gap-6`}>
         {section.items?.map((item, idx) => (
           <MotionCard key={item.id || idx} className="flex items-center gap-3.5 p-4 rounded-2xl bg-white/5 border border-white/10 min-w-0">
-            <div data-cms-text="eyebrow" data-cms-item={item.id}
-              style={{...(customColors?.eyebrowColor ? { color: customColors.eyebrowColor } : {}),...typographyStyle(section,'eyebrow')}}
+            <div data-cms-text="label" data-cms-item={item.id}
+              style={{...(customColors?.eyebrowColor ? { color: customColors.eyebrowColor } : {}),...typographyStyle(section,'label')}}
               className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center shrink-0"
             >
               {renderIcon(item.icon)}
@@ -2029,13 +1944,8 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
   const renderComparisonMatrix = () => (
     <div className={`w-full ${getPaddingClass()}`}>
       <div className={`mb-12 ${section.textAlignment === 'left' ? 'text-left' : 'text-center'}`}>
-        {section.subtitle && (
-          <MotionItem><span data-cms-text="eyebrow"
-            style={{...(getEyebrowStyle()),...typographyStyle(section,'eyebrow')}}
-            className="text-xs font-bold uppercase tracking-widest text-indigo-400 block mb-2"
-          >
-            {section.subtitle}
-          </span></MotionItem>
+        {(
+          <MotionItem><SectionEyebrow section={section}/></MotionItem>
         )}
         <MotionItem><h2 data-cms-text="title"
           style={{...(getTitleStyle()),...typographyStyle(section,'title')}}
@@ -2059,7 +1969,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
             <div className="col-span-5 text-neutral-400">
               {section.comparisonDimensionName || 'ENGINEERING DIMENSION'}
             </div>
-            <div data-cms-text="eyebrow" style={{...(getEyebrowStyle()),...typographyStyle(section,'eyebrow')}} className="col-span-4 text-indigo-300 font-black">
+            <div data-cms-text="label" style={{...(getEyebrowStyle()),...typographyStyle(section,'label')}} className="col-span-4 text-indigo-300 font-black">
               {section.comparisonOurBrandName || 'AURORA FLAGSHIP'}
             </div>
             <div className="col-span-3 text-neutral-500">
@@ -2090,13 +2000,8 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
       <div className={`mb-10 ${
         section.textAlignment === 'left' ? 'text-left' : section.textAlignment === 'right' ? 'text-right' : 'text-center'
       }`}>
-        {section.subtitle && (
-          <MotionItem><span data-cms-text="eyebrow"
-            style={{...(getEyebrowStyle()),...typographyStyle(section,'eyebrow')}}
-            className="text-xs font-bold uppercase tracking-widest text-indigo-400 block mb-2"
-          >
-            {section.subtitle}
-          </span></MotionItem>
+        {(
+          <MotionItem><SectionEyebrow section={section}/></MotionItem>
         )}
         <MotionItem><h2 data-cms-text="title"
           style={{...(getTitleStyle()),...typographyStyle(section,'title')}}
@@ -2128,7 +2033,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
               >
                 <span data-cms-text="itemTitle" data-cms-item={item.id} style={{...(getTitleStyle()),...typographyStyle(section,'itemTitle')}}>{item.title}</span>
                 {isOpen ? (
-                  <ChevronUp data-cms-text="eyebrow" data-cms-item={item.id} className="w-4 h-4 text-indigo-400 flex-shrink-0 ml-3" style={{...(getEyebrowStyle()),...typographyStyle(section,'eyebrow')}} />
+                  <ChevronUp data-cms-text="label" data-cms-item={item.id} className="w-4 h-4 text-indigo-400 flex-shrink-0 ml-3" style={{...(getEyebrowStyle()),...typographyStyle(section,'label')}} />
                 ) : (
                   <ChevronDown className="w-4 h-4 text-neutral-400 flex-shrink-0 ml-3" />
                 )}
@@ -2163,13 +2068,8 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
       <div className={`w-full ${getPaddingClass()}`}>
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
           <div className="lg:col-span-5 space-y-4">
-          {section.subtitle && (
-            <MotionItem><span data-cms-text="eyebrow"
-              style={{...(getEyebrowStyle()),...typographyStyle(section,'eyebrow')}}
-              className="text-xs font-bold uppercase tracking-widest text-indigo-400 block"
-            >
-              {section.subtitle}
-            </span></MotionItem>
+          {(
+            <MotionItem><SectionEyebrow section={section}/></MotionItem>
           )}
           <MotionItem><h2 data-cms-text="title"
             style={{...(getTitleStyle()),...typographyStyle(section,'title')}}
@@ -2188,16 +2088,16 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
 
             <MotionItem className="space-y-3 pt-4 text-xs text-neutral-300">
               <div className="flex items-center gap-3">
-                <Mail data-cms-text="eyebrow" className="w-4 h-4 text-indigo-400 shrink-0" style={{...(getEyebrowStyle()),...typographyStyle(section,'eyebrow')}} />
+                <Mail data-cms-text="label" className="w-4 h-4 text-indigo-400 shrink-0" style={{...(getEyebrowStyle()),...typographyStyle(section,'label')}} />
                 <span className="break-all">{section.formEmail || 'concierge@aurora-audio.se'}</span>
               </div>
               <div className="flex items-center gap-3">
-                <Phone data-cms-text="eyebrow" className="w-4 h-4 text-indigo-400 shrink-0" style={{...(getEyebrowStyle()),...typographyStyle(section,'eyebrow')}} />
+                <Phone data-cms-text="label" className="w-4 h-4 text-indigo-400 shrink-0" style={{...(getEyebrowStyle()),...typographyStyle(section,'label')}} />
                 <span>{section.contactPhone || '+46 8 123 4567 (Mon–Fri 09:00–18:00 CET)'}</span>
               </div>
               {section.contactAddress && (
                 <div className="flex items-center gap-3">
-                  <MapPin data-cms-text="eyebrow" className="w-4 h-4 text-indigo-400 shrink-0" style={{...(getEyebrowStyle()),...typographyStyle(section,'eyebrow')}} />
+                  <MapPin data-cms-text="label" className="w-4 h-4 text-indigo-400 shrink-0" style={{...(getEyebrowStyle()),...typographyStyle(section,'label')}} />
                   <span>{section.contactAddress}</span>
                 </div>
               )}
@@ -2307,7 +2207,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
                     />
                   </div>
 
-                  <button
+                  <button data-cms-button="primary" data-cms-button-kind="button"
                     type="submit"
                     style={getPrimaryBtnStyle()}
                     className="w-full py-3 rounded-xl bg-indigo-600 hover:opacity-90 text-white font-bold transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer"
@@ -2328,13 +2228,8 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
   const renderStoreLocator = () => (
     <div className={`w-full ${getPaddingClass()}`}>
       <div className={`mb-12 ${section.textAlignment === 'left' ? 'text-left' : 'text-center'}`}>
-        {section.subtitle && (
-          <MotionItem><span data-cms-text="eyebrow"
-            style={{...(getEyebrowStyle()),...typographyStyle(section,'eyebrow')}}
-            className="text-xs font-bold uppercase tracking-widest text-indigo-400 block mb-2"
-          >
-            {section.subtitle}
-          </span></MotionItem>
+        {(
+          <MotionItem><SectionEyebrow section={section}/></MotionItem>
         )}
         <MotionItem><h2 data-cms-text="title"
           style={{...(getTitleStyle()),...typographyStyle(section,'title')}}
@@ -2357,7 +2252,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
           <MotionCard key={item.id || idx} className="p-6 rounded-3xl bg-white/5 border border-white/10 flex flex-col justify-between min-w-0">
             <div>
               <div className="flex items-center justify-between mb-3">
-                <span data-cms-text="eyebrow" data-cms-item={item.id} style={{...(getEyebrowStyle()),...typographyStyle(section,'eyebrow')}} className="text-[10px] font-bold uppercase tracking-wider text-indigo-400">{item.subtitle}</span>
+                <span data-cms-text="label" data-cms-item={item.id} style={{...(getEyebrowStyle()),...typographyStyle(section,'label')}} className="text-[10px] font-bold uppercase tracking-wider text-indigo-400">{item.subtitle}</span>
                 {item.badge && (
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                     {item.badge}
@@ -2405,13 +2300,8 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
         {/* Header & Slider Navigation Arrows */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10">
           <div className={`${section.textAlignment === 'center' ? 'text-center sm:text-left' : ''}`}>
-            {section.subtitle && (
-              <MotionItem><span data-cms-text="eyebrow"
-                style={{...(getEyebrowStyle()),...typographyStyle(section,'eyebrow')}}
-                className="text-xs font-bold uppercase tracking-widest text-indigo-400 block mb-2"
-              >
-                {section.subtitle}
-              </span></MotionItem>
+            {(
+              <MotionItem><SectionEyebrow section={section}/></MotionItem>
             )}
             <MotionItem><h2 data-cms-text="title"
               style={{...(getTitleStyle()),...typographyStyle(section,'title')}}
@@ -2537,13 +2427,8 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
   const renderLogoCloud = () => (
     <div className={`w-full ${getPaddingClass()}`}>
       <div className="text-center mb-8">
-        {section.subtitle && (
-          <MotionItem><span data-cms-text="eyebrow"
-            style={{...(getEyebrowStyle()),...typographyStyle(section,'eyebrow')}}
-            className="text-[11px] font-bold uppercase tracking-widest text-indigo-400 block mb-1"
-          >
-            {section.subtitle}
-          </span></MotionItem>
+        {(
+          <MotionItem><SectionEyebrow section={section}/></MotionItem>
         )}
         <MotionItem><h3 data-cms-text="title" style={{...(getTitleStyle()),...typographyStyle(section,'title')}} className="text-sm sm:text-base font-bold text-neutral-300">{section.title}</h3></MotionItem>
       </div>
@@ -2594,13 +2479,8 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
   // 24. CTA Strip Banner
   const renderCtaStrip = () => (
     <div className={`w-full ${getPaddingClass()} text-center`}>
-      {section.subtitle && (
-        <MotionItem><span data-cms-text="eyebrow"
-          style={{...(getEyebrowStyle()),...typographyStyle(section,'eyebrow')}}
-          className="text-xs font-bold uppercase tracking-widest text-indigo-400 block mb-2"
-        >
-          {section.subtitle}
-        </span></MotionItem>
+      {(
+        <MotionItem><SectionEyebrow section={section}/></MotionItem>
       )}
       <MotionItem><h2 data-cms-text="title"
         style={{...(getTitleStyle()),...typographyStyle(section,'title')}}
@@ -2619,7 +2499,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
 
       <div className="flex flex-wrap items-center justify-center gap-4">
         {section.buttonText && (
-          <MotionButton><a data-cms-action="button"
+          <MotionButton><a data-cms-button="primary" data-cms-button-kind="button" data-cms-action="button"
             href={section.buttonLink || '#'}
             onClick={e => isEditingMode && e.preventDefault()}
             style={getPrimaryBtnStyle()}
@@ -2629,7 +2509,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
           </a></MotionButton>
         )}
         {section.secondaryButtonText && (
-          <MotionButton><a data-cms-action="button"
+          <MotionButton><a data-cms-button="secondary" data-cms-button-kind="button" data-cms-action="button"
             href={section.secondaryButtonLink || '#'}
             onClick={e => isEditingMode && e.preventDefault()}
             style={getSecondaryBtnStyle()}
@@ -2685,13 +2565,8 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
     if(section.newsletterPreset==='inline-signup')return <InlineNewsletter section={section} email={emailInput} onEmail={value=>{setEmailInput(value);setNewsletterError('');}} onSubmit={handleNewsletterSubmit} success={isSubmitted} error={newsletterError} couponCode={newsletterCouponCode} disabled={isEditingMode||!hasResolvedCoupon}/>;
     return (
       <div className={`w-full ${getPaddingClass()} text-center`}>
-      {section.subtitle && (
-        <MotionItem><span data-cms-text="eyebrow"
-          style={{...(getEyebrowStyle()),...typographyStyle(section,'eyebrow')}}
-          className="text-xs font-bold uppercase tracking-widest text-indigo-400 block mb-2"
-        >
-          {section.subtitle}
-        </span></MotionItem>
+      {(
+        <MotionItem><SectionEyebrow section={section}/></MotionItem>
       )}
       <MotionItem><h2 data-cms-text="title"
         style={{...(getTitleStyle()),...typographyStyle(section,'title')}}
@@ -2734,7 +2609,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
               placeholder="Enter your VIP email address..."
               className="w-full px-4 py-3 rounded-xl bg-black/50 border border-white/20 text-white placeholder-neutral-400 text-xs focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
             />
-            <MotionButton><button data-cms-action="button"
+            <MotionButton><button data-cms-button="primary" data-cms-button-kind="button" data-cms-action="button"
               type="submit"
               style={getPrimaryBtnStyle()}
               className="w-full sm:w-auto px-6 py-3 rounded-xl bg-indigo-600 hover:opacity-90 text-white font-bold text-xs whitespace-nowrap shadow-lg transition-colors cursor-pointer"
@@ -2783,7 +2658,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
       case 'values_list': return <ValuesList section={section}/>;
       case 'icon_list': return renderIconList();
       case 'comparison_matrix': return section.comparisonPreset==='device-table'?<DeviceComparison section={section} editing={isEditingMode}/>:renderComparisonMatrix();
-      case 'faq_accordion': if(section.faqPreset==='framed-faq')return <FramedFaq section={section}/>; return ['pricing-card-faq','pricing-band-faq','corporate-starter-faq','saas-split'].includes(section.faqPreset??'')?<SaasFaq section={section} pricing={runtimeSection.starterPricing} editing={isEditingMode}/>: section.faqPreset==='industrial-split'?<IndustrialFaq key={`${section.id}-${section.faqInitiallyOpen}`} section={section}/>: section.faqPreset==='minimal'?<MinimalFaq key={`${section.id}-${section.faqInitiallyOpen}`} section={section}/>:renderFaqAccordion();
+      case 'faq_accordion': if(section.faqPreset==='framed-faq')return <FramedFaq section={section}/>; return ['pricing-card-faq','pricing-band-faq','corporate-starter-faq','saas-split'].includes(section.faqPreset??'')?<SaasFaq section={section} authoredSection={rawSection} pricing={runtimeSection.starterPricing} editing={isEditingMode}/>: section.faqPreset==='industrial-split'?<IndustrialFaq key={`${section.id}-${section.faqInitiallyOpen}`} section={section}/>: section.faqPreset==='minimal'?<MinimalFaq key={`${section.id}-${section.faqInitiallyOpen}`} section={section}/>:renderFaqAccordion();
       case 'contact_form': return section.contactPreset==='enquiry'?<EnquiryForm section={section} isEditingMode={isEditingMode}/>:renderContactForm();
       case 'store_locator': return section.contactPreset==='location'?<ContactLocation section={section}/>:renderStoreLocator();
       case 'testimonials_slider': return renderTestimonials();
@@ -2795,17 +2670,18 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
   };
 
   if(section.type==='promotion_highlights'&&!isEditingMode&&!resolvePromotionCards(section,runtimeSection.promotions?.offers??[]).length)return null;
+  const ownedAppearance=actionAppearanceCss(rawSection,section,resolvePageStyle(runtime.page.document.style,runtime.context.themePalette));
   return (
-    <section data-cms-shared-style={runtime.page.document.style?'':undefined} data-cms-surface={rawSection.surface} data-cms-editor={isEditingMode?'':undefined}
+    <section data-cms-unified-buttons={runtime.page.document.style?.unifiedButtons||rawSection.buttonRadius!==undefined||rawSection.buttonSize!==undefined?'':undefined} data-cms-shared-style={runtime.page.document.style&&!runtime.page.document.style.preserveLayout?'':undefined} data-cms-surface={rawSection.surface} data-cms-editor={isEditingMode?'':undefined}
       id={`section-${section.id}`}
-      style={{...sectionRootStyle,...containedSurfaceBackground(section),...(sectionAnchorOffset(section)?{scrollMarginTop:sectionAnchorOffset(section)}:{}),...sectionBorderStyle(section),'--cms-page-width':runtime.page.document.containerWidth==='site'?'var(--storefront-content-width, 1280px)':runtime.page.document.containerWidth==='full'?'100%':runtime.page.document.containerWidth==='wide'?'1440px':'1280px',...(runtime.page.document.containerWidth==='site'?{'--cms-page-gutter':'var(--storefront-content-gutter, 24px)'}:{}),...(runtime.page.document.style?{'--cms-button-radius':`${runtime.page.document.style.buttonRadius??0}px`,'--cms-button-height':`${{compact:36,normal:44,large:52}[runtime.page.document.style.buttonSize??'normal']}px`}: {})} as React.CSSProperties}
+      style={{...sectionRootStyle,...containedSurfaceBackground(section),...(sectionAnchorOffset(section)?{scrollMarginTop:sectionAnchorOffset(section)}:{}),...sectionBorderStyle(section),'--cms-page-width':runtime.page.document.containerWidth==='site'?'var(--storefront-content-width, 1280px)':runtime.page.document.containerWidth==='full'?'100%':runtime.page.document.containerWidth==='wide'?'1440px':'1280px',...(runtime.page.document.containerWidth==='site'?{'--cms-page-gutter':'var(--storefront-content-gutter, 24px)'}:{}),...(runtime.page.document.style&&runtime.page.document.style.unifiedButtons!==false?{'--cms-button-radius':`${rawSection.buttonRadius??runtime.page.document.style.buttonRadius??0}px`,'--cms-button-height':`${{compact:36,normal:44,large:52}[rawSection.buttonSize??runtime.page.document.style.buttonSize??'normal']}px`}: {}),...(rawSection.buttonRadius!==undefined?{'--cms-button-radius':`${rawSection.buttonRadius}px`}:{}),...(rawSection.buttonSize!==undefined?{'--cms-button-height':`${{compact:36,normal:44,large:52}[rawSection.buttonSize]}px`}:{})} as React.CSSProperties}
       onClickCapture={isEditingMode?event=>{
         const element=event.target as HTMLElement;
         const target=element.closest<HTMLElement>('[data-image-slot]')?.dataset.imageSlot;
         if(target){event.preventDefault();onSelectImage?.(target);return;}
         if(element.closest('[data-cms-source]')){event.preventDefault();onSelectElement?.('source');return;}
         const text=element.closest<HTMLElement>('[data-cms-text]');
-        if(text){const role=text.dataset.cmsText!;const item=text.dataset.cmsItem;onSelectElement?.(item?`items:${item}`:({eyebrow:'subtitle',title:'title',lead:'leadText',content:'content',itemTitle:'itemTitle',itemContent:'itemContent'} as Record<string,string>)[role],role);return;}
+        if(text){const role=text.dataset.cmsText!;const item=text.dataset.cmsItem;onSelectElement?.(item?`items:${item}`:({eyebrow:'eyebrow',secondaryTitle:'subtitle',label:'items',number:'items',title:'title',lead:'leadText',content:'content',itemTitle:'itemTitle',itemContent:'itemContent'} as Record<string,string>)[role],role);return;}
         const action=element.closest<HTMLElement>('[data-cms-action],[data-editorial-action]');
         if(action){event.preventDefault();onSelectElement?.(action.dataset.cmsItem?`items:${action.dataset.cmsItem}`:'button');return;}
         if(element.closest('form'))onSelectElement?.('form');
@@ -2819,7 +2695,8 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
           : ''
       }`}
     >
-      {runtime.page.document.style&&<style>{`[data-cms-shared-style] [data-cms-action="button"],[data-cms-shared-style] [data-editorial-action="button"]{border-radius:var(--cms-button-radius);min-height:var(--cms-button-height)}`}</style>}
+      {runtime.page.document.style&&runtime.page.document.style.unifiedButtons===undefined&&<style>{`[data-cms-shared-style] [data-cms-action="button"],[data-cms-shared-style] [data-editorial-action="button"]{border-radius:var(--cms-button-radius);min-height:var(--cms-button-height)}`}</style>}
+      {ownedAppearance&&<style data-cms-owned-appearance>{ownedAppearance}</style>}
       {isEditingMode&&<style>{`[data-cms-editor] [data-cms-text]:hover{outline:1px dashed #7965ff;outline-offset:3px}`}</style>}
       {/* Editor Active Badge */}
       {isEditingMode && isSelected && (
