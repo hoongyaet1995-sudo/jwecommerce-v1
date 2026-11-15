@@ -62,6 +62,7 @@
 .jw-shell-header[data-shell-style=unified] .jw-shell-submenu{border-radius:17px;box-shadow:0 24px 65px #0a14102b;padding:10px}
 .jw-shell-header[data-shell-style=unified] .jw-shell-submenu a{font-size:16px;border-radius:10px}
 .jw-shell-header[data-shell-style=unified] .jw-shell-menu-group .jw-shell-group-title{padding:13px 14px}
+.jw-shell-header[data-shell-style=unified] .jw-shell-menu-all{border-top:0}
 .jw-shell-header[data-shell-style=unified][data-header-scrolled=true]{padding-top:9px;padding-bottom:9px}
 .jw-shell-header[data-shell-style=unified][data-header-scrolled=true] .jw-shell-main{min-height:54px;padding:0 var(--storefront-content-gutter,24px)}
 .jw-shell-footer[data-shell-style=unified]{background:var(--cms-shell-contrast,#0d1b18);color:var(--cms-shell-oncontrast,#fff);border:0;padding:65px 0 32px}
