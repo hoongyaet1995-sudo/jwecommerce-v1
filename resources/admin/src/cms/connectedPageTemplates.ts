@@ -7,7 +7,7 @@ import {pricingSampleSections} from './unifiedPricingSample';
 export const connectedPageIds=Object.keys(snapshots).map(id=>`jw-connected-${id}`);
 export const isConnectedPage=(id:string)=>connectedPageIds.includes(id);
 export const connectedPageCards=Object.entries(snapshots).map(([id,page])=>({id:`jw-connected-${id}`,name:`JW ${page.name}`,category:'Brand & Story',description:'Editable connected business starter. Review business copy and scope before publishing.',ready:true,sections:page.sections.map(s=>'type' in s?s.type:'pricing_table'),thumbnail:page.sections.find(s=>'mediaUrl' in s)?.mediaUrl}));
-export function connectedPageStyle():PageStyle{return {palette:{paper:'#ffffff',ink:'#0a0b0b',muted:'#686d6b',accent:'#ffa1ed',light:'#111111',secondary:'#94ff55',secondaryInk:'#111111',hover:'#0d1b18',contrast:'#0d1b18'},colorSource:'custom',preserveLayout:true,motionPace:'smooth'};}
+export function connectedPageStyle():PageStyle{return {palette:{paper:'#ffffff',ink:'#0a0b0b',muted:'#686d6b',accent:'#ffa1ed',light:'#111111',secondary:'#94ff55',secondaryInk:'#111111',hover:'#0d1b18',contrast:'#0d1b18'},colorSource:'custom',preserveLayout:true,motionPace:'relaxed'};}
 /** Every call makes fresh page, item, image-slot and pricing IDs. No merchant draft is reused. */
 export function connectedPageSections(id:string,context:PageTemplateContext&{connectedPageDestinations?:Record<string,string>},prefix:string):PageSection[]{
  const key=id.replace(/^jw-connected-/,'') as keyof typeof snapshots;const page=snapshots[key];if(!page)return [];

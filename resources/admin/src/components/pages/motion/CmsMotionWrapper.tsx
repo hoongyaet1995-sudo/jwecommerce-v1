@@ -12,7 +12,7 @@ interface SectionMotionContextType {
 const SectionMotionContext = createContext<SectionMotionContextType>({
   preset: 'subtle-lift',
   isMotionEnabled: true,
-  pace: 'smooth'
+  pace: 'relaxed'
 });
 
 export const useSectionMotion = () => useContext(SectionMotionContext);
@@ -50,7 +50,7 @@ export const MOTION_PRESET_DETAILS: Record<
 };
 
 // Container Variants for Orchestrated Cascade Stagger
-const getContainerVariants = (preset: SectionMotionPreset, duration=.8): Variants => {
+const getContainerVariants = (preset: SectionMotionPreset, duration=1.1): Variants => {
   if (preset === 'none') {
     return {
       hidden: {},
@@ -125,7 +125,7 @@ const getContainerVariants = (preset: SectionMotionPreset, duration=.8): Variant
 };
 
 // Item Variants mapping based on preset
-const getItemVariants = (preset: SectionMotionPreset, duration=.8): Variants => {
+const getItemVariants = (preset: SectionMotionPreset, duration=1.1): Variants => {
   switch (preset) {
     case 'fade-in':
       return {
@@ -183,7 +183,7 @@ const getItemVariants = (preset: SectionMotionPreset, duration=.8): Variants => 
 };
 
 // Media (Hero / Split Image) Specific Reveal Variants
-const getMediaVariants = (preset: SectionMotionPreset, duration=.8): Variants => {
+const getMediaVariants = (preset: SectionMotionPreset, duration=1.1): Variants => {
   if (preset === 'none') {
     return { hidden: {}, visible: {} };
   }
@@ -264,7 +264,7 @@ interface CmsMotionWrapperProps extends MotionSafeDivAttributes {
  */
 export const CmsMotionWrapper: React.FC<CmsMotionWrapperProps> = ({
   preset: rawPreset = 'subtle-lift',
-  pace='smooth',
+  pace='relaxed',
   replayKey,
   isEditingMode = false,
   className = '',
