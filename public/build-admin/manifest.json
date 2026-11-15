@@ -112,7 +112,7 @@
     "src": "../../public/cms/connected/assets/show-photo/malaysia-proud.png"
   },
   "C:/Users/User/.codex/worktrees/cms-integration-release-20261115/jwstudio-ecommerce/public/css/cms-shell-design.css": {
-    "file": "assets/cms-shell-design-BM5-p4Vd.css",
+    "file": "assets/cms-shell-design-CklqpNty.css",
     "src": "C:/Users/User/.codex/worktrees/cms-integration-release-20261115/jwstudio-ecommerce/public/css/cms-shell-design.css"
   },
   "_index-BZet9Qgx.js": {
@@ -157,7 +157,7 @@
     "src": "_index-CehZ58sQ.css"
   },
   "src/main.tsx": {
-    "file": "assets/main-BTZgZ5bF.js",
+    "file": "assets/main-CuFnxK8q.js",
     "name": "main",
     "src": "src/main.tsx",
     "isEntry": true,
@@ -171,11 +171,11 @@
       "assets/main-lwU9mrON.css"
     ],
     "assets": [
-      "assets/cms-shell-design-BM5-p4Vd.css"
+      "assets/cms-shell-design-CklqpNty.css"
     ]
   },
   "src/previews/inventory48/Inventory48Runtime.tsx": {
-    "file": "assets/Inventory48Runtime-Dmola0tk.js",
+    "file": "assets/Inventory48Runtime-CrLGAV73.js",
     "name": "Inventory48Runtime",
     "src": "src/previews/inventory48/Inventory48Runtime.tsx",
     "isDynamicEntry": true,

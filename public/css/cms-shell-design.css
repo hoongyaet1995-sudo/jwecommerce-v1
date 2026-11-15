@@ -51,7 +51,7 @@
 
 /* Unified approved JW shell. Legacy saved style keys remain readable, never author new compositions. */
 .jw-shell-header[data-shell-style=unified],.jw-shell-footer[data-shell-style=unified]{--shell-paper:var(--cms-shell-paper,#fff);--shell-ink:var(--cms-shell-ink,#0a0b0b);--shell-line:#dedfdd;--shell-hover:var(--cms-shell-primary,#ffb4df);font-family:Arial,sans-serif}
-.jw-shell-header[data-shell-style=unified]{padding:24px 0 14px;background:color-mix(in srgb,var(--shell-paper) 88%,transparent);backdrop-filter:blur(16px);border:0}
+.jw-shell-header[data-shell-style=unified]{--shell-hover:#f2f3f1;padding:24px 0 14px;background:color-mix(in srgb,var(--shell-paper) 88%,transparent);backdrop-filter:blur(16px);border:0}
 .jw-shell-header[data-shell-style=unified] .jw-shell-main{display:flex;box-sizing:border-box;width:100%;max-width:var(--storefront-content-width,1440px);min-height:54px;padding:0 var(--storefront-content-gutter,24px);gap:24px}
 .jw-shell-header[data-shell-style=unified] .jw-shell-brand{font:800 22px/1.2 Arial,sans-serif;letter-spacing:-.055em;flex-shrink:0}
 .jw-shell-header[data-shell-style=unified] .jw-shell-brand-logo{width:156px;max-width:156px;height:auto;max-height:54px}
@@ -61,6 +61,7 @@
 .jw-shell-header[data-shell-style=unified] .jw-shell-cta{padding:11px 14px 11px 18px;color:var(--shell-paper);background:var(--shell-ink);font-size:16px;font-weight:650;border:0;border-radius:999px;white-space:nowrap}
 .jw-shell-header[data-shell-style=unified] .jw-shell-submenu{border-radius:17px;box-shadow:0 24px 65px #0a14102b;padding:10px}
 .jw-shell-header[data-shell-style=unified] .jw-shell-submenu a{font-size:16px;border-radius:10px}
+.jw-shell-header[data-shell-style=unified] .jw-shell-menu-group .jw-shell-group-title{padding:13px 14px}
 .jw-shell-header[data-shell-style=unified][data-header-scrolled=true]{padding-top:9px;padding-bottom:9px}
 .jw-shell-header[data-shell-style=unified][data-header-scrolled=true] .jw-shell-main{min-height:54px;padding:0 var(--storefront-content-gutter,24px)}
 .jw-shell-footer[data-shell-style=unified]{background:var(--cms-shell-contrast,#0d1b18);color:var(--cms-shell-oncontrast,#fff);border:0;padding:65px 0 32px}
