@@ -1,0 +1,144 @@
+{
+    "release": "www-width-default-20261115",
+    "home": "11",
+    "pageIds": [
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18
+    ],
+    "documents": [
+        {
+            "id": 20,
+            "pageId": 11,
+            "stage": "draft",
+            "version": 2,
+            "hash": "930e9ba0e891f6fada19b1ae2e5546212342ad931336cae640c8f1688332da31",
+            "afterHash": "9467cba45b6b84e9f84128c605e6a5b45d0afa5b684e162c425b350406d6bbc2"
+        },
+        {
+            "id": 21,
+            "pageId": 12,
+            "stage": "draft",
+            "version": 2,
+            "hash": "ad1820298ddf678880eb9d3b3a7e1378161c8c27d2bb2ff5aa6036dd6ad0a49a",
+            "afterHash": "e10698f9248fa8eff683073708b0a71b5675e29122b9ccc7c1d53c245a99219d"
+        },
+        {
+            "id": 22,
+            "pageId": 13,
+            "stage": "draft",
+            "version": 2,
+            "hash": "7795456940ee3f71d0c919504c4f16768e7a1f8d3782e815d32ad3e0c93ee59d",
+            "afterHash": "dfee5165b49279b71b3e7e4245caa80e5fbf62d11f2fb80e076a9117903b586f"
+        },
+        {
+            "id": 23,
+            "pageId": 14,
+            "stage": "draft",
+            "version": 8,
+            "hash": "6fed887a3dba7be2343eb3535d69c9bb677314699da9d3657e87231117d7ad4f",
+            "afterHash": "723828d7495b1388fbff94c3d24008c0c7cb6ce4dd335f485ea8789bb55c0ef8"
+        },
+        {
+            "id": 24,
+            "pageId": 15,
+            "stage": "draft",
+            "version": 2,
+            "hash": "f89ecccc67ce1e9128ea34d4b5da3b7e86ed1f9f6abd0419c0b4563b890c6689",
+            "afterHash": "37813c605606b1cfc082e87a03783e1c29da8656f1caad405c8bde0aa37fa61d"
+        },
+        {
+            "id": 25,
+            "pageId": 16,
+            "stage": "draft",
+            "version": 2,
+            "hash": "25b0b14d7ba695f9f66c2fdb21e81bac3ce4fffc152a9e742e11c1debbce75d7",
+            "afterHash": "be256bee201a66b37302c10c6c4efd378f7a55ba7de5bae6023ac64047ab6405"
+        },
+        {
+            "id": 26,
+            "pageId": 17,
+            "stage": "draft",
+            "version": 2,
+            "hash": "682a551132fae7a4f3ba94fd3ece8b1e2a5335edd2fcc30cabfedbdfe58e0c12",
+            "afterHash": "dc91e740c165927c5a3d1e0801074551be9124da288dbd92be156db0530a72f2"
+        },
+        {
+            "id": 27,
+            "pageId": 18,
+            "stage": "draft",
+            "version": 2,
+            "hash": "e1d278095a54d35e331fe3cf01b96c19c3c06ebedfa3d272d45bc9b386f2d131",
+            "afterHash": "4348467ca8d079d7e4f1c0e04c75e7ba66e1fcbb38c88c2ef9c3511fc2873175"
+        },
+        {
+            "id": 28,
+            "pageId": 11,
+            "stage": "published",
+            "version": 2,
+            "hash": "930e9ba0e891f6fada19b1ae2e5546212342ad931336cae640c8f1688332da31",
+            "afterHash": "9467cba45b6b84e9f84128c605e6a5b45d0afa5b684e162c425b350406d6bbc2"
+        },
+        {
+            "id": 29,
+            "pageId": 12,
+            "stage": "published",
+            "version": 2,
+            "hash": "ad1820298ddf678880eb9d3b3a7e1378161c8c27d2bb2ff5aa6036dd6ad0a49a",
+            "afterHash": "e10698f9248fa8eff683073708b0a71b5675e29122b9ccc7c1d53c245a99219d"
+        },
+        {
+            "id": 30,
+            "pageId": 13,
+            "stage": "published",
+            "version": 2,
+            "hash": "7795456940ee3f71d0c919504c4f16768e7a1f8d3782e815d32ad3e0c93ee59d",
+            "afterHash": "dfee5165b49279b71b3e7e4245caa80e5fbf62d11f2fb80e076a9117903b586f"
+        },
+        {
+            "id": 31,
+            "pageId": 14,
+            "stage": "published",
+            "version": 2,
+            "hash": "92d89e8779f97ab22cf54f4d5aa7de95a7070780efc7a0f03fb0219fe873ec4f",
+            "afterHash": "21834e9a00d9566ec54b5da8921f2de0cdd66118859bdbca819be4cdf568070f"
+        },
+        {
+            "id": 32,
+            "pageId": 15,
+            "stage": "published",
+            "version": 2,
+            "hash": "f89ecccc67ce1e9128ea34d4b5da3b7e86ed1f9f6abd0419c0b4563b890c6689",
+            "afterHash": "37813c605606b1cfc082e87a03783e1c29da8656f1caad405c8bde0aa37fa61d"
+        },
+        {
+            "id": 33,
+            "pageId": 16,
+            "stage": "published",
+            "version": 2,
+            "hash": "25b0b14d7ba695f9f66c2fdb21e81bac3ce4fffc152a9e742e11c1debbce75d7",
+            "afterHash": "be256bee201a66b37302c10c6c4efd378f7a55ba7de5bae6023ac64047ab6405"
+        },
+        {
+            "id": 34,
+            "pageId": 17,
+            "stage": "published",
+            "version": 2,
+            "hash": "682a551132fae7a4f3ba94fd3ece8b1e2a5335edd2fcc30cabfedbdfe58e0c12",
+            "afterHash": "dc91e740c165927c5a3d1e0801074551be9124da288dbd92be156db0530a72f2"
+        },
+        {
+            "id": 35,
+            "pageId": 18,
+            "stage": "published",
+            "version": 2,
+            "hash": "e1d278095a54d35e331fe3cf01b96c19c3c06ebedfa3d272d45bc9b386f2d131",
+            "afterHash": "4348467ca8d079d7e4f1c0e04c75e7ba66e1fcbb38c88c2ef9c3511fc2873175"
+        }
+    ]
+}

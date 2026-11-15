@@ -1215,6 +1215,7 @@ export const SECTION_TEMPLATES: SectionTemplateOption[] = [...DETAIL_SECTION_TEM
   ...template,
   defaultData: {
     ...template.defaultData,
+    containerMode:'page',
     customColors: {...createSectionColorDefaults(),...template.defaultData.customColors},
   },
 }));

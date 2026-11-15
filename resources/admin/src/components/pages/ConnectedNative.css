@@ -516,7 +516,7 @@ h1, h2, h3,
 }
 
 @container cms-connected (max-width: 809px) {
-    .section-pad { padding: 0 16px 95px; }
+    .section-pad { padding: 0 var(--cms-page-gutter,16px) 95px; }
     .site-header,
     .site-header.is-scrolled { padding: 5px 16px; }
     .brand img { width: 126px; }

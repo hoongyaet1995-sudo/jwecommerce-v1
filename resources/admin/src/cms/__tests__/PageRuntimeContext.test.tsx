@@ -131,6 +131,13 @@ const renderRuntimeOrFallback = (parsed: PageRuntimePayload | null) => renderToS
 ) : <PageRuntimeUnavailable />);
 
 describe('PageRuntimeContext', () => {
+  it('inherits website width for all161 starters when a legacy page omits its width',()=>{
+    const value=payload();delete value.page.document.containerWidth;value.page.document.sections=SECTION_TEMPLATES.map((template,index)=>({...template.defaultData,id:'inherit-'+index,isVisible:true}));
+    expect(SECTION_TEMPLATES).toHaveLength(161);expect(SECTION_TEMPLATES.every(t=>t.defaultData.containerMode==='page')).toBe(true);
+    value.page.document.sections.forEach((section,index)=>{if(section.type==='promotion_highlights')value.runtime.sections[index]={promotions:{offers:[{id:'1',name:'Offer',description:'',code:'SAVE',benefit:'20% off',minimumSpend:null,endsAt:null,status:'active'}]}};});
+    const html=renderRuntimeOrFallback(readBootstrapValue(value));expect((html.match(/data-page-container=/g)??[]).length).toBe(161);expect((html.match(/data-container-width="site"/g)??[]).length).toBe(161);expect(html).toContain('--cms-page-width:var(--storefront-content-width, 1280px)');
+  });
+
   it('loads full collection banner defaults and rejects invented proportions',()=>{
     const value=payload();value.page.document.sections=[{id:'banners',...collectionBannerDefaults()}];
     expect(renderRuntimeOrFallback(readBootstrapValue(value))).toContain('data-collection-banners');
@@ -138,7 +145,7 @@ describe('PageRuntimeContext', () => {
   });
   it('accepts explicit Follow Website and Full widths without overriding legacy widths',()=>{
     const value=payload();value.page.document.sections=[{id:'hero',type:'hero_banner',title:'Wedding copy',isVisible:true,heroBannerPreset:'editorial-gradient',containerMode:'full-bleed'},{id:'body',type:'rich_text',title:'Body',isVisible:true,containerMode:'page'}];
-    for(const width of ['site','full'] as const){value.page.document.containerWidth=width;expect(readBootstrapValue(value)).not.toBeNull();const html=renderRuntimeOrFallback(readBootstrapValue(value));expect(html).toContain(`data-container-width="${width}"`);if(width==='site'){expect(html).toContain('--cms-page-width:var(--storefront-content-width, 1280px)');expect(html).toContain('--cms-page-gutter:var(--storefront-content-gutter, 24px)');expect(html).toContain('padding-inline:var(--cms-page-gutter');expect(html).not.toContain('px-6 @min-[640px]:px-10');}}
+    for(const width of ['site','full'] as const){value.page.document.containerWidth=width;expect(readBootstrapValue(value)).not.toBeNull();const html=renderRuntimeOrFallback(readBootstrapValue(value));expect(html).toContain(`data-container-width="${width}"`);expect(html).toContain('--cms-page-width:100%');expect(html).toContain('--cms-page-gutter:0px');if(width==='site'){expect(html).toContain('--cms-page-width:var(--storefront-content-width, 1280px)');expect(html).toContain('--cms-page-gutter:var(--storefront-content-gutter, 24px)');expect(html).toContain('padding-inline:var(--cms-page-gutter');expect(html).not.toContain('px-6 @min-[640px]:px-10');}}
   });
   it('shares saved page width with every renderer and rejects invalid widths',()=>{
     const value=payload();value.page.document.containerWidth='wide';value.page.document.sections=SECTION_TEMPLATES.map((template,index)=>({...template.defaultData,id:'container-'+index,isVisible:true}));

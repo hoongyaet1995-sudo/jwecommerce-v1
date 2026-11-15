@@ -581,13 +581,13 @@ export const PageAdmin: React.FC = () => {
         id: 'page-' + stamp, title: template.name === 'Blank Page' ? 'New Page' : template.name,
         slug: template.id + '-' + stamp.slice(0,8), description: template.description,
         status:'draft', template:'standard', createdAt:new Date().toISOString().split('T')[0], updatedAt:new Date().toISOString().split('T')[0],
-        ...(['about-editorial','about-studio','about-chapters'].includes(templateId) ? {containerWidth:'standard' as const} : {}),
+        containerWidth:'site',
         style:createPageTemplateStyle(templateId),
-    ...((templateId==='wedding-photography'||isConnectedShowcase(templateId))?{containerWidth:'site' as const}:{}),
-        ...(isConnectedPage(templateId)?{containerWidth:'full' as const}:{}),
+
+
         ...(templateId==='wedding-photography'?{shellDesign:{business:'service' as const,style:'editorial' as const,appearance:'light' as const,showAnnouncement:false,showAccount:false,showCurrency:false,showThemeSwitch:false,ctaLabel:'',ctaUrl:'',tagline:'',contactEmail:''}}:{}),
         ...(templateId==='beauty-skincare'?{headerPresentation:{mode:'translucent' as const,tone:'dark' as const}}:{}),
-        ...(templateId==='everyday-market'?{containerWidth:'wide' as const}:{}),
+
         sections:createPageTemplateSections(template.id, {...templateContext,connectedPageDestinations:Object.fromEntries(pages.filter(p=>p.status!=='archived'&&/^jw-connected-/.test(p.slug)).map(p=>[p.slug,'/pages/'+p.slug])),products,categories,collections,promotionOffers}, 'sec-'+stamp)
       };
       const saved = await savePage(newPage);

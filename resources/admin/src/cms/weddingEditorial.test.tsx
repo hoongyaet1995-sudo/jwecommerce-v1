@@ -50,7 +50,7 @@ describe('Wedding editorial integration',()=>{
  });
  it('renders editable gradient copy/actions and quote fields without hidden avatar controls',()=>{
   const sections=createPageTemplateSections('wedding-photography',{},'a');
-  const hero=renderToStaticMarkup(<EditorialGradientHero section={sections[0]}/>);expect(hero).toContain('data-cms-hero-safe');expect(hero).toContain('var(--cms-page-width)');expect(hero).toContain('Explore our work');
+  const hero=renderToStaticMarkup(<EditorialGradientHero section={sections[0]}/>);expect(hero).toContain('data-cms-hero-safe');expect(sections[0].containerMode).toBe('page');expect(hero).toContain('Explore our work');
   expect(repeatedItemFields(sections[7])).toEqual(['title','description']);expect(imageTargets(sections[7])).toEqual([]);expect(renderToStaticMarkup(<EditorialQuote section={sections[7]}/>)).toContain('Sample couple');
  });
  it('registers new presets through existing Add Section semantic types',()=>{

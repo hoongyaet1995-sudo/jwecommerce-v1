@@ -2,8 +2,8 @@ import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {it,expect} from 'vitest';
 import {PageSectionContainer,pageContainerStyle,storefrontContentVariables} from './PageSectionContainer';
-it('defaults all sections to Standard and switches page width without per-section input',()=>{
- expect(renderToStaticMarkup(<PageSectionContainer><p>Content</p></PageSectionContainer>)).toContain('max-width:1280px');
+it('defaults all sections to Follow website and switches page width without per-section input',()=>{
+ expect(renderToStaticMarkup(<PageSectionContainer><p>Content</p></PageSectionContainer>)).toContain('max-width:var(--storefront-content-width, 1280px)');
  expect(renderToStaticMarkup(<PageSectionContainer width="wide"><p>Content</p></PageSectionContainer>)).toContain('max-width:1440px');
  expect(renderToStaticMarkup(<PageSectionContainer width="wide" fullBleed><p>Content</p></PageSectionContainer>)).toContain('max-width:none');
 });
@@ -19,4 +19,9 @@ it('scopes the website frame to Builder while page and section width overrides s
   expect(pageContainerStyle('full').maxWidth).toBe('100%');
   expect(pageContainerStyle('site',true).maxWidth).toBe('none');
  }
+});
+
+it('applies website side spacing only once when a layout owns its native gutter',()=>{
+ const html=renderToStaticMarkup(<PageSectionContainer nativeGutter><p>Native layout</p></PageSectionContainer>);expect(html).toContain('padding-inline:0');
+ const special=renderToStaticMarkup(<PageSectionContainer nativeGutter fullBleed><p>Special</p></PageSectionContainer>);expect(special).toContain('max-width:none');
 });

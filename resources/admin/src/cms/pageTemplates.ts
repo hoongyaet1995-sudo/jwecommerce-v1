@@ -55,7 +55,7 @@ export function createPageTemplateStyle(id:string):PageStyle|undefined {if(isCon
 
 // These are editable draft snapshots. Checkout remains the authority for live rates.
 // Photographs illustrate the starter layout; they do not depict the merchant's team.
-export function createPageTemplateSections(templateId: string, context: PageTemplateContext, prefix: string): PageSection[] {
+function createLayoutSections(templateId: string, context: PageTemplateContext, prefix: string): PageSection[] {
   if(isConnectedPage(templateId))return connectedPageSections(templateId,context,prefix);
   if(isConnectedShowcase(templateId))return connectedShowcaseSections(templateId,context,prefix);
   if(templateId==='saas-connected')return saasSections(prefix);
@@ -169,4 +169,9 @@ export function createPageTemplateSections(templateId: string, context: PageTemp
         {id:'',title:'How can I track my delivery?',description:'Use the Order Tracking entry above and complete verification. Keep your order confirmation for reference.'},
         {id:'',title:'What if I need to change my address or report a delay?',description:'To edit: add your verified support channel and explain the process for address changes and delayed deliveries.'}]}),
   ];
+}
+
+/** All new template sections share the page frame; saved special layouts stay independent. */
+export function createPageTemplateSections(templateId:string,context:PageTemplateContext,prefix:string):PageSection[]{
+ return createLayoutSections(templateId,context,prefix).map(section=>({...section,containerMode:'page'}));
 }

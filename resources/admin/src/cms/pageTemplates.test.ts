@@ -7,7 +7,7 @@ describe('page template draft data', () => {
     const second=createPageTemplateSections('about-chapters',{shopName:'Example'},'b');
     expect(first.map(s=>s.type)).toEqual(['media_text_split','chapter_navigation','chapter_block','chapter_block','chapter_block','cta_strip']);
     expect(first[0].leadText).toBe('An introduction to Example.');
-    expect(first[0].containerMode).toBe('full-bleed');
+    expect(first[0].containerMode).toBe('page');
     expect(first[3].items).toHaveLength(2);
     expect(first[4].items).toHaveLength(3);
     expect(first[5].ctaPreset).toBe('editorial-band');
@@ -22,7 +22,7 @@ describe('page template draft data', () => {
     expect(first[0].title).toBe('The world of Example Store.');
     expect(first[0].galleryPreset).toBe('editorial-montage');
     expect(first[2].columnsCount).toBe(2);expect(first[4].columnsCount).toBe(3);
-    expect(first[5].containerMode).toBe('full-bleed');
+    expect(first[5].containerMode).toBe('page');
     first[0].items![0].title='Changed';expect(second[0].items![0].title).not.toBe('Changed');
     expect(first[0].items![0].id).not.toBe(second[0].items![0].id);
   });
