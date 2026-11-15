@@ -1,5 +1,9 @@
 import React from 'react';
 export type PageContainerWidth='standard'|'wide'|'full'|'site';
+/** Canvas-scoped website defaults; authored page/section widths remain independent. */
+export function storefrontContentVariables(width:Exclude<PageContainerWidth,'site'>='wide') {
+ return {'--storefront-content-width':{standard:'1280px',wide:'1440px',full:'100%'}[width],'--storefront-content-gutter':'clamp(20px, 4cqi, 58px)',containerType:'inline-size' as const};
+}
 /** Site is an explicit opt-in; existing authored Standard/Wide pages retain their geometry. */
 export function pageContainerStyle(width:PageContainerWidth='standard',fullBleed=false):React.CSSProperties {
  return {maxWidth:fullBleed?'none':width==='site'?'var(--storefront-content-width, 1280px)':width==='full'?'100%':width==='wide'?1440:1280,...(!fullBleed&&width==='site'?{paddingInline:'var(--storefront-content-gutter, 24px)',boxSizing:'border-box' as const}:{})};
