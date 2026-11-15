@@ -1,0 +1,8 @@
+{
+  "app/Domain/Cms/ConnectedWwwPublication.php": "50820dbbcfd9389ab652461ab49d8833ebf3c1021727f95c6de93d8df1c57c7e",
+  "app/Domain/Cms/PageDocumentContract.php": "b03818e87c804ccd9c9333c66c3ed6fb5ba2bcb13b19930237cb0e9017207804",
+  "app/Domain/Cms/ConnectedPageContracts.php": "f1b6fdd3d6ea344b008755b8b96c7b322e1a18b4b0bcbd1dd69dc36ed349e735",
+  "tests/Feature/Cms/ConnectedWwwPublicationTest.php": "95e2c9538bd0bf381768f27d406d03144e575d8df57c25a3d1777e5e9b796c20",
+  "scripts/releases/publish-www-connected-20261115.php": "86c880164e9fed6e85f631e652c40272a6c24f65815878b323d90b8d936ca8e2",
+  "resources/cms/releases/20261115-www-connected-publication.json": "7fd1982cb97da381b77d021a2074c039c2864afc9ad014fbe88edf4a41085a23"
+}

@@ -95,7 +95,7 @@ final class PageDocumentContract
                 foreach ($section['productTabs'] ?? [] as $tabIndex => $tab) if (trim($tab['label'] ?? '') === '') $this->addError($errors,"{$sectionPath}.productTabs.{$tabIndex}.label",'Name this product tab.');
             }
             foreach ($sectionDefinition['publishRequired'] as $field) {
-                if ($editorialQuote && $field === 'title') continue;
+                if ($field === 'title' && ($editorialQuote || ConnectedPageContracts::allowsHeadinglessPublication($section))) continue;
                 // Catalog readiness is reviewed by employees, not a publication gate.
                 if ($section['type'] === 'product_listing' && in_array($field, ['sourceType', 'sourceId', 'productIds'], true)) continue;
                 if (in_array($section['listingPreset'] ?? null, ['editorial-tabs','pantry-tabs','tech-tabs','kids-tabs'], true) && $section['type'] === 'product_listing' && in_array($field,['sourceType','sourceId'],true)) continue;

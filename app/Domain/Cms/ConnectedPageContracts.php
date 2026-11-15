@@ -1,6 +1,11 @@
 <?php
 namespace App\Domain\Cms;
 final class ConnectedPageContracts {
+ public static function allowsHeadinglessPublication(array $section):bool {
+  if(!isset($section['connectedDiagram']))return false;
+  static $metadata;$metadata??=json_decode(file_get_contents(resource_path('admin/src/cms/connectedFamilyMetadata.json')),true);$meta=$metadata[$section['connectedDiagram']]??null;
+  return is_array($meta)&&$meta['type']===($section['type']??null)&&$meta['layout']===($section['connectedLayout']??null)&&!in_array('title',$meta['sectionFields'],true);
+ }
  public static function errors(array $document):array {
   $errors=[];$sections=$document['sections']??[];$metadata=json_decode(file_get_contents(resource_path('admin/src/cms/connectedFamilyMetadata.json')),true);
   foreach($sections as $index=>$section){if(!is_array($section))continue;$path="sections.$index";
