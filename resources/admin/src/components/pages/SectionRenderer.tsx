@@ -1627,13 +1627,14 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
                   {item.features?.map((feat, fIdx) => (
                     <div key={fIdx} className="flex items-start gap-2.5 text-xs text-neutral-200">
                       <Check className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
-                      <span>{feat}</span>
+                      <span data-cms-text="itemContent" data-cms-item={item.id} style={typographyStyle(section,'itemContent')}>{feat}</span>
                     </div>
                   ))}
                 </div>
               </div>
 
               <a
+                data-cms-button={isSpecial?'primary':'secondary'} data-cms-button-kind="button" data-cms-item={item.id}
                 href={item.linkUrl || '#'}
                 onClick={e => isEditingMode && e.preventDefault()}
                 style={isSpecial ? getPrimaryBtnStyle() : getSecondaryBtnStyle()}

@@ -2,6 +2,7 @@ import type {PageSection} from '../types';
 import {normalizeSampleSection,demoPalette} from './sectionDefaultDesign';
 import measurements from './sectionDefaultMedia.json';
 import {imageTargets,updateImageTarget} from './imageTargets';
+import {hasFullHeroBackdrop,hasCollectionPhotoBackdrop} from './photoBackdrop';
 
 export const unifiedStarterPalette=demoPalette;
 export const neutralMediaRoot='/images/cms/defaults/neutral/';
@@ -14,6 +15,8 @@ export function neutralMediaUrl(kind='photo',ratio=1.6,safeSide='center'){
 export function applyNewSectionDefaults(source:PageSection,cardIndex?:number):PageSection{
  let section=normalizeSampleSection(source);
  section.starterDesign='neutral-v1';
+ // Creation defaults only: reuse the existing full-photo overlay, never text backing boxes.
+ if(hasFullHeroBackdrop(section))section.overlayOpacity=section.type==='hero_slider'?100:65;
  if(typeof section.formSuccessMessage==='string')section.formSuccessMessage='Thank you. Your message has been received.';
  // Page palette remains authoritative. The JW demo palette is the fallback when no page palette is set.
  delete section.brandPalette;
@@ -24,6 +27,7 @@ export function applyNewSectionDefaults(source:PageSection,cardIndex?:number):Pa
   const measured=slots[i]??slots[0];
   const kind=target.field==='authorAvatar'?'avatar':section.type==='logo_cloud'?'logo':measured?.kind??'photo';
   section=updateImageTarget(section,target.id,{mediaUrl:neutralMediaUrl(kind,measured?.ratio??1.6,measured?.safeSide??'center')});
+  if(section.type==='cta_strip'&&section.ctaPreset==='image-banner'||hasCollectionPhotoBackdrop(section))section=updateImageTarget(section,target.id,{imageOverlay:true,imageOverlayOpacity:70});
  }
  // Starters expose actions for editing without carrying unrelated sample-page anchors.
  const clearDemoLinks=(v:unknown):unknown=>Array.isArray(v)?v.map(clearDemoLinks):v&&typeof v==='object'?Object.fromEntries(Object.entries(v).map(([k,x])=>[k,x==='#sample'?'':clearDemoLinks(x)])):v;

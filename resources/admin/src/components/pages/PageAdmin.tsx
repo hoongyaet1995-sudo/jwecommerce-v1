@@ -1,3 +1,5 @@
+import {useCmsBrand} from '../../cms/useCmsBrand';
+import {resolvePageStyle} from '../../cms/pageStyle';
 import {isConnectedPage} from '../../cms/connectedPageTemplates';
 import {semanticPaletteVariables} from '../../cms/semanticPalette';
 import {headingCapability,sectionEyebrow,slideEyebrow} from '../../cms/sectionHeading';
@@ -215,6 +217,7 @@ export const PageAdmin: React.FC = () => {
    void load();window.addEventListener('focus',load);const timer=window.setInterval(load,60000);
    return()=>{active=false;window.removeEventListener('focus',load);window.clearInterval(timer);};
   },[currentPage?.id,Boolean(currentPage?.sections.some(s=>s.type==='promotion_highlights'))]);
+  const previewBrand=useCmsBrand(Boolean(currentPage));
   const activeSection = currentPage?.sections.find(s => s.id === activeSectionId) || null;
   const adminRuntimePayload = useMemo(() => currentPage
     ? createAdminPageRuntimePayload(currentPage, { products, categories, collections }, currencyCode,deliveryRates??templateContext.shippingRates,promotionOffers,pages)
@@ -1555,6 +1558,7 @@ export const PageAdmin: React.FC = () => {
 
       {/* Add Section Template Modal */}
       <AddSectionModal
+        pageStyle={resolvePageStyle(currentPage.style,previewBrand?.palette??adminRuntimePayload.context.themePalette)}
         isOpen={isAddSectionOpen}
         onClose={() => setIsAddSectionOpen(false)}
         onAdd={handleAddSection}

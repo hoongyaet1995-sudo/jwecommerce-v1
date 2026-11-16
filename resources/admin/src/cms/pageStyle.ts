@@ -35,7 +35,7 @@ export function resolveStyledSection(section:PageSection,style?:PageStyle):PageS
  if(style?.motionPace&&section.motionPace===undefined)section={...section,motionPace:style.motionPace};
  if(isConnectedFamily(section)||isUnifiedPricing(section))return resolveNativeVisualSection(section,style);
  if(style?.preserveLayout){
-  const base=resolveStyledSection(section,section.surface==='page'||isConnectedFamily(section)?{palette:style.palette}:undefined);
+  const base=resolveStyledSection(section,section.surface==='page'||isConnectedFamily(section)||section.starterDesign==='neutral-v1'?{palette:style.palette}:undefined);
   const typography={...base.typography};
   for(const [role,value]of Object.entries(style.typography??{}))typography[role as keyof SectionTypography]={...value,...base.typography?.[role as keyof SectionTypography]};
   return {...base,...(style.spacing?{paddingY:section.paddingY??style.spacing}:{}),...(Object.keys(typography).length?{typography}:{})};

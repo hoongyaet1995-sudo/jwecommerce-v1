@@ -13,6 +13,8 @@ export function ConnectedFamilySection({section,editing=false,authoredSection,pa
  const contrast=p?.contrast??p?.ink??'#0d1b18';
  const tokens={containerType:'inline-size',containerName:'cms-connected','--cms-primary':p?.accent??s.customColors?.primaryBtnBg??'#ffa1ed','--cms-secondary':p?.secondary??s.customColors?.secondaryBtnBg??'#94ff55','--cms-contrast':contrast,'--cms-on-contrast':onColor(contrast),'--ink':p?.ink??'#0a0b0b','--muted':p?.muted??'#686d6b','--paper':p?.paper??'#ffffff','--connected-padding':s.paddingY?{compact:'48px',normal:'96px',spacious:'160px'}[s.paddingY]:undefined,'--connected-alignment':s.textAlignment} as React.CSSProperties;
  if(explicitSurface)Object.assign(tokens,{'--ink':s.customColors?.titleColor??p?.ink??'#0a0b0b','--muted':s.customColors?.contentColor??p?.muted??'#686d6b','--paper':surface??p?.paper??'#ffffff','--connected-surface':surface});
+ // Neutral Contrast starters must not keep a pale inset behind inherited light text.
+ if(own.starterDesign==='neutral-v1'&&own.surface==='contrast')Object.assign(tokens,{'--soft':surface??contrast});
  const destination=(url?:string)=>url===undefined?undefined:(links[url]??url);
  const linked=Object.keys(links).length?{...s,buttonLink:destination(s.buttonLink),secondaryButtonLink:destination(s.secondaryButtonLink),items:s.items?.map(item=>({...item,linkUrl:destination(item.linkUrl)}))}:s;
  return <div className={`cms-connected-native ${nativeContext}`} data-connected-layout={s.connectedLayout} data-padding={s.paddingY} data-text-alignment={s.textAlignment} data-explicit-surface={surface?'':undefined} data-family={metadata.family} style={tokens}><ConnectedNativeComposition section={linked} editing={editing}/></div>;

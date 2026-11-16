@@ -1,3 +1,4 @@
+import type {PageStyle} from '../../cms/pageStyle';
 import {SectionLayoutPreview} from './SectionLayoutPreview';
 import {createNewSection} from '../../cms/sectionStarterDefaults';
 import {sharedSectionFamilies,createSharedSection} from '../../cms/sharedSectionLibrary';
@@ -78,6 +79,7 @@ import {
 } from 'lucide-react';
 
 interface AddSectionModalProps {
+  pageStyle?:PageStyle;
   isOpen: boolean;
   onClose: () => void;
   onAdd: (newSection: PageSection) => void;
@@ -1240,11 +1242,13 @@ export const AddSectionModal: React.FC<AddSectionModalProps> = ({
   onAdd,
   categories,
   collections,
+  pageStyle,
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [previewChoice,setPreviewChoice]=useState<{index:number;layout:string}|null>(null);
   const [previewMobile,setPreviewMobile]=useState(false);
+  const [previewSurface,setPreviewSurface]=useState<'light'|'contrast'>('light');
 
   const closeModal=()=>{setPreviewChoice(null);onClose();};
   if (!isOpen) return null;
@@ -1279,7 +1283,7 @@ export const AddSectionModal: React.FC<AddSectionModalProps> = ({
       } : {}),
       id: 'sec-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7)
     };
-    onAdd(createNewSection(newSection,SECTION_TEMPLATES.indexOf(template)));
+    onAdd({...createNewSection(newSection,SECTION_TEMPLATES.indexOf(template)),surface:previewSurface});
     onClose();
   };
 
@@ -1362,6 +1366,11 @@ export const AddSectionModal: React.FC<AddSectionModalProps> = ({
           </div>
         </div>
 
+        <div className="px-6 py-3 flex flex-wrap items-center justify-between gap-3 border-b border-neutral-200 dark:border-neutral-800">
+          <p className="text-xs text-neutral-500 dark:text-neutral-400">Colors follow Page Settings · Page Palette</p>
+          <div role="group" aria-label="Preview surface" className="flex gap-2">{(['light','contrast'] as const).map(surface=><button type="button" key={surface} aria-pressed={previewSurface===surface} onClick={()=>setPreviewSurface(surface)} className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${previewSurface===surface?'bg-indigo-600 text-white':'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300'}`}>{surface==='light'?'Light':'Contrast'}</button>)}</div>
+        </div>
+
         {/* Templates Grid */}
         <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4.5 bg-neutral-50/40 dark:bg-neutral-950/40">
           {previewChoice ? <div className="col-span-full space-y-4 min-w-0">
@@ -1369,7 +1378,7 @@ export const AddSectionModal: React.FC<AddSectionModalProps> = ({
             <h3 className="font-bold text-neutral-900 dark:text-white">{SECTION_TEMPLATES[previewChoice.index].title}</h3>
             {SECTION_TEMPLATES[previewChoice.index].sharedFamily&&<div className="max-w-sm"><VisualChoiceSelect aria-label="Choose shared layout" value={previewChoice.layout} onChange={e=>setPreviewChoice({...previewChoice,layout:e.target.value})}>{sharedSectionFamilies.find(f=>f.id===SECTION_TEMPLATES[previewChoice.index].sharedFamily)!.layouts.map(l=><option key={l.id} value={l.id}>{l.label}</option>)}</VisualChoiceSelect></div>}
             <p className="text-xs text-neutral-500">Layout preview with demo content. Catalog and service data will use your store settings.</p>
-            <SectionLayoutPreview key={`${previewChoice.index}-${previewChoice.layout}-${previewMobile}`} card={previewChoice.index} title={SECTION_TEMPLATES[previewChoice.index].title} layout={previewChoice.layout} full mobile={previewMobile}/>
+            <SectionLayoutPreview key={`${previewChoice.index}-${previewChoice.layout}-${previewMobile}`} card={previewChoice.index} title={SECTION_TEMPLATES[previewChoice.index].title} layout={previewChoice.layout} full mobile={previewMobile} surface={previewSurface} pageStyle={pageStyle}/>
           </div> : filteredTemplates.length === 0 ? (
             <div className="col-span-full py-16 text-center text-neutral-400">
               <Search className="w-10 h-10 mx-auto mb-2 opacity-40" />
@@ -1398,7 +1407,7 @@ export const AddSectionModal: React.FC<AddSectionModalProps> = ({
                     hover:border-indigo-500 hover:shadow-xl hover:shadow-indigo-500/10 hover:-translate-y-0.5 cursor-pointer"
                 >
                   <div>
-                    <div className="-mx-5 -mt-5 mb-5 rounded-t-2xl overflow-hidden"><SectionLayoutPreview card={SECTION_TEMPLATES.indexOf(tmpl)} title={tmpl.title}/></div>
+                    <div className="-mx-5 -mt-5 mb-5 rounded-t-2xl overflow-hidden"><SectionLayoutPreview card={SECTION_TEMPLATES.indexOf(tmpl)} title={tmpl.title} surface={previewSurface} pageStyle={pageStyle}/></div>
                     <div className="flex items-center justify-between mb-3.5">
                       <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-colors shadow-2xs">
                         <Icon className="w-5 h-5" />
@@ -1441,7 +1450,7 @@ export const AddSectionModal: React.FC<AddSectionModalProps> = ({
           <p className="text-xs text-neutral-500 dark:text-neutral-400">
             Showing <strong className="text-neutral-900 dark:text-white">{filteredTemplates.length}</strong> available modular sections. All contents and media can be customized in the Inspector.
           </p>
-          {previewChoice&&<button type="button" className="px-4 py-2 text-xs font-semibold rounded-xl bg-indigo-600 text-white" onClick={()=>{const t=SECTION_TEMPLATES[previewChoice.index];if(t.sharedFamily){onAdd(createNewSection(createSharedSection(t.sharedFamily,previewChoice.layout),previewChoice.index));closeModal();}else{handleSelectTemplate(t);setPreviewChoice(null);}}}>Insert selected layout</button>}
+          {previewChoice&&<button type="button" className="px-4 py-2 text-xs font-semibold rounded-xl bg-indigo-600 text-white" onClick={()=>{const t=SECTION_TEMPLATES[previewChoice.index];if(t.sharedFamily){onAdd({...createNewSection(createSharedSection(t.sharedFamily,previewChoice.layout),previewChoice.index),surface:previewSurface});closeModal();}else{handleSelectTemplate(t);setPreviewChoice(null);}}}>Insert selected layout</button>}
           <button
             onClick={closeModal}
             className="px-4 py-2 text-xs font-semibold rounded-xl bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors cursor-pointer"

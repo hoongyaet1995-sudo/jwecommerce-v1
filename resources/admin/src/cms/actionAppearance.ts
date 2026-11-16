@@ -4,6 +4,8 @@ import type {PageSection} from '../types';
 import type {PageStyle} from './pageStyle';
 import {onColor} from './pageStyle';
 import matrix from './actionAppearanceMatrix.json';
+import {defaultSectionColorCss,readableDefaultColor} from './defaultSectionColors';
+import {demoPalette} from './sectionDefaultDesign';
 export type ActionChannel='primary'|'secondary';
 export interface ButtonColors {primaryBg?:string;primaryText?:string;primaryHover?:string;secondaryBg?:string;secondaryText?:string;secondaryHover?:string}
 export const buttonColorKeys=['primaryBg','primaryText','primaryHover','secondaryBg','secondaryText','secondaryHover'] as const;
@@ -29,7 +31,7 @@ export const buttonTarget=(channel:ActionChannel,kind?:'button'|'link')=>`[data-
 const escapeId=(id:string)=>id.replace(/[^a-zA-Z0-9_-]/g,c=>'\\'+c.codePointAt(0)!.toString(16)+' ');
 /** Opt-in writers only. Legacy palette fields remain untouched and retain their old defaults. */
 export function actionAppearanceCss(raw:PageSection,resolved:PageSection,page?:PageStyle):string {
- const root='#'+escapeId('section-'+raw.id),rules:string[]=[];
+ const root='#'+escapeId('section-'+raw.id),rules:string[]=[defaultSectionColorCss(raw,resolved,page)];
  const rule=(selector:string,value:string)=>rules.push(`${root} ${selector}{${value}}`);
  const radius=raw.buttonRadius??(page?.unifiedButtons?page.buttonRadius??0:undefined);
  const size=raw.buttonSize??(page?.unifiedButtons?page.buttonSize??'normal':undefined);
@@ -37,15 +39,27 @@ export function actionAppearanceCss(raw:PageSection,resolved:PageSection,page?:P
  if(radius!==undefined)rule(button,`border-radius:${radius}px!important;`);
  if(size)rule(button,`min-height:${{compact:36,normal:44,large:52}[size]}px!important;padding-block:${{compact:8,normal:12,large:16}[size]}px!important;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;`);
  for(const channel of ['primary','secondary'] as const){
+  if(raw.starterDesign==='neutral-v1'){
+   const palette=resolved.brandPalette??raw.brandPalette??page?.palette??demoPalette;
+   const fallback=channel==='primary'?(raw.surface==='contrast'?palette.paper:palette.accent):palette.secondary;
+   const colorKey=channel==='primary'?'primaryBtnBg':'secondaryBtnBg';
+   const textKey=channel==='primary'?'primaryBtnText':'secondaryBtnText';
+   const paint=raw.buttonColors?.[`${channel}Bg`]??resolved.customColors?.[colorKey]??fallback;
+   const ink=raw.buttonColors?.[`${channel}Text`]??(raw.colorOverrides?.includes(textKey)?raw.customColors?.[textKey]:undefined)??readableDefaultColor(channel==='primary'?(raw.surface==='contrast'?palette.ink:palette.light):palette.secondaryInk,paint);
+   rule(buttonTarget(channel,'button'),`background:${paint}!important;color:${ink}!important;opacity:1!important;`);
+   const hover=raw.buttonColors?.[`${channel}Hover`]??page?.buttonHoverColor??palette.hover;
+   if(page?.buttonHover!==false){const hoverInk=raw.buttonColors?.[`${channel}Text`]??(raw.colorOverrides?.includes(textKey)?raw.customColors?.[textKey]:undefined)??onColor(hover);rule(buttonTarget(channel,'button')+':hover',`background:${hover}!important;color:${hoverInk}!important;opacity:1!important;`);rule(buttonTarget(channel,'link')+':hover',`color:${raw.buttonColors?.[`${channel}Text`]??'var(--cms-auto-accent)'}!important;opacity:1!important;`);}
+  }
   const bg=raw.buttonColors?.[`${channel}Bg`],text=raw.buttonColors?.[`${channel}Text`],hover=raw.buttonColors?.[`${channel}Hover`]??(page?.buttonHover?page.buttonHoverColor??page.palette.hover:undefined);
   if(bg)rule(buttonTarget(channel,'button'),`background:${bg}!important;`);
-  if(text)rule(buttonTarget(channel),`color:${text}!important;`);
-  if(hover){rule(buttonTarget(channel,'button')+':hover',`background:${hover}!important;color:${onColor(hover)}!important;opacity:1!important;`);rule(buttonTarget(channel,'link')+':hover',`color:${hover}!important;`);}
+  if(text){rule(buttonTarget(channel),`color:${text}!important;`);if(raw.starterDesign==='neutral-v1')rule(buttonTarget(channel,'button'),`color:${text}!important;`);}
+  if(hover){rule(buttonTarget(channel,'button')+':hover',`background:${hover}!important;color:${raw.starterDesign==='neutral-v1'&&text?text:onColor(hover)}!important;opacity:1!important;`);rule(buttonTarget(channel,'link')+':hover',`color:${raw.starterDesign==='neutral-v1'?(text??'var(--cms-auto-accent)'):hover}!important;`);}
  }
  for(const role of ['eyebrow','title','lead','content','itemTitle','itemContent','secondaryTitle','label','number'] as const){
   const local=raw.typography?.[role],inherited=page?.typography?.[role];
   const owned=local?.colorOverride||(!local?.color&&inherited?.colorOverride);
-  const color=owned?(local?.colorOverride?local.color:inherited?.color):undefined;
+  const legacyKey=role==='eyebrow'?'eyebrowColor':role==='title'||role==='itemTitle'?'titleColor':'contentColor';
+  const color=raw.starterDesign==='neutral-v1'?(local?.color??inherited?.color??(raw.colorOverrides?.includes(legacyKey)?raw.customColors?.[legacyKey]:undefined)):owned?(local?.colorOverride?local.color:inherited?.color):undefined;
   if(color){rule(`[data-cms-text="${role}"]`,`color:${color}!important;`);rule(`[data-cms-text="${role}"] :where(h1,h2,h3,h4,p,span,strong,small,em)`,`color:inherit!important;`);}
  }
  return rules.join('\n');
