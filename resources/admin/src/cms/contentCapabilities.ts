@@ -67,9 +67,9 @@ function legacySectionContentFields(section:PageSection):readonly string[]{
  }
  if(section.type==='feature_cards'&&section.featureCardsPreset==='service-highlights')result=section.showSectionHeading===true?[...copy]:[];
  if(section.type==='rich_text'&&['manifesto','industrial-split'].includes(section.richTextPreset??''))result=[...copy];
- if(section.type==='hero_slider'&&['editorial-overlay','fashion-editorial'].includes(section.sliderPreset??''))result=['title']; // Slide copy/actions belong to entries.
+ if(section.type==='hero_slider')result=['editorial-overlay','fashion-editorial'].includes(section.sliderPreset??'')?['title']:[]; // Slide copy/actions belong to entries.
  if(section.type==='product_listing'&&['industrial-related','editorial-grid','editorial-tabs','fashion-lookbook','beauty-grid','pantry-grid','pantry-tabs','tech-grid','tech-tabs','kids-grid','kids-tabs'].includes(section.listingPreset??''))result.push(...primary);
- if(section.type==='shop_navigation'&&['collection-banners','kids-banners','fashion-banners'].includes(section.shopNavigationPreset??''))result=result.filter(field=>!primary.includes(field));
+ if(section.type==='shop_navigation'&&['collection-banners','kids-banners','fashion-banners','age-cards'].includes(section.shopNavigationPreset??''))result=result.filter(field=>!primary.includes(field));
  if(section.type==='shop_navigation'&&['market-hero','market-offers'].includes(section.shopNavigationPreset??'')&&section.showSectionHeading===false)result=result.filter(field=>!primary.includes(field));
  if(section.type==='cta_strip'){
   if(section.ctaPreset==='industrial-outline')result=['title','content',...actions];

@@ -1,3 +1,4 @@
+import {inheritedStarterFont} from './starterTypography';
 import {connectedPassport} from './connectedFamilies';
 import {headingCapability,legacyTypographyRoles} from './sectionHeading';
 import {isPlanComparison} from './planComparison';
@@ -30,7 +31,7 @@ export const inspectorGroups:Array<{name:string;tab:InspectorTab}>=[
 function legacyTextRoles(section:PageSection):TextRole[] {
  if(isPlanComparison(section))return ['eyebrow','title','content','itemTitle','itemContent'];
  if(section.galleryPreset==='photo-marquee')return section.showSectionHeading===false?['eyebrow']:['eyebrow','title','content'];
- if(section.type==='hero_slider'&&['editorial-overlay','fashion-editorial'].includes(section.sliderPreset??''))return ['eyebrow','title','content'];
+ if(section.type==='hero_slider')return ['eyebrow','title','content'];
  if(section.type==='shop_navigation'&&['market-hero','market-offers'].includes(section.shopNavigationPreset??''))return [...(section.showSectionHeading===false?[]:['title','content'] as TextRole[]),'eyebrow',...(section.shopNavigationPreset==='market-hero'?['lead'] as TextRole[]:[]),'itemTitle','itemContent'];
  if(section.type==='chapter_navigation')return ['eyebrow'];
  if(section.type==='announcement_bar')return ['itemTitle'];
@@ -79,7 +80,7 @@ export function isTypography(value:unknown):value is SectionTypography {
 const readableRoleFloor:Partial<Record<TextRole,number>>={content:16,lead:16,itemContent:14,itemTitle:18,eyebrow:12};
 export function typographyStyle(section:PageSection,role:TextRole):CSSProperties {
  const value=section.typography?.[role]??(legacyTypographyRoles(section).includes(role as any)?section.typography?.eyebrow:undefined);if(!value)return {};
- return {...(value.fontFamily?{fontFamily:fontFamilies[value.fontFamily]}:{}),
+ return {...(value.fontFamily?{fontFamily:value.fontFamily==='site'?(inheritedStarterFont(section,role)??fontFamilies.site):fontFamilies[value.fontFamily]}:{}),
   ...(value.fontSize?{fontSize:`clamp(${Math.min(value.fontSize,Math.max(readableRoleFloor[role]??8,Math.round(value.fontSize*.7)))}px, ${value.fontSize/7.68}cqi, ${value.fontSize}px)`}:{}),
   ...(value.fontWeight?{fontWeight:value.fontWeight}:{}),...(value.lineHeight?{lineHeight:value.lineHeight}:{}),...(value.letterSpacing!==undefined?{letterSpacing:`${value.letterSpacing}px`}:{}),...(value.color?{color:value.color}:{}),
  };

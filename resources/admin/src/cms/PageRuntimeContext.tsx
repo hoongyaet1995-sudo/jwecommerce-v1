@@ -262,7 +262,7 @@ type PageSectionFieldRule =
 // `satisfies Record<keyof PageSection, ...>` makes a PageSection type change fail compilation
 // until its browser-bootstrap rule is deliberately classified here.
 export const PAGE_SECTION_BOOTSTRAP_FIELD_RULES = {
- titleEmphasis:{kind:'nested'},connectedLayout:{kind:'optional-enum',values:connectedLayouts},connectedDiagram:{kind:'optional-string'},connectedVisualContext:{kind:'optional-enum',values:['default','commerce','operations','workflow','fulfilment','website']},connectedLayoutMemory:{kind:'nested'},pricingMatrix:{kind:'nested'},itemLayoutMode:{kind:'optional-enum',values:['flow']},motionPace:{kind:'optional-enum',values:['smooth','relaxed']},
+ starterDesign:{kind:'optional-enum',values:['neutral-v1']},titleEmphasis:{kind:'nested'},connectedLayout:{kind:'optional-enum',values:connectedLayouts},connectedDiagram:{kind:'optional-string'},connectedVisualContext:{kind:'optional-enum',values:['default','commerce','operations','workflow','fulfilment','website']},connectedLayoutMemory:{kind:'nested'},pricingMatrix:{kind:'nested'},itemLayoutMode:{kind:'optional-enum',values:['flow']},motionPace:{kind:'optional-enum',values:['smooth','relaxed']},
  pricingPreset:{kind:'optional-enum',values:['default','saas-packages','plan-comparison']},pricingCurrency:{kind:'optional-string'},
   newsletterPreset:{kind:'optional-enum',values:['default','inline-signup']},
   surface:{kind:'optional-enum',values:['page','light','contrast']},

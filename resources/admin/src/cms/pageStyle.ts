@@ -1,3 +1,4 @@
+import {demoPalette} from './sectionDefaultDesign';
 import {isConnectedFamily} from './connectedFamilies';
 import {isUnifiedPricing} from './unifiedPricing';
 import {legacyTypographyRoles} from './sectionHeading';
@@ -30,6 +31,7 @@ function resolveNativeVisualSection(section:PageSection,style?:PageStyle):PageSe
  return {...section,brandPalette:palette,...(colors.customBgColor?{backgroundColor:'custom',textColor:contrast?'light':'dark'}:{}),...(Object.keys(colors).length?{customColors:colors}:{}),typography:Object.keys(typography).length?typography:undefined,paddingY:section.paddingY??style?.spacing};
 }
 export function resolveStyledSection(section:PageSection,style?:PageStyle):PageSection {
+ if(section.starterDesign==='neutral-v1'&&!style)style={palette:demoPalette};
  if(style?.motionPace&&section.motionPace===undefined)section={...section,motionPace:style.motionPace};
  if(isConnectedFamily(section)||isUnifiedPricing(section))return resolveNativeVisualSection(section,style);
  if(style?.preserveLayout){

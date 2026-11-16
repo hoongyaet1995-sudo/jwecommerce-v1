@@ -1,3 +1,4 @@
+import {demoPalette} from '../../cms/sectionDefaultDesign';
 import {SharedSectionLayout} from './SharedSectionLayout';
 import {ConnectedFamilyContent} from './ConnectedFamilyContent';
 import {isConnectedFamily} from '../../cms/connectedFamilies';
@@ -1296,7 +1297,7 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
   section=normalizeConnectedRows(normalizeImageHighlights(normalizeThreeImageCards(section)));
   const onChange=(next:PageSection)=>onSectionChange(section?normalizeEyebrowChange(section,next,pageTypography):next);
   const inheritedBrand=useCmsBrand(followTheme||section?.surface==='page'&&!pagePalette);
-  const effectivePagePalette=pagePalette?(followTheme?inheritedBrand?.palette??pagePalette:pagePalette):section?.surface==='page'?inheritedBrand?.palette:undefined;
+  const effectivePagePalette=(pagePalette?(followTheme?inheritedBrand?.palette??pagePalette:pagePalette):section?.surface==='page'?inheritedBrand?.palette:undefined)??(section?.starterDesign==='neutral-v1'?demoPalette:undefined);
   const [inspectorTab,setInspectorTab]=React.useState<InspectorTab>('content');
   const [textRole,setTextRole]=React.useState<TextRole>('title');
   const bodyRef=React.useRef<HTMLDivElement>(null);

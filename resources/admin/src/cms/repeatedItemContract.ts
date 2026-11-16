@@ -76,6 +76,7 @@ function legacyRepeatedItemFields(section:PageSection):readonly string[]{
   if(section.chapterPreset==='perspective')return ['title','imageUrl'];
   return ['title','description','imageUrl'];
  }
+ if(section.type==='policy_content'&&section.policyPreset==='steps')return ['title','description','imageUrl'];
  if(section.type==='policy_content')return [...(fields.policy_content??[]),...(section.policyPreset==='tabs'?['category']:[])];
  return fields[section.type]??[];
 }

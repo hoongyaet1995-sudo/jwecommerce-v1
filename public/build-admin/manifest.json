@@ -111,16 +111,16 @@
     "file": "assets/malaysia-proud-CoWH8gQK.png",
     "src": "../../public/cms/connected/assets/show-photo/malaysia-proud.png"
   },
-  "C:/Users/User/.codex/worktrees/cms-integration-release-20261115/jwstudio-ecommerce/public/css/cms-shell-design.css": {
+  "C:/Users/User/.codex/worktrees/section-defaults-release-20261116/jwstudio-ecommerce/public/css/cms-shell-design.css": {
     "file": "assets/cms-shell-design-CgEQMW9q.css",
-    "src": "C:/Users/User/.codex/worktrees/cms-integration-release-20261115/jwstudio-ecommerce/public/css/cms-shell-design.css"
+    "src": "C:/Users/User/.codex/worktrees/section-defaults-release-20261116/jwstudio-ecommerce/public/css/cms-shell-design.css"
   },
   "_index-BVpySroV.css": {
     "file": "assets/index-BVpySroV.css",
     "src": "_index-BVpySroV.css"
   },
-  "_index-DUFR0Ypq.js": {
-    "file": "assets/index-DUFR0Ypq.js",
+  "_index-DCbR0gcE.js": {
+    "file": "assets/index-DCbR0gcE.js",
     "name": "index",
     "css": [
       "assets/index-BVpySroV.css"
@@ -157,12 +157,12 @@
     ]
   },
   "src/main.tsx": {
-    "file": "assets/main-CemId7p-.js",
+    "file": "assets/main-CP-prDnN.js",
     "name": "main",
     "src": "src/main.tsx",
     "isEntry": true,
     "imports": [
-      "_index-DUFR0Ypq.js"
+      "_index-DCbR0gcE.js"
     ],
     "dynamicImports": [
       "src/previews/inventory48/Inventory48Runtime.tsx"
@@ -175,12 +175,12 @@
     ]
   },
   "src/previews/inventory48/Inventory48Runtime.tsx": {
-    "file": "assets/Inventory48Runtime-Buup2OHP.js",
+    "file": "assets/Inventory48Runtime-fFnSsBpi.js",
     "name": "Inventory48Runtime",
     "src": "src/previews/inventory48/Inventory48Runtime.tsx",
     "isDynamicEntry": true,
     "imports": [
-      "_index-DUFR0Ypq.js",
+      "_index-DCbR0gcE.js",
       "src/main.tsx"
     ],
     "css": [
@@ -188,12 +188,12 @@
     ]
   },
   "src/public-page.tsx": {
-    "file": "assets/public-page-BPuRD0MO.js",
+    "file": "assets/public-page-j_Ux4-SH.js",
     "name": "public-page",
     "src": "src/public-page.tsx",
     "isEntry": true,
     "imports": [
-      "_index-DUFR0Ypq.js"
+      "_index-DCbR0gcE.js"
     ]
   }
 }

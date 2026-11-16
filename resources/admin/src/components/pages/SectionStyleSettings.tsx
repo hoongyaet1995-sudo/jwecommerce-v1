@@ -1,3 +1,4 @@
+import {demoPalette} from '../../cms/sectionDefaultDesign';
 import {isConnectedFamily} from '../../cms/connectedFamilies';
 import React from 'react';
 import type {PageSection,SectionColorConfig} from '../../types';
@@ -12,7 +13,7 @@ import {textRoles} from '../../cms/inspectorCapabilities';
 export const surfaceUnsupported=new Set(Object.entries(capabilities.sections).filter(([,c])=>c.surfaces.length===1).map(([type])=>type));
 const labels:Partial<Record<keyof SectionColorConfig,string>>={primaryBtnBg:'Primary button background',primaryBtnText:'Primary button text',secondaryBtnBg:'Secondary button background',secondaryBtnText:'Secondary button text',eyebrowColor:'Accent color'};
 export function SectionStyleSettings({section,onChange,pagePalette,followTheme=false,preserveLayout=false,customBackground,mode='surface'}:{preserveLayout?:boolean;mode?:'surface'|'button-colors';customBackground?:React.ReactNode;followTheme?:boolean;pagePalette?:BrandPalette;section:PageSection;onChange:(s:PageSection)=>void}){
- const brand=useCmsBrand(!pagePalette),palette=(section.surface==='page'?undefined:section.brandPalette)??(followTheme||!pagePalette?brand?.palette:undefined)??pagePalette??stylePresets[0].palette;
+ const brand=useCmsBrand(!pagePalette),palette=(section.surface==='page'?undefined:section.brandPalette)??(!pagePalette&&section.starterDesign==='neutral-v1'?demoPalette:undefined)??(followTheme||!pagePalette?brand?.palette:undefined)??pagePalette??stylePresets[0].palette;
  const resolved=resolveStyledSection(section,{palette,preserveLayout}),baseline=resolveStyledSection({...section,surface:undefined},{palette}).customColors;
  const defaults={...palette,paper:baseline?.customBgColor||palette.paper,ink:baseline?.titleColor||palette.ink,muted:baseline?.contentColor||palette.muted,accent:baseline?.primaryBtnBg||palette.accent,light:baseline?.primaryBtnText||palette.light};
  const legacySurface=section.surface===undefined&&!!(preserveLayout||section.backgroundColor||section.brandPalette||section.customColors?.customBgColor||!pagePalette);
@@ -27,7 +28,7 @@ export function SectionStyleSettings({section,onChange,pagePalette,followTheme=f
  if(mode==='button-colors')return null;
  return <div data-section-surface className="space-y-3"><p className="text-xs text-neutral-500">{section.surface==='page'?'Following page palette':section.brandPalette?'Legacy section palette · kept':legacySurface?'Existing layout surface · kept':'Following page palette'}</p>
  {(isConnectedFamily(section)||!surfaceUnsupported.has(section.type)||(section.type==='hero_banner'&&section.heroBannerPreset==='corporate-split-composite'))&&<><SurfaceCards compact palette={hasContainedSurface(section)?{...palette,accent:palette.ink}:palette} defaultPalette={(followTheme?brand?.palette:undefined)??pagePalette??brand?.palette??stylePresets[0].palette} value={section.surface==='page'?'default':section.surface??(legacySurface?'legacy':'default')} onChange={surface=>{const next={...section};next.surface=surface==='default'?'page':surface;next.colorOverrides=next.colorOverrides?.filter(k=>k!=='customBgColor');onChange(next)}}/><p className="text-[11px] text-neutral-500">{hasContainedSurface(section)?'Changes the card or panel only.':'Automatic text colors adapt to this surface.'}</p></>}
- {customBackground&&<details><summary className="text-xs text-neutral-500 cursor-pointer">Custom background & gradients</summary><div className="pt-3 space-y-3">{customBackground}</div></details>}
+ {customBackground&&has('customBgColor')&&<details><summary className="text-xs text-neutral-500 cursor-pointer">Custom background & gradients</summary><div className="pt-3 space-y-3">{customBackground}</div></details>}
  {section.brandPalette&&<button type="button" className="text-xs underline text-indigo-500" onClick={()=>{const next={...section};delete next.brandPalette;onChange(next)}}>Follow page palette</button>}
  {section.type==='media_text_split'&&['editorial-story-cards','editorial-journal-rows'].includes(section.layoutPreset??'')&&<details><summary className="text-xs text-neutral-500 cursor-pointer">Card surface</summary><div className="pt-3">{colorField('secondaryBtnBg')}</div></details>}
  {section.type==='faq_accordion'&&section.faqPreset==='framed-faq'&&<details><summary className="text-xs text-neutral-500 cursor-pointer">Panel accents</summary><div className="space-y-3 pt-3">{colorField('primaryBtnBg')}{colorField('secondaryBtnBg')}</div></details>}

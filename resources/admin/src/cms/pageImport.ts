@@ -1,3 +1,4 @@
+import defaultPlaceholderMedia from '../../../cms/default-placeholder-media.v1.json';
 import {connectedFamilyMetadata} from './connectedFamilies';
 import connectedMedia from '../../../cms/connected-media.v1.json';
 import {isUnifiedPricing,validateUnifiedPricingSection} from './unifiedPricing';
@@ -238,7 +239,7 @@ const hasPhpCompatibleRawHost = (value: string): boolean => {
 
 const isSafeMediaUrl = (value: string): boolean => {
   if (value === '') return true;
-  if(connectedMedia.includes(value))return true;
+  if(connectedMedia.includes(value)||defaultPlaceholderMedia.includes(value))return true;
   if (MANAGED_MEDIA_PATTERN.test(value)) return true;
   if (/^\/images\/cms\/templates\/connected\/[0-9a-f]{24}\.webp$/.test(value)) return true;
   if (/^\/images\/cms\/saas\/(?:editor|support|calendar|analytics)\.svg$/.test(value)) return true;

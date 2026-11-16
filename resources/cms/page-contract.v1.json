@@ -2145,6 +2145,12 @@
         "fulfilment",
         "website"
       ]
+    },
+    "starterDesign": {
+      "type": "string",
+      "enum": [
+        "neutral-v1"
+      ]
     }
   },
   "section": {
@@ -2175,7 +2181,8 @@
           "buttonSize",
           "colorOverrides",
           "buttonColors",
-          "titleEmphasis"
+          "titleEmphasis",
+          "starterDesign"
         ],
         "publishRequired": [
           "title"
@@ -2224,7 +2231,8 @@
           "buttonSize",
           "colorOverrides",
           "buttonColors",
-          "titleEmphasis"
+          "titleEmphasis",
+          "starterDesign"
         ],
         "publishRequired": [
           "title"
@@ -2271,7 +2279,8 @@
           "connectedDiagram",
           "mediaAlt",
           "connectedLayoutMemory",
-          "connectedVisualContext"
+          "connectedVisualContext",
+          "starterDesign"
         ],
         "publishRequired": [
           "title"
@@ -2314,7 +2323,8 @@
           "buttonSize",
           "colorOverrides",
           "buttonColors",
-          "titleEmphasis"
+          "titleEmphasis",
+          "starterDesign"
         ],
         "publishRequired": [
           "title"
@@ -2359,7 +2369,8 @@
           "buttonSize",
           "colorOverrides",
           "buttonColors",
-          "titleEmphasis"
+          "titleEmphasis",
+          "starterDesign"
         ],
         "publishRequired": [
           "title"
@@ -2392,7 +2403,8 @@
           "buttonSize",
           "colorOverrides",
           "buttonColors",
-          "titleEmphasis"
+          "titleEmphasis",
+          "starterDesign"
         ],
         "publishRequired": [
           "title"
@@ -2451,7 +2463,8 @@
           "colorOverrides",
           "buttonColors",
           "itemLayoutMode",
-          "titleEmphasis"
+          "titleEmphasis",
+          "starterDesign"
         ],
         "publishRequired": [
           "title"
@@ -2488,7 +2501,8 @@
           "buttonSize",
           "colorOverrides",
           "buttonColors",
-          "titleEmphasis"
+          "titleEmphasis",
+          "starterDesign"
         ],
         "publishRequired": [
           "title"
@@ -2521,7 +2535,8 @@
           "buttonSize",
           "colorOverrides",
           "buttonColors",
-          "titleEmphasis"
+          "titleEmphasis",
+          "starterDesign"
         ],
         "publishRequired": [
           "title"
@@ -2560,7 +2575,8 @@
           "connectedDiagram",
           "imageSlots",
           "connectedLayoutMemory",
-          "connectedVisualContext"
+          "connectedVisualContext",
+          "starterDesign"
         ],
         "publishRequired": [
           "title"
@@ -2594,7 +2610,8 @@
           "buttonSize",
           "colorOverrides",
           "buttonColors",
-          "titleEmphasis"
+          "titleEmphasis",
+          "starterDesign"
         ],
         "publishRequired": [
           "title"
@@ -2646,7 +2663,8 @@
           "buttonSize",
           "colorOverrides",
           "buttonColors",
-          "titleEmphasis"
+          "titleEmphasis",
+          "starterDesign"
         ],
         "publishRequired": [
           "title",
@@ -2687,7 +2705,8 @@
           "buttonSize",
           "colorOverrides",
           "buttonColors",
-          "titleEmphasis"
+          "titleEmphasis",
+          "starterDesign"
         ],
         "publishRequired": [
           "title"
@@ -2734,7 +2753,8 @@
           "buttonSize",
           "colorOverrides",
           "buttonColors",
-          "titleEmphasis"
+          "titleEmphasis",
+          "starterDesign"
         ],
         "publishRequired": [
           "title"
@@ -2778,7 +2798,8 @@
           "colorOverrides",
           "buttonColors",
           "titleEmphasis",
-          "pricingMatrix"
+          "pricingMatrix",
+          "starterDesign"
         ],
         "publishRequired": [
           "title"
@@ -2832,7 +2853,8 @@
           "mediaUrl",
           "mediaAlt",
           "connectedLayoutMemory",
-          "connectedVisualContext"
+          "connectedVisualContext",
+          "starterDesign"
         ],
         "publishRequired": [
           "title"
@@ -2865,7 +2887,8 @@
           "buttonSize",
           "colorOverrides",
           "buttonColors",
-          "titleEmphasis"
+          "titleEmphasis",
+          "starterDesign"
         ],
         "publishRequired": [
           "title"
@@ -2902,7 +2925,8 @@
           "buttonSize",
           "colorOverrides",
           "buttonColors",
-          "titleEmphasis"
+          "titleEmphasis",
+          "starterDesign"
         ],
         "publishRequired": [
           "title"
@@ -2937,7 +2961,8 @@
           "buttonSize",
           "colorOverrides",
           "buttonColors",
-          "titleEmphasis"
+          "titleEmphasis",
+          "starterDesign"
         ],
         "publishRequired": [
           "title"
@@ -2981,7 +3006,8 @@
           "mediaUrl",
           "mediaAlt",
           "connectedLayoutMemory",
-          "connectedVisualContext"
+          "connectedVisualContext",
+          "starterDesign"
         ],
         "publishRequired": [
           "title"
@@ -3018,7 +3044,8 @@
           "buttonSize",
           "colorOverrides",
           "buttonColors",
-          "titleEmphasis"
+          "titleEmphasis",
+          "starterDesign"
         ],
         "publishRequired": [
           "title"
@@ -3052,7 +3079,8 @@
           "buttonSize",
           "colorOverrides",
           "buttonColors",
-          "titleEmphasis"
+          "titleEmphasis",
+          "starterDesign"
         ],
         "publishRequired": [
           "title"
@@ -3096,7 +3124,8 @@
           "connectedLayout",
           "connectedDiagram",
           "connectedLayoutMemory",
-          "connectedVisualContext"
+          "connectedVisualContext",
+          "starterDesign"
         ],
         "publishRequired": [
           "title"
@@ -3150,7 +3179,8 @@
           "connectedLayout",
           "connectedDiagram",
           "connectedLayoutMemory",
-          "connectedVisualContext"
+          "connectedVisualContext",
+          "starterDesign"
         ],
         "publishRequired": [
           "title"
@@ -3196,7 +3226,8 @@
           "buttonSize",
           "colorOverrides",
           "buttonColors",
-          "titleEmphasis"
+          "titleEmphasis",
+          "starterDesign"
         ],
         "publishRequired": [
           "title"
@@ -3235,7 +3266,8 @@
           "buttonSize",
           "colorOverrides",
           "buttonColors",
-          "titleEmphasis"
+          "titleEmphasis",
+          "starterDesign"
         ],
         "publishRequired": [
           "title"
@@ -3271,7 +3303,8 @@
           "buttonSize",
           "colorOverrides",
           "buttonColors",
-          "titleEmphasis"
+          "titleEmphasis",
+          "starterDesign"
         ],
         "publishRequired": [
           "title"
@@ -3316,7 +3349,8 @@
           "connectedLayout",
           "connectedDiagram",
           "connectedLayoutMemory",
-          "connectedVisualContext"
+          "connectedVisualContext",
+          "starterDesign"
         ],
         "publishRequired": [
           "title"
@@ -3361,7 +3395,8 @@
           "connectedDiagram",
           "items",
           "connectedLayoutMemory",
-          "connectedVisualContext"
+          "connectedVisualContext",
+          "starterDesign"
         ],
         "publishRequired": [
           "title"
@@ -3397,7 +3432,8 @@
           "buttonSize",
           "colorOverrides",
           "buttonColors",
-          "titleEmphasis"
+          "titleEmphasis",
+          "starterDesign"
         ],
         "publishRequired": [
           "title"
@@ -3439,7 +3475,8 @@
           "buttonSize",
           "colorOverrides",
           "buttonColors",
-          "titleEmphasis"
+          "titleEmphasis",
+          "starterDesign"
         ],
         "publishRequired": [
           "title"
@@ -3481,7 +3518,8 @@
           "buttonSize",
           "colorOverrides",
           "buttonColors",
-          "titleEmphasis"
+          "titleEmphasis",
+          "starterDesign"
         ],
         "publishRequired": [
           "title"
@@ -3515,7 +3553,8 @@
           "buttonSize",
           "colorOverrides",
           "buttonColors",
-          "titleEmphasis"
+          "titleEmphasis",
+          "starterDesign"
         ],
         "publishRequired": [
           "title"
@@ -3556,7 +3595,8 @@
           "buttonSize",
           "colorOverrides",
           "buttonColors",
-          "titleEmphasis"
+          "titleEmphasis",
+          "starterDesign"
         ],
         "publishRequired": [
           "title"
@@ -3593,7 +3633,8 @@
           "buttonSize",
           "colorOverrides",
           "buttonColors",
-          "titleEmphasis"
+          "titleEmphasis",
+          "starterDesign"
         ],
         "publishRequired": [
           "title"

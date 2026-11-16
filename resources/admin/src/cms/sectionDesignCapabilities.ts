@@ -25,7 +25,7 @@ export function renderedColorFields(s:PageSection):readonly string[]|undefined {
  if(isScrollStackCards(s))return ['customBgColor','eyebrowColor','titleColor','contentColor'];
  if(isTeamStoryOverview(s))return ['customBgColor','eyebrowColor','titleColor','contentColor'];
  if(isKnowledgeTriptych(s))return ['customBgColor','eyebrowColor','titleColor','contentColor'];
- if(isFixedImageCards(s))return imageCardsThreePassport.colors;
+ if(isFixedImageCards(s))return ['staggered-focus-cards','image-cards-contrast'].includes(s.galleryPreset??'')?imageCardsThreePassport.colors.filter(k=>k!=='customBgColor'):imageCardsThreePassport.colors;
  if(s.type==='media_text_split'&&['contained-wide-centered','wide-visual-centered','inset-surface-panel','split-visual-surface'].includes(s.layoutPreset??''))return ['customBgColor','titleColor','contentColor'];
  if(s.type==='media_text_split'&&['wide-visual-editorial','contained-wide-editorial'].includes(s.layoutPreset??''))return ['customBgColor','eyebrowColor','titleColor','contentColor'];
  const text=['customBgColor','titleColor','contentColor'];

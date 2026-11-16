@@ -1,3 +1,4 @@
+import {createNewSection} from '../../cms/sectionStarterDefaults';
 import {sharedSectionFamilies,createSharedSection} from '../../cms/sharedSectionLibrary';
 import {VisualChoiceSelect} from './VisualChoiceSelect';
 import {containedWideCentered,containedWideEditorial,insetSurfacePanel,centeredWideVisual,splitVisualSurface,wideVisualEditorial} from '../../cms/wideVisualEditorial';
@@ -1277,14 +1278,7 @@ export const AddSectionModal: React.FC<AddSectionModalProps> = ({
       } : {}),
       id: 'sec-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7)
     };
-    if (newSection.pricingPreset==='saas-packages'||newSection.featureCardsPreset?.startsWith('saas-')||newSection.faqPreset==='saas-split'||newSection.featureCardsPreset?.startsWith('industrial-')||newSection.faqPreset==='industrial-split'||newSection.comparisonPreset==='device-table'||newSection.layoutPreset==='tech-feature'||newSection.type==='promotion_highlights'||newSection.type==='chapter_block'||newSection.galleryPreset?.startsWith('editorial-')||newSection.featureCardsPreset==='editorial-columns') {
-      newSection.items=newSection.items?.map((item,index)=>({...item,id:`${newSection.id}-item-${index}`}));
-    }
-    if(isConnectedRows(newSection)||isFixedImageCards(newSection)||isImageHighlights(newSection))newSection.items=newSection.items?.map((item,index)=>({...item,id:`${newSection.id}-item-${index}`}));
-    newSection.productTabs=newSection.productTabs?.map((tab,index)=>({...tab,id:`${newSection.id}-tab-${index}`}));
-    if(newSection.heroBannerPreset==='corporate-centered')newSection.secondaryButtonLink='';
-    if(newSection.layoutPreset?.startsWith('saas-')){if(newSection.buttonLink?.startsWith('#section-saas-starter-'))newSection.buttonLink='';if(newSection.secondaryButtonLink?.startsWith('#section-saas-starter-'))newSection.secondaryButtonLink='';}
-    onAdd(newSection);
+    onAdd(createNewSection(newSection,SECTION_TEMPLATES.indexOf(template)));
     onClose();
   };
 
@@ -1369,7 +1363,7 @@ export const AddSectionModal: React.FC<AddSectionModalProps> = ({
 
         {/* Templates Grid */}
         <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4.5 bg-neutral-50/40 dark:bg-neutral-950/40">
-          {sharedChoice ? <div className="col-span-full space-y-4"><button type="button" className="text-indigo-500" onClick={()=>setSharedChoice(null)}>← Back to sections</button><h3 className="font-bold text-neutral-900 dark:text-white">{sharedSectionFamilies.find(f=>f.id===sharedChoice.family)!.title}</h3><VisualChoiceSelect aria-label="Choose shared layout" value={sharedChoice.layout} onChange={e=>setSharedChoice({...sharedChoice,layout:e.target.value})}>{sharedSectionFamilies.find(f=>f.id===sharedChoice.family)!.layouts.map(l=><option key={l.id} value={l.id}>{l.label}</option>)}</VisualChoiceSelect><button type="button" className="px-4 py-2 rounded-xl bg-indigo-600 text-white" onClick={()=>{onAdd(createSharedSection(sharedChoice.family,sharedChoice.layout));setSharedChoice(null);onClose();}}>Insert selected layout</button></div> : filteredTemplates.length === 0 ? (
+          {sharedChoice ? <div className="col-span-full space-y-4"><button type="button" className="text-indigo-500" onClick={()=>setSharedChoice(null)}>← Back to sections</button><h3 className="font-bold text-neutral-900 dark:text-white">{sharedSectionFamilies.find(f=>f.id===sharedChoice.family)!.title}</h3><VisualChoiceSelect aria-label="Choose shared layout" value={sharedChoice.layout} onChange={e=>setSharedChoice({...sharedChoice,layout:e.target.value})}>{sharedSectionFamilies.find(f=>f.id===sharedChoice.family)!.layouts.map(l=><option key={l.id} value={l.id}>{l.label}</option>)}</VisualChoiceSelect><button type="button" className="px-4 py-2 rounded-xl bg-indigo-600 text-white" onClick={()=>{onAdd(createNewSection(createSharedSection(sharedChoice.family,sharedChoice.layout),SECTION_TEMPLATES.findIndex(t=>t.sharedFamily===sharedChoice.family)));setSharedChoice(null);onClose();}}>Insert selected layout</button></div> : filteredTemplates.length === 0 ? (
             <div className="col-span-full py-16 text-center text-neutral-400">
               <Search className="w-10 h-10 mx-auto mb-2 opacity-40" />
               <p className="text-sm font-semibold text-neutral-600 dark:text-neutral-300">No matching sections found</p>

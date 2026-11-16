@@ -45,6 +45,8 @@ final class MediaUrlPolicy
         $connectedMedia??=array_fill_keys(json_decode(file_get_contents(resource_path('cms/connected-media.v1.json')),true),true);
         if(isset($connectedMedia[$url]))return true;
 
+        if (preg_match('#\A/images/cms/defaults/neutral/(?:photo|logo|avatar)-[0-9]{1,6}-(?:left|right|center)\.svg\z#D', $url) === 1 && is_file(public_path(ltrim($url, '/')))) { return true; }
+
         // Bundled, reviewed template assets are distinct from uploaded managed media.
         if (preg_match('#\A/images/cms/templates/connected/[0-9a-f]{24}\.webp\z#D', $url) === 1) { return true; }
 

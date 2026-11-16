@@ -352,7 +352,14 @@ final class PageDocumentContract
         }
         $type = $section['type'];
         $targets = [];
-        if ((($type === 'chapter_block' && ($section['chapterPreset'] ?? 'story') === 'story') || in_array($type, ['cta_strip', 'hero_banner', 'split_hero', 'media_text_split', 'featured_deal'], true))
+        if ($type === 'comparison_matrix' && ($section['comparisonPreset'] ?? '') === 'device-table') {
+            foreach ($section['items'] ?? [] as $item) {
+                $item = $item instanceof stdClass ? get_object_vars($item) : $item;
+                if (is_array($item) && ($item['subtitle'] ?? '') === 'device' && isset($item['id'])) {
+                    $targets['item:'.$item['id'].':imageUrl'] = false;
+                }
+            }
+        } elseif ((($type === 'chapter_block' && ($section['chapterPreset'] ?? 'story') === 'story') || in_array($type, ['cta_strip', 'hero_banner', 'split_hero', 'media_text_split', 'featured_deal'], true))
             && ! in_array(($section['layoutPreset'] ?? ''), ['editorial-story-cards','editorial-journal-rows','artisan-story'], true) && ($section['mediaType'] ?? 'image') !== 'video' && ! ($type === 'cta_strip' && ($section['ctaPreset'] ?? 'default') === 'editorial-band')) {
             $targets['mediaUrl'] = in_array($type, ['hero_banner', 'cta_strip'], true);
         } elseif ($type === 'before_after') {

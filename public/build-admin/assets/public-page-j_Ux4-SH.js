@@ -1,0 +1,1 @@
+import{c1 as s,c0 as a,j as t,r as c,a4 as r,c2 as n,c3 as i}from"./index-DCbR0gcE.js";const o=document.getElementById("cms-page-root");if(o){const e=s();a.createRoot(o).render(t.jsx(c.StrictMode,{children:e?t.jsx(r,{payload:e,children:t.jsx(n,{sections:e.page.document.sections,mode:e.context.mode})}):t.jsx(i,{})}))}

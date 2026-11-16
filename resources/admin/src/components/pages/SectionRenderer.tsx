@@ -1,3 +1,5 @@
+import {observeNeutralStarterMedia} from './NeutralStarterMedia';
+import {starterFonts} from '../../cms/starterTypography';
 import {isConnectedFamily} from '../../cms/connectedFamilies';
 import {ConnectedFamilySection} from './ConnectedFamilySection';
 import {UnifiedPricing} from './UnifiedPricing';
@@ -118,6 +120,8 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
   const runtime = usePageRuntime();
   const section=resolveStyledSection(rawSection,resolvePageStyle(runtime.page.document.style,runtime.context.themePalette)??(rawSection.surface==='page'?{palette:runtime.context.themePalette??stylePresets[0].palette}:undefined));
   useEffect(()=>loadCmsFonts(),[]);
+  const starterRoot=useRef<HTMLElement>(null);
+  useEffect(()=>rawSection.starterDesign==='neutral-v1'&&starterRoot.current?observeNeutralStarterMedia(starterRoot.current):undefined,[rawSection.starterDesign,rawSection.id]);
   const runtimeSection = usePageSectionRuntime(section.id);
   const [productListingIdx, setProductListingIdx] = useState(0);
   const [listingVariantIds, setListingVariantIds] = useState<Record<string,string>>({});
@@ -301,6 +305,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
   const customColors = section.customColors;
   const sectionRootStyle: React.CSSProperties = {
     ...(runtime.page.document.style&&!runtime.page.document.style.preserveLayout||rawSection.surface||rawSection.brandPalette?{color:customColors?.titleColor}:{}),
+    ...(rawSection.starterDesign==='neutral-v1'?{fontFamily:starterFonts.body,'--font-display':starterFonts.display,'--font-body':starterFonts.body,'--font-ui':starterFonts.ui}:{}),
     ...(customColors?.eyebrowColor ? { '--sec-eyebrow': customColors.eyebrowColor } : {}),
     ...(customColors?.titleColor ? { '--sec-title': customColors.titleColor } : {}),
     ...(customColors?.contentColor ? { '--sec-desc': customColors.contentColor } : {}),
@@ -2677,7 +2682,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
   if(section.type==='promotion_highlights'&&!isEditingMode&&!resolvePromotionCards(section,runtimeSection.promotions?.offers??[]).length)return null;
   const ownedAppearance=actionAppearanceCss(rawSection,section,resolvePageStyle(runtime.page.document.style,runtime.context.themePalette));
   return (
-    <section data-cms-unified-buttons={runtime.page.document.style?.unifiedButtons||rawSection.buttonRadius!==undefined||rawSection.buttonSize!==undefined?'':undefined} data-cms-shared-style={runtime.page.document.style&&!runtime.page.document.style.preserveLayout?'':undefined} data-cms-surface={rawSection.surface} data-cms-editor={isEditingMode?'':undefined}
+    <section ref={starterRoot} data-cms-starter-design={rawSection.starterDesign} data-cms-unified-buttons={runtime.page.document.style?.unifiedButtons||rawSection.buttonRadius!==undefined||rawSection.buttonSize!==undefined?'':undefined} data-cms-shared-style={runtime.page.document.style&&!runtime.page.document.style.preserveLayout?'':undefined} data-cms-surface={rawSection.surface} data-cms-editor={isEditingMode?'':undefined}
       id={`section-${section.id}`}
       style={{...sectionRootStyle,...containedSurfaceBackground(section),...(sectionAnchorOffset(section)?{scrollMarginTop:sectionAnchorOffset(section)}:{}),...sectionBorderStyle(section),'--cms-page-width':section.containerMode==='full-bleed'?'100%':(runtime.page.document.containerWidth??'site')==='site'?'var(--storefront-content-width, 1280px)':runtime.page.document.containerWidth==='full'?'100%':runtime.page.document.containerWidth==='wide'?'1440px':'1280px',...(section.containerMode==='full-bleed'?{'--cms-page-gutter':'0px'}:(runtime.page.document.containerWidth??'site')==='site'?{'--cms-page-gutter':'var(--storefront-content-gutter, 24px)'}:{}),...(runtime.page.document.style&&runtime.page.document.style.unifiedButtons!==false?{'--cms-button-radius':`${rawSection.buttonRadius??runtime.page.document.style.buttonRadius??0}px`,'--cms-button-height':`${{compact:36,normal:44,large:52}[rawSection.buttonSize??runtime.page.document.style.buttonSize??'normal']}px`}: {}),...(rawSection.buttonRadius!==undefined?{'--cms-button-radius':`${rawSection.buttonRadius}px`}:{}),...(rawSection.buttonSize!==undefined?{'--cms-button-height':`${{compact:36,normal:44,large:52}[rawSection.buttonSize]}px`}:{})} as React.CSSProperties}
       onClickCapture={isEditingMode?event=>{
