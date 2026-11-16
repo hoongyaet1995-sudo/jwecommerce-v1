@@ -24,7 +24,9 @@ it('inserts all 173 cards through the real picker and exports editable canonical
   const onAdd=vi.fn();await act(async()=>root.render(<AddSectionModal key={i} isOpen onClose={()=>{}} onAdd={onAdd} categories={[]} collections={[]}/>));
   const choices=[...node.querySelectorAll<HTMLButtonElement>('button')].filter(b=>b.querySelector('h3'));
   await act(async()=>choices[i].click());
-  if(t.sharedFamily)await act(async()=>[...node.querySelectorAll<HTMLButtonElement>('button')].find(b=>b.textContent==='Insert selected layout')!.click());
+  expect(onAdd).not.toHaveBeenCalled();
+  expect(node.querySelector('iframe[title*=preview]')).not.toBeNull();
+  await act(async()=>[...node.querySelectorAll<HTMLButtonElement>('button')].find(b=>b.textContent==='Insert selected layout')!.click());
   expect(onAdd).toHaveBeenCalledTimes(1);const section=onAdd.mock.calls[0][0] as PageSection;
   expect(section.starterDesign).toBe('neutral-v1');expect(section.title).toBe('Lorem ipsum dolor sit amet.');
   const plain=render(section);expect(plain).toContain('data-cms-starter-design="neutral-v1"');

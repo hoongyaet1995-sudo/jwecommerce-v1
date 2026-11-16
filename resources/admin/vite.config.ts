@@ -20,6 +20,7 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, 'src/main.tsx'),
         'public-page': resolve(__dirname, 'src/public-page.tsx'),
+        'section-preview': resolve(__dirname, 'src/section-preview/index.html'),
       },
     },
   },

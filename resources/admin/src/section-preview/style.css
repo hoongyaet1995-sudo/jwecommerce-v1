@@ -1,0 +1,4 @@
+@import "../index.css";
+@source "../components/pages";
+@source "../cms";
+body{margin:0;background:white;color:#101a3a}#root{display:flow-root}*{animation-duration:0s!important;transition-duration:0s!important}

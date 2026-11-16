@@ -1,0 +1,9 @@
+# Add Page Section real-preview release
+
+Approved scope: GitHub main plus www and ecom, preserve existing pages, media, custom settings and unrelated work. Isolated release branch codex/section-preview-release-20261116 based on8a1f3949. Canonical development worktree remains on its original dirty branch.
+
+Only formal picker preview flow, isolated responsive renderer entry, preview-only runtime fixtures, matching focused tests, local acceptance record, static installer and isolated rebuilt Admin assets are included. No sample UI, application backend changes, migrations, data publishers or credentials are included. Existing SSR output hash is unchanged.
+
+Isolated checks:10 frontend tests pass including all173 real picker preview/confirm insertions and A-B-A layout/mobile selection; TypeScript passes; client/SSR build passes16.13s; explicit CMS backend acceptance passes1046assertions. Generic Artisan filtered suite hits an existing duplicate MarketingStoryboardTrialScopeTest at discovery; using the explicit CMS file avoids unrelated discovery and passes without code changes. Canonical local authenticated edit/save/refresh/public acceptance and production-frame173desktop+173mobile audits are documented in 2026-11-16-add-section-real-preview-integration.md.
+
+Deployment uses fast-forward GitHub main pulls on both approved app roots, restricted static copying including the new preview HTML and manifest, cache clearing, SHA comparison, HTTPS asset/hash checks and real authenticated preview/layout/add/edit/save/refresh acceptance. Pre-release page/document/menu/settings/media fingerprints and environment hashes are captured; temporary QA drafts must remain unpublished/non-home and be guarded/backed up before cleanup. Results and final SHA are recorded in canonical output/section-preview-release-20261116 and the existing checkpoint. No social release. Accounting totals unavailable.

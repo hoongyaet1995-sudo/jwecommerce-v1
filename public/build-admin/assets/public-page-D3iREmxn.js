@@ -1,0 +1,1 @@
+import{bB as s,bA as a,j as t,r,a4 as n,bC as i,bD as c}from"./PageRuntimeContext-HIijp67h.js";/* empty css              */const o=document.getElementById("cms-page-root");if(o){const e=s();a.createRoot(o).render(t.jsx(r.StrictMode,{children:e?t.jsx(n,{payload:e,children:t.jsx(i,{sections:e.page.document.sections,mode:e.context.mode})}):t.jsx(c,{})}))}
