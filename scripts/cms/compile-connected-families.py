@@ -207,6 +207,10 @@ for page in manifest['pages']:
      for index,sib in enumerate(siblings):variants.append('case '+str(index)+':return '+emit(sib,'entry',True)+';')
      return 'group(s,'+J(collection)+').map(entry=>{switch(entry.layoutVariant??0){'+''.join(variants)+'default:return '+emit(siblings[0],'entry',True)+';}})'
    binding=field_bindings.get(n.get('data-field')); role=n.get('data-role'); props=attrs(n,item)
+   # Editable statistic captions keep their source geometry and existing item-text ownership.
+   caption_slot=next((static_slots[id(c)] for c in n.children if id(c) in static_slots),None)
+   if caption_slot and 'mini-stat' in n.parent.get('class',[]):
+    props+=['"data-cms-text":"itemContent"','"data-cms-item":detail(s,'+J(caption_slot)+')?.id']
    tag=J(n.name)
    if binding:
     val=value(binding,item or 'undefined')

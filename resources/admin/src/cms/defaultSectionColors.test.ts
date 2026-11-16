@@ -30,7 +30,7 @@ it('does not rewrite unmarked legacy styles, source data or authored colors',()=
 });
 it('keeps every default rule inside its own section, including comma-separated contexts',()=>{
  const css=defaultSectionColorCss(starter,resolveStyledSection(starter,{palette:stylePresets[2].palette}),{palette:stylePresets[2].palette});
- for(const rule of css.split('\n'))expect(rule.startsWith('#section-readability')).toBe(true);
+ for(const rule of css.split('\n'))expect(rule.startsWith('#section-readability')||rule.startsWith('@container cms-connected (max-width:809px){#section-readability ')).toBe(true);
  expect(css).toContain(':where(.process-story){--cms-auto-ink:#ffffff;');
  expect(css).not.toMatch(/:where\([^{}]*\[data-cms-text[^{}]*\)\{background:/);
  expect(css).not.toContain(':where([data-cms-hero-safe] > div){background:');
@@ -47,4 +47,15 @@ it('keeps every new image overlay within the existing canonical save/import cont
   const document={title:'Readability',slug:'readability-'+i,description:'',template:'landing',sections:[section]};
   expect(parseDraftImport(JSON.stringify(document),'readability').sections[0]).toEqual(section);
  }
+});
+
+it('retains authored selected-tab ink while repairing only automatic starter ink',()=>{
+ const page={palette:stylePresets[0].palette};
+ const authored={...starter,type:'media_gallery' as const,buttonColors:{primaryText:'#ffcc33'}};
+ const before=JSON.stringify(authored);
+ const css=defaultSectionColorCss(authored,resolveStyledSection(authored,page),page);
+ expect(css).toContain('.corp-tablist button[aria-selected="true"]');
+ expect(css).toContain('color:#ffcc33!important;');
+ expect(JSON.stringify(authored)).toBe(before);
+ expect(defaultSectionColorCss({...authored,starterDesign:undefined},resolveStyledSection(authored,page),page)).toBe('');
 });

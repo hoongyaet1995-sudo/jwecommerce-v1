@@ -52,7 +52,7 @@ export function resolveStyledSection(section:PageSection,style?:PageStyle):PageS
  const explicitSurface=section.surface==='page'||section.surface==='light'||section.surface==='contrast';
  const cardContrast=['contained-wide-centered','contained-wide-editorial'].includes(section.layoutPreset??'')||['staggered-focus-cards','image-cards-contrast'].includes(section.galleryPreset??'')||section.type==='faq_accordion'&&['pricing-card-faq','pricing-band-faq'].includes(section.faqPreset??'');
  const contrast=section.surface==='contrast'&&!cardContrast;const c:BrandPalette=palette??stylePresets[0].palette;
- const ink=contrast?(c.contrast?onColor(c.contrast):c.light):c.ink,muted=contrast?(hasContainedSurface(section)?blend(c.light,c.ink,.2):ink):c.muted,bg=contrast?(c.contrast??(hasContainedSurface(section)?c.ink:c.accent)):c.paper;
+ const ink=contrast?(c.contrast?onColor(c.contrast):c.light):c.ink,muted=contrast?(hasContainedSurface(section)?blend(c.light,c.ink,.2):ink):c.muted,bg=contrast?(c.contrast??(section.starterDesign==='neutral-v1'||hasContainedSurface(section)?c.ink:c.accent)):c.paper;
  const typography:SectionTypography={};
  for(const role of ['eyebrow','title','lead','content','itemTitle','itemContent'] as const){
   const overlayItems=role.startsWith('item')&&section.type==='shop_navigation'&&section.shopNavigationPreset==='collection-banners';
