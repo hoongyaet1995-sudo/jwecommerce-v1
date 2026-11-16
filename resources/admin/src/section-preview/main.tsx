@@ -25,4 +25,3 @@ function Frame(){
  return <Boundary><PageRuntimeProvider payload={sectionPreviewPayload(section,false,pageStyle)}><SectionRenderer section={section} isEditingMode viewport={width===390?'mobile':'desktop'}/></PageRuntimeProvider></Boundary>;
 }
 createRoot(document.getElementById('root')!).render(<Frame/>);
-
