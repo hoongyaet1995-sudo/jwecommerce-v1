@@ -1,3 +1,4 @@
+import {SharedLayoutDiagram,hasSharedDiagram} from './SharedLayoutDiagram';
 import React from 'react';
 
 type Props = Pick<React.SelectHTMLAttributes<HTMLSelectElement>, 'value'|'onChange'|'children'|'disabled'|'aria-label'> & {className?:string};
@@ -5,6 +6,7 @@ function options(nodes:React.ReactNode):React.ReactElement<{value:string|number;
   return React.Children.toArray(nodes).flatMap(node=>React.isValidElement(node)?node.type===React.Fragment?options((node.props as {children:React.ReactNode}).children):node.type==='option'?[node as React.ReactElement<{value:string|number;children:React.ReactNode;disabled?:boolean}>]:[]:[]);
 }
 function Diagram({value,label}:{value:string;label:string}) {
+  if(hasSharedDiagram(value))return <SharedLayoutDiagram value={value}/>;
   const text=<><rect x="48" y="23" width="40" height="5" rx="1"/><rect x="48" y="34" width="32" height="3" rx="1"/><rect x="48" y="42" width="38" height="3" rx="1"/></>;
   const image=<><rect x="8" y="12" width="32" height="43" rx="2" opacity=".35"/><path d="M10 47 20 32 28 41 35 27 39 47Z" opacity=".65"/></>;
   let drawing:React.ReactNode=<>{image}{text}</>;

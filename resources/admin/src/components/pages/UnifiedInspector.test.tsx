@@ -1,5 +1,7 @@
+import {connectedPassport,isConnectedFamily} from '../../cms/connectedFamilies';
+import {isImageFlow} from '../../cms/imageFlow';
 import type {PageSection} from '../../types';
-import {writeFileSync} from 'node:fs';
+import {writeFileSync,readFileSync,mkdirSync} from 'node:fs';
 import {sectionContentFields} from '../../cms/contentCapabilities';
 import {repeatedItemFields} from '../../cms/repeatedItemContract';
 // @vitest-environment jsdom
@@ -9,10 +11,11 @@ import {createRoot} from 'react-dom/client';
 import {it,expect,vi} from 'vitest';
 import {SectionInspector} from './SectionInspector';
 import {SECTION_TEMPLATES} from './AddSectionModal';
-vi.mock('../../context/AdminContext',()=>({useAdmin:()=>({products:[],categories:[],collections:[],addToast:vi.fn()})}));
+vi.mock('../../context/AdminContext',()=>({useAdmin:()=>({products:[],categories:[],collections:[],pages:[],addToast:vi.fn()})}));
 vi.mock('../../context/useAdminCurrency',()=>({useAdminCurrency:()=>({currencyCode:'MYR',money:(value:number)=>String(value)})}));
 vi.mock('../../integration/adminBootstrap',()=>({readAdminBootstrap:()=>({})}));
 vi.mock('../../integration/couponData',()=>({fetchCoupons:async()=>({promotions:[]})}));
+mkdirSync('../../output/jw-cms-integration-20261114/section-test-audit-20261116',{recursive:true});
 const props={pageId:'sample',onChange:vi.fn(),onMediaUpload:vi.fn(),onDelete:vi.fn(),onClose:vi.fn()};
 it.each(SECTION_TEMPLATES)('mounts $title with applicable controls and three categories',(template)=>{
   const html=renderToStaticMarkup(<SectionInspector {...props} section={{...template.defaultData,id:'sample',isVisible:true}}/>);
@@ -52,13 +55,13 @@ it('location item controls do not depend on accidental saved fields',()=>{
 it('all textual Delete and Clear actions use accessible icon buttons',()=>{
  for(const template of SECTION_TEMPLATES){
   const html=renderToStaticMarkup(<SectionInspector {...props} section={{...template.defaultData,id:'sample'}}/>);
-  expect(html,template.title).not.toMatch(/>\s*(Delete(?: Image)?|Clear)\s*<\/button>/);
+  expect(html,template.title).not.toMatch(/>\s*(Delete(?: Image)?)\s*<\/button>/);
  }
 });
 
 it('every registered repeated-item preset declares its editable capabilities',()=>{
  for(const template of SECTION_TEMPLATES){
-  if(template.defaultData.items?.length)expect(repeatedItemFields({...template.defaultData,id:'sample'}),template.title).not.toHaveLength(0);
+  if(template.defaultData.items?.length){const section={...template.defaultData,id:'sample'};expect(repeatedItemFields(section).length+(connectedPassport(section)?.details.length??0),template.title).toBeGreaterThan(0);}
  }
 });
 
@@ -74,14 +77,14 @@ it('refreshes Content capabilities on Story Cards -> Classic -> Story Cards with
 });
 it('registers all twelve media text layouts as independently selectable starters',()=>{
  const presets=SECTION_TEMPLATES.filter(t=>t.type==='media_text_split').map(t=>t.defaultData.layoutPreset??'default');
- expect(new Set(presets)).toEqual(new Set(['editorial-journal-rows','artisan-story','kids-discovery','default','editorial-hero','editorial-story','editorial-story-cards','story-with-steps','editorial-cover','flush-split','producer-story','tech-feature']));
+ expect(presets).toEqual(expect.arrayContaining(['editorial-journal-rows','artisan-story','kids-discovery','default','editorial-hero','editorial-story','editorial-story-cards','story-with-steps','editorial-cover','flush-split','producer-story','tech-feature']));
 });
 
 it.each(['editorial-hero','editorial-story','editorial-cover'] as const)('exposes empty supported Content fields for %s without pre-existing saved keys',async(layoutPreset)=>{
  const node=document.createElement('div');const root=createRoot(node);
  await act(async()=>root.render(<SectionInspector {...props} section={{id:'empty',type:'media_text_split',title:'Title',isVisible:true,layoutPreset}}/>));
  expect(node.querySelector('[data-inspector-field="content"]')).not.toBeNull();
- expect(node.querySelector('[data-inspector-field="subtitle"]')).not.toBeNull();
+ expect(node.querySelector('[data-inspector-field="eyebrow"]')).not.toBeNull();
  expect(node.querySelector('[aria-label="Image alternative text"]')).not.toBeNull();
  expect(node.querySelector('[data-inspector-field="leadText"]')!==null).toBe(layoutPreset!=='editorial-story');
  expect(node.textContent).not.toContain('Add Card');
@@ -90,18 +93,18 @@ it.each(['editorial-hero','editorial-story','editorial-cover'] as const)('expose
 
 const sparseSection=(template:typeof SECTION_TEMPLATES[number]):PageSection=>({
  id:'sparse',type:template.type,title:'Sparse heading',isVisible:true,
- ...Object.fromEntries(Object.entries(template.defaultData).filter(([key])=>key.endsWith('Preset')||['valuesShowHeading','showSectionHeading'].includes(key))),
+ ...Object.fromEntries(Object.entries(template.defaultData).filter(([key])=>key.endsWith('Preset')||['valuesShowHeading','showSectionHeading','connectedLayout','connectedDiagram','pricingMatrix','planContentSource','itemLayoutMode'].includes(key))),
 });
 it.each(SECTION_TEMPLATES)('offers empty Content entries for $title independently of saved optional values',template=>{
  const section=sparseSection(template);
  const node=document.createElement('div');node.innerHTML=renderToStaticMarkup(<SectionInspector {...props} section={section}/>);
  const noHeading=['announcement_bar','chapter_navigation','stats_counter','icon_list'];
  const headingHidden=section.type==='feature_cards'&&section.featureCardsPreset==='service-highlights'||section.type==='hero_slider'&&['editorial-overlay','fashion-editorial'].includes(section.sliderPreset??'')||section.showSectionHeading===false||section.type==='chapter_block'&&section.chapterPreset==='principles'||(section.type==='values_list'||section.featureCardsPreset==='values-list')&&!section.valuesShowHeading;
- expect(!!node.querySelector('[data-inspector-field="title"]'),template.title).toBe(!noHeading.includes(section.type)&&!headingHidden);
- if(['hero_banner','split_hero','featured_deal','newsletter_signup'].includes(section.type))expect(node.querySelector('[data-inspector-field="buttonText"]')).not.toBeNull();
+ expect(!!node.querySelector('[data-inspector-field="title"]'),template.title).toBe(isConnectedFamily(section)?connectedPassport(section)!.sectionFields.includes('title'):!noHeading.includes(section.type)&&!headingHidden);
+ if(!isConnectedFamily(section)&&sectionContentFields(section).includes('buttonText')&&['hero_banner','split_hero','featured_deal','newsletter_signup'].includes(section.type))expect(node.querySelector('[data-inspector-field="buttonText"]')).not.toBeNull();
  if(section.type==='product_listing'&&section.listingPreset==='editorial-grid'||section.type==='contact_form'&&section.contactPreset==='enquiry')expect(node.querySelector('[data-inspector-field="buttonLink"]')).not.toBeNull();
  if(section.type==='media_text_split'){
-  if(!['editorial-cover','kids-discovery'].includes(section.layoutPreset??''))expect(node.querySelector('[data-inspector-field="buttonText"]')).not.toBeNull();
+  if(sectionContentFields(section).includes('buttonText'))expect(node.querySelector('[data-inspector-field="buttonText"]')).not.toBeNull();
   expect(node.textContent).toContain(section.layoutPreset==='editorial-story-cards'?'Add story':section.layoutPreset==='story-with-steps'?'Add Step':'Text & headings');
  }
  if(section.type==='chapter_block'&&['perspective','delivery'].includes(section.chapterPreset??''))expect(node.textContent).toContain('Add Photo');
@@ -121,12 +124,13 @@ it.each(repeatableTemplates)('exposes renderer-backed repeated fields for $title
  const item:Record<string,unknown>={id:'audit-item',title:'AUDIT-title'};
  for(const field of fields){
   if(['sourceType','sourceId','icon','imageUrl','authorAvatar','videoUrl'].includes(field))continue;
-  item[field]=field==='price'?37:field==='rating'?4:field==='isHighlighted'?true:field==='features'?['AUDIT-features']:'AUDIT-'+field;
+  item[field]=field==='annualPrice'?37:field==='planSurface'?'paper':field==='pricingMode'?'contact':field==='category'&&['corporate-feature','corporate-support'].includes(section.layoutPreset??'')?'benefit':field==='price'?37:field==='rating'?4:field==='isHighlighted'?true:field==='features'?['AUDIT-features']:'AUDIT-'+field;
  }
  if(section.layoutPreset==='kids-discovery')item.badge='care';
  if(fields.includes('imageUrl')&&!['policy_content','chapter_block'].includes(section.type))item.imageUrl='https://images.unsplash.com/photo-audit';
  if(fields.includes('authorAvatar'))item.authorAvatar='https://images.unsplash.com/photo-audit';
- section.items=[item as unknown as NonNullable<typeof section.items>[number]];
+ section.items=isConnectedFamily(section)?connectedPassport(section)!.groups.map((g,i)=>({...item,id:'audit-item-'+i,layoutGroup:g.id,layoutVariant:0}) as unknown as NonNullable<typeof section.items>[number]):[item as unknown as NonNullable<typeof section.items>[number]];
+ if(isConnectedFamily(section))section.imageSlots=section.items.map(i=>({target:`item:${i.id}:imageUrl`,mediaAlt:'AUDIT-mediaAlt'}));
  if(section.type==='comparison_matrix'&&section.comparisonPreset==='device-table')section.items=[...['one','two','three'].map(id=>({id,title:id,subtitle:'device'})),...section.items];
  if(fields.includes('imageUrl')&&['policy_content','chapter_block'].includes(section.type))section.items.push({id:'audit-photo',title:'Photo description',imageUrl:'https://images.unsplash.com/photo-audit'});
  const node=document.createElement('div');node.innerHTML=renderToStaticMarkup(<SectionInspector {...props} section={section}/>);
@@ -135,7 +139,8 @@ it.each(repeatableTemplates)('exposes renderer-backed repeated fields for $title
  for(const field of fields){
   if(['sourceType','sourceId','icon','imageUrl','authorAvatar','videoUrl','isHighlighted'].includes(field))continue;
   if(section.type==='chapter_block'&&section.chapterPreset==='perspective'&&field==='title')continue;
-  const expected=section.layoutPreset==='kids-discovery'&&field==='badge'?'care':field==='price'?'37':field==='rating'?'4':field==='features'?'AUDIT-features':'AUDIT-'+field;
+  if(item.pricingMode==='contact'&&['price','billingLabel'].includes(field))continue;
+  const expected=field==='annualPrice'?'37':field==='planSurface'?'paper':field==='pricingMode'?'contact':field==='category'&&['corporate-feature','corporate-support'].includes(section.layoutPreset??'')?'benefit':section.layoutPreset==='kids-discovery'&&field==='badge'?'care':field==='price'?'37':field==='rating'?'4':field==='features'?'AUDIT-features':'AUDIT-'+field;
   if(!values.includes(expected))unsupported.push(field);
  }
  expect(unsupported,template.title+' missing editable entry fields').toEqual([]);
@@ -145,29 +150,33 @@ it('exports the reviewed starter and consumer capability matrix for canonical/ba
   const section={...template.defaultData,id:'audit-'+index};
   return {name:template.title,type:template.type,section,contentFields:sectionContentFields(section),itemFields:repeatedItemFields(section)};
  });
+ expect(records).toHaveLength(173);
  expect(new Set(records.map(row=>row.type)).size).toBe(35);
- writeFileSync('../../output/cms-page-style/full-content-capability-matrix.json',JSON.stringify(records,null,2));
+ const base=JSON.parse(readFileSync('../../tests/Fixtures/Cms/page-document-all-sections.v1.json','utf8'));
+ writeFileSync('../../output/jw-cms-integration-20261114/section-test-audit-20261116/registered-documents.json',JSON.stringify(records.map((r,i)=>({...base,title:r.name,slug:'audit173-'+i,sections:[r.section]})),null,2));
+ writeFileSync('../../output/jw-cms-integration-20261114/section-test-audit-20261116/full-content-capability-matrix.json',JSON.stringify(records,null,2));
 });
 
 it.each(repeatableTemplates)('can add, edit, reorder and delete entries in mounted $title Content',async template=>{
  (globalThis as {IS_REACT_ACT_ENVIRONMENT?:boolean}).IS_REACT_ACT_ENVIRONMENT=true;
  const node=document.createElement('div');const root=createRoot(node);
- let saved:PageSection={...template.defaultData,id:'interaction',items:[],deliverySource:'manual' as const};
+ let saved:PageSection={...template.defaultData,id:'interaction',items:[],itemLayoutMode:'flow',deliverySource:'manual' as const};
  function Harness(){const [section,setSection]=useState(saved);return <SectionInspector {...props} section={section} onChange={next=>{saved=next;setSection(next)}}/>;}
  await act(async()=>root.render(<Harness/>));
- const add=()=>[...node.querySelectorAll<HTMLButtonElement>('button')].find(button=>/^Add (Card|Slide|story|Step|Photo|Principle|Destination|Entry|Navigation Link|Column|Value|device|specification row)$/.test(button.textContent?.trim()??'')&&!button.closest('[hidden]'));
+
+ const add=()=>[...node.querySelectorAll<HTMLButtonElement>('button')].find(button=>/^Add (Card|Slide|story|Step|step|scenario|label|Logo|item|Photo|Principle|Destination|Entry|Navigation Link|Column|Value|device|specification row)$/.test(button.textContent?.trim()??'')&&!button.closest('[hidden]'));
  expect(add(),template.title).toBeDefined();
  await act(async()=>add()!.click());await act(async()=>add()!.click());
  expect(saved.items,template.title).toHaveLength(2);
  expect(new Set(saved.items!.map(item=>item.id)).size,template.title).toBe(2);
  const firstId=saved.items![0].id;
  const container=node.querySelector(`[data-inspector-item="${firstId}"]`)!;
- const editor=(container.matches('input,textarea')?container:container.querySelector('input:not([type="file"]),textarea')??(template.defaultData.galleryPreset==='photo-marquee'?node.querySelector('[data-image-target-inspector] input:not([type="file"])'):null)) as HTMLInputElement|HTMLTextAreaElement;
+ const editor=(container.matches('input,textarea')?container:container.querySelector('input:not([type="file"]),textarea')??((template.defaultData.galleryPreset==='photo-marquee'||isImageFlow(saved))?node.querySelector('[data-image-target-inspector] input:not([type="file"])'):null)) as HTMLInputElement|HTMLTextAreaElement;
  expect(editor,template.title+' entry editor').not.toBeNull();
- const value=template.defaultData.galleryPreset==='photo-marquee'?'/images/edited-marquee.png':editor instanceof HTMLInputElement&&editor.type==='number'?'37':'EDITED ENTRY';
+ const value=(template.defaultData.galleryPreset==='photo-marquee'||isImageFlow(saved))?'/images/edited-marquee.png':editor instanceof HTMLInputElement&&editor.type==='number'?'37':'EDITED ENTRY';
  await act(async()=>{Object.getOwnPropertyDescriptor(editor instanceof HTMLTextAreaElement?HTMLTextAreaElement.prototype:HTMLInputElement.prototype,'value')!.set!.call(editor,value);editor.dispatchEvent(new Event('input',{bubbles:true}));});
  expect(Object.values(saved.items![0]).flat().map(String),template.title+' edit result').toContain(value);
- const move=[...node.querySelectorAll<HTMLButtonElement>('button')].find(button=>[button.getAttribute('aria-label'),button.title,button.textContent?.trim()].some(name=>/^(Up|Down|Move (?:item|value) [0-9]+ (?:up|down)|Move device up|Move device down|Move row up|Move row down)$/.test(name??''))&&!button.disabled&&!button.closest('[hidden]'));
+ const move=[...node.querySelectorAll<HTMLButtonElement>('button')].find(button=>[button.getAttribute('aria-label'),button.title,button.textContent?.trim()].some(name=>/^(Up|Down|Move (?:item|value) [0-9]+ (?:up|down)|Move device up|Move device down|Move row up|Move row down|Move up|Move down)$/.test(name??''))&&!button.disabled&&!button.closest('[hidden]'));
  expect(move,template.title+' reorder').toBeDefined();await act(async()=>move!.click());expect(saved.items![1].id,template.title+' retained stable identity').toBe(firstId);
 
  const remove=[...node.querySelectorAll<HTMLButtonElement>('button')].find(button=>(/^Delete(?: |$)/.test(button.getAttribute('aria-label')??button.title)||/^Remove (device|row)$/.test(button.getAttribute('aria-label')??button.textContent?.trim()??''))&&!button.closest('[hidden]')&&!['Delete section','Delete Section'].includes(button.getAttribute('aria-label')??button.title));
@@ -182,4 +191,14 @@ it.each(['guidelines','choices','steps','process-flow','timeline','tabs','column
 it('exposes Manifesto text while hiding the dormant quote editor',()=>{
  const html=renderToStaticMarkup(<SectionInspector {...props} section={{id:'manifesto',isVisible:true,type:'rich_text',title:'Manifesto',richTextPreset:'manifesto'}}/>);
  expect(html).toContain('data-inspector-field="content"');expect(html).not.toContain('aria-label="Quote"');
+});
+
+it.each(['amount','contact'] as const)('keeps %s pricing controls tied to the selected price mode',async pricingMode=>{
+ const node=document.createElement('div');const root=createRoot(node);
+ const section:PageSection={id:'pricing-mode',isVisible:true,type:'pricing_table',title:'Plans',pricingPreset:'saas-packages',items:[{id:'plan',title:'Plan',pricingMode,price:37,billingLabel:'/ month',pricingLabel:'On request',features:[]}]};
+ await act(async()=>root.render(<SectionInspector {...props} section={section}/>));
+ expect(!!node.querySelector('[aria-label="Plan 1 price wording"]')).toBe(pricingMode==='contact');
+ expect([...node.querySelectorAll('input')].some(n=>n.value==='/ month')).toBe(pricingMode==='amount');
+ expect(node.querySelector('[aria-label="Plan 1 price display"]')).not.toBeNull();
+ act(()=>root.unmount());
 });

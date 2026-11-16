@@ -1,3 +1,5 @@
+import {sharedSectionFamilies,createSharedSection} from '../../cms/sharedSectionLibrary';
+import {VisualChoiceSelect} from './VisualChoiceSelect';
 import {containedWideCentered,containedWideEditorial,insetSurfacePanel,centeredWideVisual,splitVisualSurface,wideVisualEditorial} from '../../cms/wideVisualEditorial';
 import {planComparison,framedFaq} from '../../cms/planComparison';
 import {focusedSteps} from '../../cms/focusedSteps';
@@ -88,6 +90,8 @@ export interface SectionTemplateOption {
   description: string;
   icon: React.ElementType;
   badge?: string;
+  sharedFamily?: string;
+  searchTerms?: string;
   defaultData: Omit<PageSection, 'id'>;
 }
 
@@ -1211,7 +1215,8 @@ const KIDS_SECTION_TEMPLATES:SectionTemplateOption[]=[{index:3,title:'Nursery & 
 const WEDDING_SECTION_TEMPLATES:SectionTemplateOption[]=[{index:0,title:'Editorial Gradient Hero'},{index:2,title:'Photo Marquee'},{index:3,title:'Portfolio Cards'},{index:6,title:'Numbered Process'},{index:7,title:'Editorial Quote'}].map(({index,title})=>({type:weddingTemplate.sections[index].type as PageSection['type'],title,category:index===2?'Media & Visuals':index===0?'Header & Intro':index===7?'Social Proof':'Storytelling & Narrative',description:'Editable editorial photographs, narrative and service content.',icon:Columns,defaultData:weddingTemplate.sections[index] as unknown as Omit<PageSection,'id'>}));
 const JEWELRY_SECTION_TEMPLATES:SectionTemplateOption[]=[{type:'media_text_split',title:'Artisan Story',category:'Storytelling & Narrative',description:'Central narrative framed by editable craft photographs, with supported links and images.',icon:Columns,defaultData:jewelryTemplate.sections[4] as unknown as Omit<PageSection,'id'>}];
 const DETAIL_SECTION_TEMPLATES:SectionTemplateOption[]=[...[{index:1,title:'Industrial Split Introduction'},{index:3,title:'Industrial Media Mosaic'},{index:4,title:'Industrial Process Split'},{index:5,title:'Industrial Related Containers'},{index:6,title:'Industrial Outline CTA'}].map(({index,title})=>({type:solutionDetail.sections[index].type as PageSection['type'],title,category:(index===3?'Media & Visuals':index===5?'Commerce & Shop':'Storytelling & Narrative') as SectionTemplateOption['category'],description:'Editable industrial layout with shared text, media and actions.',icon:Columns,defaultData:solutionDetail.sections[index] as unknown as Omit<PageSection,'id'>})),{type:'media_gallery' as const,title:'Album Browser',category:'Media & Visuals' as const,description:'Photograph groups, captions, load more and lightbox.',icon:Columns,defaultData:galleryDetail.sections[0] as unknown as Omit<PageSection,'id'>}];
-export const SECTION_TEMPLATES: SectionTemplateOption[] = [...DETAIL_SECTION_TEMPLATES,...WEDDING_SECTION_TEMPLATES,...JEWELRY_SECTION_TEMPLATES,...KIDS_SECTION_TEMPLATES,...TECH_SECTION_TEMPLATES,...MARKET_SECTION_TEMPLATES,...FASHION_SECTION_TEMPLATES,...MEDIA_PRESET_TEMPLATES,...PAYMENT_SECTION_TEMPLATES,...SOURCE_SECTION_TEMPLATES,...EDITORIAL_SECTION_TEMPLATES,...CHAPTER_SECTION_TEMPLATES,...SHIPPING_SECTION_TEMPLATES,...POLICY_SECTION_TEMPLATES].map(template => ({
+const SHARED_SECTION_TEMPLATES:SectionTemplateOption[]=sharedSectionFamilies.map(f=>({type:f.type,title:f.title,category:f.id==="hero"?'Header & Intro':f.id==="pricing"||f.id==="cta"?'Conversion & Leads':f.id==="faq"?'Support & Contact':f.id==="logos"?'Social Proof':'Storytelling & Narrative',description:`Shared ${f.id} layouts with editable text, media and actions.`,icon:LayoutTemplate,badge:'Connected',sharedFamily:f.id,searchTerms:f.layouts.map(l=>l.id+' '+l.label).join(' '),defaultData:createSharedSection(f.id,f.layouts[0].id)}));
+export const SECTION_TEMPLATES: SectionTemplateOption[] = [...SHARED_SECTION_TEMPLATES,...DETAIL_SECTION_TEMPLATES,...WEDDING_SECTION_TEMPLATES,...JEWELRY_SECTION_TEMPLATES,...KIDS_SECTION_TEMPLATES,...TECH_SECTION_TEMPLATES,...MARKET_SECTION_TEMPLATES,...FASHION_SECTION_TEMPLATES,...MEDIA_PRESET_TEMPLATES,...PAYMENT_SECTION_TEMPLATES,...SOURCE_SECTION_TEMPLATES,...EDITORIAL_SECTION_TEMPLATES,...CHAPTER_SECTION_TEMPLATES,...SHIPPING_SECTION_TEMPLATES,...POLICY_SECTION_TEMPLATES].map(template => ({
   ...template,
   defaultData: {
     ...template.defaultData,
@@ -1223,7 +1228,7 @@ export const SECTION_TEMPLATES: SectionTemplateOption[] = [...DETAIL_SECTION_TEM
 const normalizeSectionSearch = (value: string) => value.toLowerCase().replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim();
 export function matchesSectionSearch(template: SectionTemplateOption, query: string): boolean {
   const terms = normalizeSectionSearch(query).split(' ').filter(Boolean);
-  const searchable = normalizeSectionSearch([template.type, template.title, template.description, template.category].join(' '));
+  const searchable = normalizeSectionSearch([template.type, template.title, template.description, template.category,template.searchTerms??''].join(' '));
   return terms.every(term => searchable.includes(term));
 }
 
@@ -1236,7 +1241,9 @@ export const AddSectionModal: React.FC<AddSectionModalProps> = ({
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [sharedChoice,setSharedChoice]=useState<{family:string;layout:string}|null>(null);
 
+  const closeModal=()=>{setSharedChoice(null);onClose();};
   if (!isOpen) return null;
 
   const templateCategories = [
@@ -1258,6 +1265,7 @@ export const AddSectionModal: React.FC<AddSectionModalProps> = ({
   });
 
   const handleSelectTemplate = (template: SectionTemplateOption) => {
+    if(template.sharedFamily){const f=sharedSectionFamilies.find(f=>f.id===template.sharedFamily)!;setSharedChoice({family:f.id,layout:f.layouts[0].id});return;}
     const collectionTabs = template.type === 'collection_tabs'
       ? createCollectionTabMappings(categories, collections)
       : null;
@@ -1307,7 +1315,7 @@ export const AddSectionModal: React.FC<AddSectionModalProps> = ({
             </div>
           </div>
           <button
-            onClick={onClose}
+            onClick={closeModal}
             className="p-2 rounded-xl text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
@@ -1361,7 +1369,7 @@ export const AddSectionModal: React.FC<AddSectionModalProps> = ({
 
         {/* Templates Grid */}
         <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4.5 bg-neutral-50/40 dark:bg-neutral-950/40">
-          {filteredTemplates.length === 0 ? (
+          {sharedChoice ? <div className="col-span-full space-y-4"><button type="button" className="text-indigo-500" onClick={()=>setSharedChoice(null)}>← Back to sections</button><h3 className="font-bold text-neutral-900 dark:text-white">{sharedSectionFamilies.find(f=>f.id===sharedChoice.family)!.title}</h3><VisualChoiceSelect aria-label="Choose shared layout" value={sharedChoice.layout} onChange={e=>setSharedChoice({...sharedChoice,layout:e.target.value})}>{sharedSectionFamilies.find(f=>f.id===sharedChoice.family)!.layouts.map(l=><option key={l.id} value={l.id}>{l.label}</option>)}</VisualChoiceSelect><button type="button" className="px-4 py-2 rounded-xl bg-indigo-600 text-white" onClick={()=>{onAdd(createSharedSection(sharedChoice.family,sharedChoice.layout));setSharedChoice(null);onClose();}}>Insert selected layout</button></div> : filteredTemplates.length === 0 ? (
             <div className="col-span-full py-16 text-center text-neutral-400">
               <Search className="w-10 h-10 mx-auto mb-2 opacity-40" />
               <p className="text-sm font-semibold text-neutral-600 dark:text-neutral-300">No matching sections found</p>
@@ -1432,7 +1440,7 @@ export const AddSectionModal: React.FC<AddSectionModalProps> = ({
             Showing <strong className="text-neutral-900 dark:text-white">{filteredTemplates.length}</strong> available modular sections. All contents and media can be customized in the Inspector.
           </p>
           <button
-            onClick={onClose}
+            onClick={closeModal}
             className="px-4 py-2 text-xs font-semibold rounded-xl bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors cursor-pointer"
           >
             Cancel

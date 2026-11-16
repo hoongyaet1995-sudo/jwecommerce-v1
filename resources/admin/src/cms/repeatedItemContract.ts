@@ -24,6 +24,7 @@ const fields:Partial<Record<PageSection['type'],readonly string[]>>={
  delivery_table:['title','deliveryEstimate','deliveryFee'],chapter_navigation:['title','linkUrl'],
 };
 function legacyRepeatedItemFields(section:PageSection):readonly string[]{
+ if(section.type==='logo_cloud'&&section.logoPreset==='partners')return ['title','imageUrl','linkUrl'];
  if(section.type==='media_text_split'&&['contained-wide-centered','wide-visual-centered','inset-surface-panel','split-visual-surface'].includes(section.layoutPreset??''))return [];
  if(isWideVisualEditorial(section))return [];
  if(isPlanComparison(section))return section.planContentSource==='reference'?['sourceId','icon','buttonText','linkUrl']:['title','description','price','features','badge','isHighlighted','pricingMode','pricingLabel','billingLabel','highlightLabel','icon','buttonText','linkUrl'];

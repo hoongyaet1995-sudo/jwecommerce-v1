@@ -1,5 +1,6 @@
+import {SharedSectionLayout} from './SharedSectionLayout';
 import {ConnectedFamilyContent} from './ConnectedFamilyContent';
-import {isConnectedFamily,connectedLayoutChoices,connectedLayoutPatch} from '../../cms/connectedFamilies';
+import {isConnectedFamily} from '../../cms/connectedFamilies';
 import {UnifiedPricingSettings,UnifiedPricingPlanSettings} from './UnifiedPricingSettings';
 import {isUnifiedPricing,reconcilePricingGroups} from '../../cms/unifiedPricing';
 import {SectionLayoutControls} from './SectionLayoutControls';
@@ -1341,7 +1342,7 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
     );
   }
 
-  const fixedLayout=isConnectedRows(section)||isFixedImageCards(section)||isImageHighlights(section);
+  const fixedLayout=isConnectedRows(section)||isFixedImageCards(section)||isImageHighlights(section)||isImageFlow(section);
   const fixedCards=false;
   const fixedItemCount=isImageHighlights(section)?4:fixedImageCardCount(section);
   const passport=sectionPassport(section);
@@ -1611,7 +1612,7 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
   ];
 
   const editorialCollection=['industrial-mosaic','album-browser'].includes(section.galleryPreset??'')||section.galleryPreset==='photo-marquee'||section.galleryPreset==='routine-steps'||(section.galleryPreset?.startsWith('editorial-')||section.galleryPreset==='portfolio-cards')||['editorial-columns','numbered-process'].includes(section.featureCardsPreset??'');
-  const hasItems = !isImageFlow(section) && !(section.type==='comparison_matrix'&&section.comparisonPreset==='device-table') && repeatedItemFields(section).length>0 && ((section.type==='media_text_split'&&(!section.layoutPreset||['team-story-overview','image-highlights','corporate-section-story','corporate-builder-overview','default','producer-story','tech-feature','kids-discovery','artisan-story','corporate-payments','corporate-courier','corporate-feature','corporate-support','corporate-image-story','corporate-marketplace'].includes(section.layoutPreset??'default'))) || !['promotion_highlights','shop_navigation','policy_content','chapter_block','chapter_navigation','delivery_table','media_text_split'].includes(section.type));
+  const hasItems = !(section.type==='comparison_matrix'&&section.comparisonPreset==='device-table') && repeatedItemFields(section).length>0 && ((section.type==='media_text_split'&&(!section.layoutPreset||['team-story-overview','image-highlights','corporate-section-story','corporate-builder-overview','default','producer-story','tech-feature','kids-discovery','artisan-story','corporate-payments','corporate-courier','corporate-feature','corporate-support','corporate-image-story','corporate-marketplace'].includes(section.layoutPreset??'default'))) || !['promotion_highlights','shop_navigation','policy_content','chapter_block','chapter_navigation','delivery_table','media_text_split'].includes(section.type));
 
   const hasMedia = !['editorial-story-cards','editorial-journal-rows','artisan-story'].includes(section.layoutPreset??'') && (section.type!=='cta_strip'||['illustrated-panel-right','illustrated-panel','editorial-illustrated','image-banner'].includes(section.ctaPreset??'')) && hasSectionField('mediaUrl') && [
     'hero_banner',
@@ -1712,9 +1713,107 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
       <div role="tablist" aria-label="Inspector categories" className="grid grid-cols-3 px-3 border-b border-neutral-200 dark:border-neutral-800">{(['content','design','advanced'] as InspectorTab[]).map(tab=><button key={tab} role="tab" aria-selected={inspectorTab===tab} aria-controls={`inspector-panel-${section.id}`} onClick={()=>setInspectorTab(tab)} className={`py-3 text-xs font-semibold capitalize border-b-2 ${inspectorTab===tab?'border-indigo-500 text-indigo-500':'border-transparent text-neutral-500'}`}>{tab}</button>)}</div>
       {/* Form Controls */}
       <div ref={bodyRef} id={`inspector-panel-${section.id}`} role="tabpanel" onClickCapture={event=>{const element=event.target as HTMLElement;const group=element.closest('details.cms-settings-group');const summary=group?.querySelector(':scope > summary');if(summary)viewedGroup.current=summary.textContent?.trim();}} onFocusCapture={event=>{const group=(event.target as HTMLElement).closest('details.cms-settings-group');const summary=group?.querySelector(':scope > summary');if(summary)viewedGroup.current=summary.textContent?.trim();}} className="flex-1 overflow-y-auto p-4 space-y-5 text-xs">
+        {inspectorTab==='design'&&<SharedSectionLayout section={section} onChange={onChange}/>}
+<div hidden={inspectorTab!=='design'||isConnectedFamily(section)||isUnifiedPricing(section)}>{!isConnectedFamily(section)&&hasSectionLayout(section)&&<SectionLayoutGroup key={section.type} section={section}><SaasLayoutSettings section={isUnifiedPricing(section)?{...section,pricingPreset:undefined}:section} onChange={onChange}/>{section.type==='logo_cloud'&&<PartnerLogoSettings section={section} onChange={onChange}/>}{section.type==='hero_banner'&&<label className="block text-xs">Hero layout<VisualChoiceSelect aria-label="Hero layout" value={section.heroBannerPreset??'default'} onChange={event=>onChange({...section,heroBannerPreset:event.target.value as PageSection['heroBannerPreset']})}><option value="default">Classic</option><option value="editorial-gradient">Editorial Gradient</option><option value="industrial-overlay">Industrial Overlay</option><option value="corporate-centered">Corporate Centered</option><option value="corporate-centered-composite">Centered Composite Hero</option><option value="corporate-split-composite">Corporate Split — composite artwork</option></VisualChoiceSelect></label>}{section.type==='testimonials_slider'&&<label className="block text-xs">Testimonial layout<VisualChoiceSelect aria-label="Testimonial layout" value={section.testimonialPreset??'default'} onChange={event=>onChange({...section,testimonialPreset:event.target.value as PageSection['testimonialPreset']})}><option value="default">Classic Slider</option><option value="editorial-quote">Editorial Quote</option></VisualChoiceSelect></label>}{section.type==='media_gallery'&&section.galleryPreset==='photo-marquee'&&<PhotoMarqueeSettings section={section} onChange={onChange}/>}<IndustrialGallerySettings section={section} onChange={onChange}/><TechComparisonSettings mode="design" section={section} onChange={onChange}/><NewsletterLayoutSettings section={section} onChange={onChange}/><PromotionHighlightSettings mode="design" section={section} onChange={onChange} offers={promotionOffers}/><ProductListingSettings mode="design" section={section} onChange={onChange} categories={categories} collections={collections} products={products}/><ShopNavigationSettings mode="design" section={section} onChange={onChange} categories={categories} collections={collections}/><PolicySettings mode="design" section={section} onChange={onChange}/><PaymentSettings mode="design" section={section} onChange={onChange}/><ContactSettings mode="design" section={section} onChange={onChange}/><ChapterSettings mode="design" section={section} onChange={onChange}/><ShippingDesignSettings section={section} onChange={patch=>onChange({...section,...patch})}/><div hidden={inspectorTab!=='design'} data-inspector-group={0}>{(section.type==='media_gallery'||section.type==='feature_cards')&&<div className="space-y-3 pb-4 border-b border-neutral-100 dark:border-neutral-800">
+          <label className="block text-[11px] font-bold uppercase tracking-wider text-neutral-500">Layout preset
+            <VisualChoiceSelect aria-label="Collection layout preset" value={section.type==='media_gallery'?section.galleryPreset??'default':section.featureCardsPreset??'default'} onChange={event=>onChange({...section,...(section.type==='media_gallery'?{galleryPreset:event.target.value as PageSection['galleryPreset']}:{featureCardsPreset:event.target.value as PageSection['featureCardsPreset']}),...(event.target.value==='default'?{showSectionHeading:true}:{})})} className="w-full mt-2 px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/60 text-neutral-900 dark:text-white">
+              <option value="default">Default</option>{section.type==='media_gallery'?<><option value="connected-feature-rows">Connected Feature Rows</option><option value="image-cards-four-mosaic">Image Cards — Four Mosaic</option><option value="image-cards-contrast">Contrast Image Cards</option><option value="staggered-focus-cards">Staggered Focus Cards</option><option value="image-cards-three-staggered">Three Images — Staggered</option><option value="image-cards-three">Image Cards — Three</option><option value="focused-steps">Focused Steps</option><option value="scroll-stack-cards">Scroll Stack Cards</option><option value="editorial-knowledge-triptych">Editorial Knowledge Triptych</option><option value="image-flow">Image Flow — three connected pictures</option><option value="corporate-connections">Corporate Connections — illustrated feature cards</option><option value="corporate-illustrated-steps">Corporate Illustrated Steps — automatic workflow</option><option value="corporate-scenarios">Corporate Scenarios — image, icon and name</option><option value="industrial-mosaic">Industrial Mosaic — large image and details</option><option value="album-browser">Album Browser — groups and lightbox</option><option value="product-preview-tabs">Product Preview Tabs</option><option value="photo-marquee">Photo Marquee — moving photographs</option><option value="editorial-triptych">Photo Triptych — equal photographs</option><option value="portfolio-cards">Portfolio Cards — photograph, caption and link</option><option value="editorial-montage">Editorial Montage — staggered photographs</option><option value="editorial-cards">Editorial Cards — photograph and caption</option><option value="routine-steps">Routine Steps — numbered photograph cards</option></>:<>{section.featureCardsPreset==='values-list'&&<option value="values-list">Legacy Values List</option>}<option value="industrial-cards">Industrial Cards — numbered services</option><option value="saas-modules">SaaS Module Strip</option><option value="saas-addons">SaaS Add-ons</option><option value="industrial-process-split">Industrial Process Split — heading and numbered rows</option><option value="industrial-process">Industrial Process — four-step workflow</option><option value="numbered-process">Numbered Process — steps in columns</option><option value="editorial-columns">Editorial Columns — simple text columns</option><option value="service-highlights">Service Highlights — icon and text row</option></>}
+            </VisualChoiceSelect>
+          </label>
+          {(section.galleryPreset==='photo-marquee'||section.galleryPreset==='routine-steps'||(section.galleryPreset?.startsWith('editorial-')||section.galleryPreset==='portfolio-cards')||['editorial-columns','numbered-process','service-highlights','industrial-cards','industrial-process','industrial-process-split'].includes(section.featureCardsPreset??''))&&<>
+            <InspectorToggle label="Show section heading" checked={section.showSectionHeading!==false} onChange={checked=>updateField('showSectionHeading',checked)}/>
+            {section.galleryPreset!=='photo-marquee'&&section.featureCardsPreset!=='industrial-process-split'&&<label className="block text-neutral-500">Columns<VisualChoiceSelect aria-label="Editorial columns" value={section.columnsCount??3} onChange={event=>updateField('columnsCount',Number(event.target.value) as PageSection['columnsCount'])} className="w-full mt-1 px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/60 text-neutral-900 dark:text-white"><option value={2}>Two</option><option value={3}>Three</option><option value={4}>Four</option></VisualChoiceSelect></label>}
+            <p className="text-[11px] leading-relaxed text-neutral-500">Edit and reorder entries below. Image layouts use the shared image tools. Mobile stacks entries in their saved order.</p>
+          </>}
+        </div>}</div>
+<div hidden={inspectorTab!=='design'} data-inspector-group={3}>{section.type === 'announcement_bar' && hasSectionField('tickerSpeed') && (
+          <div className="space-y-3 pb-4 border-b border-neutral-100 dark:border-neutral-800">
+            <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 block">
+              Marquee Ticker Speed
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {(['slow', 'normal', 'fast'] as const).map(spd => (
+                <button
+                  key={spd}
+                  type="button"
+                  onClick={() => updateField('tickerSpeed', spd)}
+                  className={`py-1.5 capitalize text-center rounded-lg border transition-colors cursor-pointer ${
+                    section.tickerSpeed === spd || (spd === 'normal' && !section.tickerSpeed)
+                      ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold'
+                      : 'border-neutral-200 dark:border-neutral-700 text-neutral-500'
+                  }`}
+                >
+                  {spd}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}</div><div hidden={inspectorTab!=='design'} data-inspector-group={13}>{section.type === 'hero_slider' && hasAnySectionField(['sliderHeight', 'sliderAutoplay', 'sliderInterval', 'overlayOpacity']) && (
+          <div className="space-y-3 pb-4 border-b border-neutral-100 dark:border-neutral-800">
+            <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 block">
+              Hero Slider Settings
+            </label>
+
+            <HeroSliderLayouts section={section} onChange={onChange}/>
+            {/* Slider Height Preset */}
+            {hasSectionField('sliderHeight') && (
+            <div>
+              <span className="text-neutral-600 dark:text-neutral-400 font-medium mb-1 block">Banner Height</span>
+              <div className="grid grid-cols-4 gap-1.5">
+                {[
+                  { value: 'panoramic', label: 'Panoramic' },
+                  { value: 'compact', label: 'Compact' },
+                  { value: 'normal', label: 'Medium' },
+                  { value: 'spacious', label: 'Tall' },
+                  { value: 'fullscreen', label: 'Full Screen' }
+                ].map(h => (
+                  <button
+                    key={h.value}
+                    type="button"
+                    onClick={() => updateField('sliderHeight', h.value as 'panoramic' | 'compact' | 'normal' | 'spacious' | 'fullscreen')}
+                    className={`py-1.5 px-2 rounded-lg text-xs font-semibold border transition-all cursor-pointer truncate ${
+                      (section.sliderHeight || 'spacious') === h.value
+                        ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400'
+                        : 'border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800'
+                    }`}
+                  >
+                    {h.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            )}
+
+            {/* Autoplay & Rotation Interval */}
+            {hasAnySectionField(['sliderAutoplay', 'sliderInterval']) && (
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              {hasSectionField('sliderAutoplay') && (
+              <InspectorToggle label="Autoplay" checked={section.sliderAutoplay !== false} onChange={checked => updateField('sliderAutoplay', checked)} />
+              )}
+
+              {hasSectionField('sliderInterval') && (
+              <div>
+                <span className="text-neutral-600 dark:text-neutral-400 font-medium mb-1 block">Interval (seconds)</span>
+                <select
+                  value={section.sliderInterval ?? 5}
+                  onChange={e => updateField('sliderInterval', Number(e.target.value))}
+                  className="w-full px-2.5 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/60 text-neutral-900 dark:text-white"
+                >
+                  <option value={3}>3 seconds (Fast)</option>
+                  <option value={5}>5 seconds (Standard)</option>
+                  <option value={7}>7 seconds (Relaxed)</option>
+                  <option value={10}>10 seconds (Slow)</option>
+                </select>
+              </div>
+              )}
+            </div>
+            )}
+
+          </div>
+        )}</div><div hidden={inspectorTab!=='design'} data-inspector-group={15}><MediaTextSplitSettings showIntroduction={false} section={section} onChange={patch=>onChange({...section,...patch})} /></div><div hidden={inspectorTab!=='design'} data-inspector-group={16}>{isValuesList(section) && <ValuesListSettings section={section} onChange={patch=>onChange({...section,...patch})} />}</div><div hidden={inspectorTab!=='design'} data-inspector-group={17}>{section.type==='cta_strip' && <CtaStripSettings section={section} onChange={patch=>onChange({...section,...patch})} />}</div><div hidden={inspectorTab!=='design'} data-inspector-group={18}>{section.type==='rich_text' && <RichTextSettings mode="design" section={section} onChange={patch=>onChange({...section,...patch})} />}</div></SectionLayoutGroup>}</div>
         {selectedElement&&<div className="p-3 rounded-lg bg-indigo-500/10 text-indigo-500 flex justify-between gap-2"><span>Selected: {selectedElement.target.startsWith('items:')?'List item':selectedElement.target==='image'?'Image':selectedElement.target==='button'?'Button':textRoleLabels[({eyebrow:'eyebrow',subtitle:'secondaryTitle',title:'title',content:'content',leadText:'lead'} as Record<string,TextRole>)[selectedElement.target]]??'Section content'}</span>{(textRoles(section).length>0||selectedElement.target==='image')&&<button className="underline" onClick={()=>setInspectorTab(inspectorTab==='design'?'content':'design')}>{inspectorTab==='design'?'Edit content':'Style'}</button>}</div>}
         {isConnectedFamily(section)&&inspectorTab==='content'&&<ConnectedFamilyContent section={section} onChange={onChange} assetControl={target=><MediaUploadField label="Image URL / Upload" value={target.url} onChange={url=>onChange(updateImageTarget(section,target.id,{mediaUrl:url}))} onUpload={url=>onMediaUpload(pageId,section.id,latest=>updateImageTarget(latest,target.id,{mediaUrl:url}))} placeholder="Image URL or upload"/>}/>}
-        {isConnectedFamily(section)&&inspectorTab==='design'&&<ContentDisclosure title="Section layout"><label className="block text-xs">Layout<select aria-label="Connected section layout" className="w-full p-2 border rounded dark:border-neutral-700 dark:bg-neutral-900" value={section.connectedLayout} onChange={e=>onChange(connectedLayoutPatch(section,e.target.value))}>{connectedLayoutChoices(section).map(value=><option key={value} value={value}>{value.replaceAll('-',' ')}</option>)}</select></label></ContentDisclosure>}
+
         <div hidden={inspectorTab!=='content'||isConnectedFamily(section)}>{['promotion_highlights','shop_navigation','policy_content','payment_methods','contact_form','store_locator','delivery_table'].includes(section.type)||(section.type==='chapter_block'&&section.chapterPreset==='policy')||(section.type==='media_text_split'&&['story-with-steps','editorial-story-cards','editorial-journal-rows'].includes(section.layoutPreset??''))?<ContentDisclosure title="Section content"><PromotionHighlightSettings mode="content" section={section} onChange={onChange} offers={promotionOffers} assetControl={target=><MediaUploadField label="Image URL / Upload" value={target.url} onChange={url=>onChange(updateImageTarget(section,target.id,{mediaUrl:url}))} onUpload={url=>onMediaUpload(pageId,section.id,latest=>updateImageTarget(latest,target.id,{mediaUrl:url}))} placeholder="Image URL or upload" />}/><ShopNavigationSettings mode="content" section={section} onChange={onChange} categories={categories} collections={collections} assetControl={target=><MediaUploadField label="Image override / Upload" value={target.url} onChange={url=>onChange(updateImageTarget(section,target.id,{mediaUrl:url}))} onUpload={url=>onMediaUpload(pageId,section.id,latest=>updateImageTarget(latest,target.id,{mediaUrl:url}))} placeholder="Use destination image, or upload" />}/><PolicySettings mode="content" section={section} onChange={onChange} onSelectImage={onSelectImage} assetControl={target=><MediaUploadField label="Image URL / File Upload" value={target.url} onChange={url=>onChange(updateImageTarget(section,target.id,{mediaUrl:url}))} onUpload={url=>onMediaUpload(pageId,section.id,latest=>updateImageTarget(latest,target.id,{mediaUrl:url}))} placeholder="Image URL or upload" />}/><PaymentSettings mode="content" section={section} onChange={onChange}/><ContactSettings mode="content" section={section} onChange={onChange}/><EditorialStoryCardSettings section={section} onChange={onChange} assetControl={target=><MediaUploadField label="Story image / Upload" value={target.url} onChange={url=>onChange(updateImageTarget(section,target.id,{mediaUrl:url}))} onUpload={url=>onMediaUpload(pageId,section.id,latest=>updateImageTarget(latest,target.id,{mediaUrl:url}))} placeholder="Image URL or upload"/>}/><ShippingContentSettings section={section} onChange={patch=>onChange({...section,...patch})}/></ContentDisclosure>:null}</div>
         <div hidden={inspectorTab!=='content'||isConnectedFamily(section)||isUnifiedPricing(section)}><PlanComparisonSettings section={section} pages={pages} onChange={patch=>onChange({...section,...patch})}/><StarterPricingSettings section={section} pages={pages} onChange={patch=>onChange({...section,...patch})}/></div>
           {/* 1. Header & Text Content */}
@@ -2839,103 +2938,7 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
           </div>
         )}</ContentDisclosure></div>
 
-<div hidden={inspectorTab!=='design'||isConnectedFamily(section)}><SaasLayoutSettings section={isUnifiedPricing(section)?{...section,pricingPreset:undefined}:section} onChange={onChange}/>{section.type==='logo_cloud'&&<PartnerLogoSettings section={section} onChange={onChange}/>}{!isConnectedFamily(section)&&hasSectionLayout(section)&&<SectionLayoutGroup key={section.type} section={section}>{section.type==='hero_banner'&&<label className="block text-xs">Hero layout<VisualChoiceSelect aria-label="Hero layout" value={section.heroBannerPreset??'default'} onChange={event=>onChange({...section,heroBannerPreset:event.target.value as PageSection['heroBannerPreset']})}><option value="default">Classic</option><option value="editorial-gradient">Editorial Gradient</option><option value="industrial-overlay">Industrial Overlay</option><option value="corporate-centered">Corporate Centered</option><option value="corporate-centered-composite">Centered Composite Hero</option><option value="corporate-split-composite">Corporate Split — composite artwork</option></VisualChoiceSelect></label>}{section.type==='testimonials_slider'&&<label className="block text-xs">Testimonial layout<VisualChoiceSelect aria-label="Testimonial layout" value={section.testimonialPreset??'default'} onChange={event=>onChange({...section,testimonialPreset:event.target.value as PageSection['testimonialPreset']})}><option value="default">Classic Slider</option><option value="editorial-quote">Editorial Quote</option></VisualChoiceSelect></label>}{section.type==='media_gallery'&&section.galleryPreset==='photo-marquee'&&<PhotoMarqueeSettings section={section} onChange={onChange}/>}<IndustrialGallerySettings section={section} onChange={onChange}/><TechComparisonSettings mode="design" section={section} onChange={onChange}/><NewsletterLayoutSettings section={section} onChange={onChange}/><PromotionHighlightSettings mode="design" section={section} onChange={onChange} offers={promotionOffers}/><ProductListingSettings mode="design" section={section} onChange={onChange} categories={categories} collections={collections} products={products}/><ShopNavigationSettings mode="design" section={section} onChange={onChange} categories={categories} collections={collections}/><PolicySettings mode="design" section={section} onChange={onChange}/><PaymentSettings mode="design" section={section} onChange={onChange}/><ContactSettings mode="design" section={section} onChange={onChange}/><ChapterSettings mode="design" section={section} onChange={onChange}/><ShippingDesignSettings section={section} onChange={patch=>onChange({...section,...patch})}/><div hidden={inspectorTab!=='design'} data-inspector-group={0}>{(section.type==='media_gallery'||section.type==='feature_cards')&&<div className="space-y-3 pb-4 border-b border-neutral-100 dark:border-neutral-800">
-          <label className="block text-[11px] font-bold uppercase tracking-wider text-neutral-500">Layout preset
-            <VisualChoiceSelect aria-label="Collection layout preset" value={section.type==='media_gallery'?section.galleryPreset??'default':section.featureCardsPreset??'default'} onChange={event=>onChange({...section,...(section.type==='media_gallery'?{galleryPreset:event.target.value as PageSection['galleryPreset']}:{featureCardsPreset:event.target.value as PageSection['featureCardsPreset']}),...(event.target.value==='default'?{showSectionHeading:true}:{})})} className="w-full mt-2 px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/60 text-neutral-900 dark:text-white">
-              <option value="default">Default</option>{section.type==='media_gallery'?<><option value="connected-feature-rows">Connected Feature Rows</option><option value="image-cards-four-mosaic">Image Cards — Four Mosaic</option><option value="image-cards-contrast">Contrast Image Cards</option><option value="staggered-focus-cards">Staggered Focus Cards</option><option value="image-cards-three-staggered">Three Images — Staggered</option><option value="image-cards-three">Image Cards — Three</option><option value="focused-steps">Focused Steps</option><option value="scroll-stack-cards">Scroll Stack Cards</option><option value="editorial-knowledge-triptych">Editorial Knowledge Triptych</option><option value="image-flow">Image Flow — three connected pictures</option><option value="corporate-connections">Corporate Connections — illustrated feature cards</option><option value="corporate-illustrated-steps">Corporate Illustrated Steps — automatic workflow</option><option value="corporate-scenarios">Corporate Scenarios — image, icon and name</option><option value="industrial-mosaic">Industrial Mosaic — large image and details</option><option value="album-browser">Album Browser — groups and lightbox</option><option value="product-preview-tabs">Product Preview Tabs</option><option value="photo-marquee">Photo Marquee — moving photographs</option><option value="editorial-triptych">Photo Triptych — equal photographs</option><option value="portfolio-cards">Portfolio Cards — photograph, caption and link</option><option value="editorial-montage">Editorial Montage — staggered photographs</option><option value="editorial-cards">Editorial Cards — photograph and caption</option><option value="routine-steps">Routine Steps — numbered photograph cards</option></>:<>{section.featureCardsPreset==='values-list'&&<option value="values-list">Legacy Values List</option>}<option value="industrial-cards">Industrial Cards — numbered services</option><option value="saas-modules">SaaS Module Strip</option><option value="saas-addons">SaaS Add-ons</option><option value="industrial-process-split">Industrial Process Split — heading and numbered rows</option><option value="industrial-process">Industrial Process — four-step workflow</option><option value="numbered-process">Numbered Process — steps in columns</option><option value="editorial-columns">Editorial Columns — simple text columns</option><option value="service-highlights">Service Highlights — icon and text row</option></>}
-            </VisualChoiceSelect>
-          </label>
-          {(section.galleryPreset==='photo-marquee'||section.galleryPreset==='routine-steps'||(section.galleryPreset?.startsWith('editorial-')||section.galleryPreset==='portfolio-cards')||['editorial-columns','numbered-process','service-highlights','industrial-cards','industrial-process','industrial-process-split'].includes(section.featureCardsPreset??''))&&<>
-            <InspectorToggle label="Show section heading" checked={section.showSectionHeading!==false} onChange={checked=>updateField('showSectionHeading',checked)}/>
-            {section.galleryPreset!=='photo-marquee'&&section.featureCardsPreset!=='industrial-process-split'&&<label className="block text-neutral-500">Columns<VisualChoiceSelect aria-label="Editorial columns" value={section.columnsCount??3} onChange={event=>updateField('columnsCount',Number(event.target.value) as PageSection['columnsCount'])} className="w-full mt-1 px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/60 text-neutral-900 dark:text-white"><option value={2}>Two</option><option value={3}>Three</option><option value={4}>Four</option></VisualChoiceSelect></label>}
-            <p className="text-[11px] leading-relaxed text-neutral-500">Edit and reorder entries below. Image layouts use the shared image tools. Mobile stacks entries in their saved order.</p>
-          </>}
-        </div>}</div>
-<div hidden={inspectorTab!=='design'} data-inspector-group={3}>{section.type === 'announcement_bar' && hasSectionField('tickerSpeed') && (
-          <div className="space-y-3 pb-4 border-b border-neutral-100 dark:border-neutral-800">
-            <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 block">
-              Marquee Ticker Speed
-            </label>
-            <div className="grid grid-cols-3 gap-2">
-              {(['slow', 'normal', 'fast'] as const).map(spd => (
-                <button
-                  key={spd}
-                  type="button"
-                  onClick={() => updateField('tickerSpeed', spd)}
-                  className={`py-1.5 capitalize text-center rounded-lg border transition-colors cursor-pointer ${
-                    section.tickerSpeed === spd || (spd === 'normal' && !section.tickerSpeed)
-                      ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold'
-                      : 'border-neutral-200 dark:border-neutral-700 text-neutral-500'
-                  }`}
-                >
-                  {spd}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}</div><div hidden={inspectorTab!=='design'} data-inspector-group={13}>{section.type === 'hero_slider' && hasAnySectionField(['sliderHeight', 'sliderAutoplay', 'sliderInterval', 'overlayOpacity']) && (
-          <div className="space-y-3 pb-4 border-b border-neutral-100 dark:border-neutral-800">
-            <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 block">
-              Hero Slider Settings
-            </label>
 
-            <HeroSliderLayouts section={section} onChange={onChange}/>
-            {/* Slider Height Preset */}
-            {hasSectionField('sliderHeight') && (
-            <div>
-              <span className="text-neutral-600 dark:text-neutral-400 font-medium mb-1 block">Banner Height</span>
-              <div className="grid grid-cols-4 gap-1.5">
-                {[
-                  { value: 'panoramic', label: 'Panoramic' },
-                  { value: 'compact', label: 'Compact' },
-                  { value: 'normal', label: 'Medium' },
-                  { value: 'spacious', label: 'Tall' },
-                  { value: 'fullscreen', label: 'Full Screen' }
-                ].map(h => (
-                  <button
-                    key={h.value}
-                    type="button"
-                    onClick={() => updateField('sliderHeight', h.value as 'panoramic' | 'compact' | 'normal' | 'spacious' | 'fullscreen')}
-                    className={`py-1.5 px-2 rounded-lg text-xs font-semibold border transition-all cursor-pointer truncate ${
-                      (section.sliderHeight || 'spacious') === h.value
-                        ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400'
-                        : 'border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800'
-                    }`}
-                  >
-                    {h.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-            )}
-
-            {/* Autoplay & Rotation Interval */}
-            {hasAnySectionField(['sliderAutoplay', 'sliderInterval']) && (
-            <div className="grid grid-cols-2 gap-2 pt-1">
-              {hasSectionField('sliderAutoplay') && (
-              <InspectorToggle label="Autoplay" checked={section.sliderAutoplay !== false} onChange={checked => updateField('sliderAutoplay', checked)} />
-              )}
-
-              {hasSectionField('sliderInterval') && (
-              <div>
-                <span className="text-neutral-600 dark:text-neutral-400 font-medium mb-1 block">Interval (seconds)</span>
-                <select
-                  value={section.sliderInterval ?? 5}
-                  onChange={e => updateField('sliderInterval', Number(e.target.value))}
-                  className="w-full px-2.5 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/60 text-neutral-900 dark:text-white"
-                >
-                  <option value={3}>3 seconds (Fast)</option>
-                  <option value={5}>5 seconds (Standard)</option>
-                  <option value={7}>7 seconds (Relaxed)</option>
-                  <option value={10}>10 seconds (Slow)</option>
-                </select>
-              </div>
-              )}
-            </div>
-            )}
-
-          </div>
-        )}</div><div hidden={inspectorTab!=='design'} data-inspector-group={15}><MediaTextSplitSettings showIntroduction={false} section={section} onChange={patch=>onChange({...section,...patch})} /></div><div hidden={inspectorTab!=='design'} data-inspector-group={16}>{isValuesList(section) && <ValuesListSettings section={section} onChange={patch=>onChange({...section,...patch})} />}</div><div hidden={inspectorTab!=='design'} data-inspector-group={17}>{section.type==='cta_strip' && <CtaStripSettings section={section} onChange={patch=>onChange({...section,...patch})} />}</div><div hidden={inspectorTab!=='design'} data-inspector-group={18}>{section.type==='rich_text' && <RichTextSettings mode="design" section={section} onChange={patch=>onChange({...section,...patch})} />}</div></SectionLayoutGroup>}</div>
         {/* 9. Layout, Columns & Styling */}
         <div hidden={inspectorTab!=='design'} data-inspector-group={24}><details className="cms-settings-group"><summary>Layout & spacing</summary><div className="cms-settings-group-content">
         <div className="space-y-3">
