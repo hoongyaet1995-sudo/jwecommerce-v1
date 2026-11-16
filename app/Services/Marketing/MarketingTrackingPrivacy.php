@@ -10,10 +10,16 @@ class MarketingTrackingPrivacy
   $expires=$s->get('marketing.consent_expires_at');
   // Preserve an existing session's explicit choice during rollout, with a finite deadline.
   if(!is_int($expires)){$expires=now()->addDays((int)config('marketing.privacy.choice_days',180))->timestamp;$s->put('marketing.consent_expires_at',$expires);}
-  if($expires<=now()->timestamp){$s->forget(['marketing.consent','marketing.consent_expires_at']);$this->clearContext($r);return null;}
+  if($expires<=now()->timestamp){$s->forget(['marketing.consent','marketing.consent_expires_at','marketing.privacy_prompt_shown']);$this->clearContext($r);return null;}
   return $choice;
  }
+ /** Claim the automatic prompt once per visitor session; this never grants consent. */
+ public function claimPrompt(Request $r,bool $enabled):bool {
+  if(!$enabled||!$r->hasSession()||$this->choice($r)!==null||$r->session()->get('marketing.privacy_prompt_shown')===true)return false;
+  $r->session()->put('marketing.privacy_prompt_shown',true);return true;
+ }
  public function save(Request $r,bool $accepted):void {
+  $r->session()->put('marketing.privacy_prompt_shown',true);
   $r->session()->put('marketing.consent',$accepted);$r->session()->put('marketing.consent_expires_at',now()->addDays((int)config('marketing.privacy.choice_days',180))->timestamp);
   if(!$accepted)$this->clearContext($r);
  }
