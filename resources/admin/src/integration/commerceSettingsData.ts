@@ -1,3 +1,4 @@
+import {SettingsReadError} from './settingsReadError';
 import type { LaravelAdminBootstrap } from '../types';
 import type { GeneralShippingRate } from '../types/shipping';
 import type { CashOnDeliveryConfig, GlobalPaymentSettings, ManualBankTransferConfig, PaymentGatewayConfig } from '../types/payment';
@@ -22,10 +23,13 @@ export interface ReturnPolicySettings {
 type ResponsePayload = { data: CommerceSettingsDocument; message?: string; errors?: Record<string, string[]> };
 
 export const fetchCommerceSettings = async (bootstrap: LaravelAdminBootstrap): Promise<CommerceSettingsDocument> => {
-  if (!bootstrap.commerceSettingsUrl) throw new Error('Commerce settings API is unavailable.');
-  const response = await window.fetch(bootstrap.commerceSettingsUrl, { credentials: 'same-origin', headers: { Accept: 'application/json' } });
-  if (!response.ok) throw new Error('Commerce settings request failed.');
-  return (await response.json() as ResponsePayload).data;
+  if (!bootstrap.commerceSettingsUrl) throw new SettingsReadError('Commerce settings',undefined,'response');
+  let response:Response;
+  try {response=await window.fetch(bootstrap.commerceSettingsUrl, { credentials: 'same-origin', headers: { Accept: 'application/json' } });}
+  catch {throw new SettingsReadError('Commerce settings',undefined,'network');}
+  if (!response.ok) throw new SettingsReadError('Commerce settings',response.status);
+  try {const payload=await response.json() as ResponsePayload;if(!payload?.data||!Array.isArray(payload.data.shippingRates)||!Array.isArray(payload.data.currencies))throw new Error();return payload.data;}
+  catch {throw new SettingsReadError('Commerce settings',response.status,'response');}
 };
 
 export const saveCommerceSettings = async (bootstrap: LaravelAdminBootstrap, document: Omit<CommerceSettingsDocument, 'returnPolicy'> & { returnPolicy?: ReturnPolicySettings }): Promise<CommerceSettingsDocument> => {

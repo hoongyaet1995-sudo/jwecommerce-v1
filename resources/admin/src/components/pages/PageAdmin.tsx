@@ -40,11 +40,10 @@ import { SectionInspector } from './SectionInspector';
 import { AddSectionModal } from './AddSectionModal';
 import { PageTemplateModal, pageTemplates } from './PageTemplateModal';
 import { createPageTemplateStyle, createPageTemplateSections, type PageTemplateContext } from '../../cms/pageTemplates';
-import { loadShopBranding } from '../../integration/shopBrandingData';
+import {loadPageTemplateSettings} from '../../integration/pageTemplateSettings';
 import {fetchHighlightCoupons} from '../../integration/couponData';
 import {couponHighlight,type PromotionOffer} from '../../cms/promotionHighlights';
 import { fetchCommerceSettings } from '../../integration/commerceSettingsData';
-import { currencyFor } from '../../integration/adminMoney';
 import { PagePreviewModal } from './PagePreviewModal';
 import { DeleteConfirmationModal } from '../common/DeleteConfirmationModal';
 import {
@@ -100,6 +99,8 @@ export const PageAdmin: React.FC = () => {
   const [deliveryRates,setDeliveryRates]=useState<PageTemplateContext['shippingRates']>(undefined);
   const [templateContext,setTemplateContext]=useState<PageTemplateContext>({});
   const [templateSettingsState,setTemplateSettingsState]=useState<'loading'|'ready'|'error'>('loading');
+  const [templateSettingsError,setTemplateSettingsError]=useState('');
+  const templateLoading=useRef(false);
   const templateLoadRequest=useRef(0);
   useEffect(()=>()=>{templateLoadRequest.current++;},[]);
   const {
@@ -550,27 +551,33 @@ export const PageAdmin: React.FC = () => {
     pageTakeoversRef.current.clear();
   }, []);
 
-  const handleOpenTemplates = async () => {
-    if (templateBusy || templateOpen) return;
+  const handleLoadTemplateSettings = async () => {
+    if(templateLoading.current)return;
+    templateLoading.current=true;
     const request=++templateLoadRequest.current;
-    setTemplateContext({});
-    setTemplateSettingsState('loading');
-    setTemplateOpen(true);
+    setTemplateContext({});setTemplateSettingsError('');setTemplateSettingsState('loading');
     try {
-      // Read persisted facts directly; AdminContext starts with demonstration defaults.
-      const [profile,commerce] = await Promise.all([loadShopBranding(),fetchCommerceSettings(laravelBootstrap)]);
+      const result=await loadPageTemplateSettings(laravelBootstrap);
       if(request!==templateLoadRequest.current)return;
-      setTemplateContext({shopName:profile.shopName,tagline:profile.tagline,
-        currency:currencyFor(commerce.currencies)?.code || profile.currency,shippingRates:commerce.shippingRates});
-      setTemplateSettingsState('ready');
+      if(result.context){setTemplateContext(result.context);setTemplateSettingsState('ready');}
+      else {setTemplateSettingsError(result.error);setTemplateSettingsState('error');}
     } catch {
       if(request!==templateLoadRequest.current)return;
-      setTemplateSettingsState('error');
-    }
+      setTemplateSettingsError('Saved store settings could not load. Please retry.');setTemplateSettingsState('error');
+    } finally {if(request===templateLoadRequest.current)templateLoading.current=false;}
+  };
+  const handleOpenTemplates = () => {
+    if(templateBusy||templateOpen)return;
+    setTemplateOpen(true);void handleLoadTemplateSettings();
+  };
+  const handleRetryTemplateSettings = () => {
+    if(templateBusy||!templateOpen||templateLoading.current)return;
+    void handleLoadTemplateSettings();
   };
   const handleCloseTemplates = () => {
     if(templateBusy)return;
     templateLoadRequest.current++;
+    templateLoading.current=false;
     setTemplateOpen(false);
   };
   // Handler for creating a brand new page
@@ -594,7 +601,7 @@ export const PageAdmin: React.FC = () => {
         sections:createPageTemplateSections(template.id, {...templateContext,connectedPageDestinations:Object.fromEntries(pages.filter(p=>p.status!=='archived'&&/^jw-connected-/.test(p.slug)).map(p=>[p.slug,'/pages/'+p.slug])),products,categories,collections,promotionOffers}, 'sec-'+stamp)
       };
       const saved = await savePage(newPage);
-      if (saved) { templateLoadRequest.current++; setTemplateOpen(false); await hydrateEditor(saved); }
+      if (saved) { templateLoadRequest.current++; templateLoading.current=false; setTemplateOpen(false); await hydrateEditor(saved); }
     } finally {setTemplateBusy(false);}
   };
   // Section Manipulation in Active Page
@@ -817,7 +824,7 @@ export const PageAdmin: React.FC = () => {
       />
 
 
-        {templateOpen && <PageTemplateModal context={{...templateContext,connectedPageDestinations:Object.fromEntries(pages.filter(p=>p.status!=='archived'&&/^jw-connected-/.test(p.slug)).map(p=>[p.slug,'/pages/'+p.slug])),products,categories,collections,promotionOffers}} settingsState={templateSettingsState} busy={templateBusy} onClose={handleCloseTemplates} onCreate={handleCreateNewPage}/>}
+        {templateOpen && <PageTemplateModal context={{...templateContext,connectedPageDestinations:Object.fromEntries(pages.filter(p=>p.status!=='archived'&&/^jw-connected-/.test(p.slug)).map(p=>[p.slug,'/pages/'+p.slug])),products,categories,collections,promotionOffers}} settingsState={templateSettingsState} settingsError={templateSettingsError} onRetry={handleRetryTemplateSettings} busy={templateBusy} onClose={handleCloseTemplates} onCreate={handleCreateNewPage}/>}
         {/* Header Title & Actions */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
@@ -1575,7 +1582,7 @@ export const PageAdmin: React.FC = () => {
         onSetHomepage={setPageAsHomepage}
       />
 
-      {templateOpen && <PageTemplateModal context={{...templateContext,connectedPageDestinations:Object.fromEntries(pages.filter(p=>p.status!=='archived'&&/^jw-connected-/.test(p.slug)).map(p=>[p.slug,'/pages/'+p.slug])),products,categories,collections,promotionOffers}} settingsState={templateSettingsState} busy={templateBusy} onClose={handleCloseTemplates} onCreate={handleCreateNewPage}/>}
+      {templateOpen && <PageTemplateModal context={{...templateContext,connectedPageDestinations:Object.fromEntries(pages.filter(p=>p.status!=='archived'&&/^jw-connected-/.test(p.slug)).map(p=>[p.slug,'/pages/'+p.slug])),products,categories,collections,promotionOffers}} settingsState={templateSettingsState} settingsError={templateSettingsError} onRetry={handleRetryTemplateSettings} busy={templateBusy} onClose={handleCloseTemplates} onCreate={handleCreateNewPage}/>}
     </div>
   );
 };

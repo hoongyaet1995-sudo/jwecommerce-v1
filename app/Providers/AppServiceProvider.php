@@ -74,6 +74,10 @@ class AppServiceProvider extends ServiceProvider
             $view->with('storefrontShell', app(StorefrontShellSettingsService::class)->live());
         });
         View::composer('*', function ($view): void {
+            // Error responses and their layouts must remain renderable when the database is down.
+            if (\Illuminate\Support\Str::startsWith($view->name(), ['errors::', 'errors.', 'laravel-exceptions-renderer::'])) {
+                return;
+            }
             $view->with('shopBrandName', app(ShopBrand::class)->name());
         });
     }

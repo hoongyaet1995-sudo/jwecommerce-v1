@@ -1,9 +1,13 @@
+import {SettingsReadError} from './settingsReadError';
 import type { ShopGeneralSettings, LaravelAdminBootstrap } from '../types';
 
 export async function loadShopBranding(): Promise<Partial<ShopGeneralSettings>> {
-  const response = await fetch('/admin/api/shop-branding', { headers: { Accept: 'application/json' }, credentials: 'same-origin' });
-  if (!response.ok) throw new Error('Could not load the saved shop profile. Please reload before saving.');
-  return (await response.json()).data;
+  let response:Response;
+  try {response=await fetch('/admin/api/shop-branding', { headers: { Accept: 'application/json' }, credentials: 'same-origin' });}
+  catch {throw new SettingsReadError('Shop profile',undefined,'network');}
+  if (!response.ok) throw new SettingsReadError('Shop profile',response.status);
+  try {const payload=await response.json();if(!payload?.data||typeof payload.data!=='object'||Array.isArray(payload.data))throw new Error();return payload.data;}
+  catch {throw new SettingsReadError('Shop profile',response.status,'response');}
 }
 
 async function rasterize(source: string): Promise<{logoPng: string; iconPng: string}> {
