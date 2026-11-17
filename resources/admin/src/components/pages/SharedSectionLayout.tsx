@@ -7,6 +7,7 @@ import {VisualChoiceSelect} from './VisualChoiceSelect';
 import {SectionLayoutGroup} from './SectionLayoutGroup';
 
 export function SharedSectionLayout({section,onChange}:{section:PageSection;onChange:(s:PageSection)=>void}){
+ if(section.type==='faq_accordion')return null;
  if(!isConnectedFamily(section)&&!isUnifiedPricing(section))return null;
  const pricing=isUnifiedPricing(section),choices=pricing?['pricing-cards','pricing-matrix']:connectedLayoutChoices(section);
  const value=pricing?(section.pricingMatrix?.view==='matrix'?'pricing-matrix':'pricing-cards'):section.connectedLayout;
