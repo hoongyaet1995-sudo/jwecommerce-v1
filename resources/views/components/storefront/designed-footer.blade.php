@@ -1,6 +1,33 @@
-<footer data-shell-footer data-shell-appearance="light" data-shell-business="{{ $design['business'] }}" data-shell-style="unified" class="jw-shell-footer">
-    <div class="jw-shell-footer-grid"><section><a href="{{ route('storefront.home') }}" class="jw-shell-brand"><x-storefront.shell-brand :design="$design" /></a>@if(filled($design['tagline']))<p>{{ $design['tagline'] }}</p>@endif</section>
-        @foreach($footerSections as $section)<nav aria-label="{{ $section->label }}"><h2>{{ $section->label }}</h2>@foreach($section->children->where('is_active',true) as $link)<a href="{{ $link->url }}" @if($link->is_external) target="_blank" rel="noopener" @endif>{{ $link->label }}</a>@endforeach</nav>@endforeach
-        @if(filled($design['contactEmail']) || (filled($design['ctaLabel']) && filled($design['ctaUrl'])))<section><h2>Get in touch</h2>@if(filled($design['contactEmail']))<a href="mailto:{{ $design['contactEmail'] }}">{{ $design['contactEmail'] }}</a>@endif @if(filled($design['ctaLabel']) && filled($design['ctaUrl']))<a class="jw-shell-cta" href="{{ $design['ctaUrl'] }}">{{ $design['ctaLabel'] }} <i data-lucide="arrow-up-right"></i></a>@endif</section>@endif
-    </div><div class="jw-shell-footer-brand" aria-hidden="true">{{ ($design['brandName'] ?? '') ?: $shopBrandName }}</div><div data-privacy-entry class="jw-shell-legal">© {{ date('Y') }} {{ ($design['brandName'] ?? '') ?: $shopBrandName }}. All rights reserved.</div>
+@php
+    $footerBrand = trim((string) ($design['brandName'] ?? '')) ?: $shopBrandName;
+    $footerTheme = data_get($navigationContext ?? [], 'context.themePalette') ?? app(\App\Services\CmsThemePalette::class)->current()['palette'];
+    $footerPageStyle = data_get($navigationContext ?? [], 'page.document.style', []);
+    $footerPalette = ($footerPageStyle['colorSource'] ?? '') === 'theme' ? $footerTheme : ($footerPageStyle['palette'] ?? $footerTheme);
+    $footerContrast = $footerPalette['contrast'] ?? $footerPalette['ink'] ?? '#0d1b18';
+    $footerPaper = $footerPalette['paper'] ?? '#ffffff';
+    if (!is_string($footerContrast) || !preg_match('/^#[a-f0-9]{6}$/i', $footerContrast)) $footerContrast = '#0d1b18';
+    if (!is_string($footerPaper) || !preg_match('/^#[a-f0-9]{6}$/i', $footerPaper)) $footerPaper = '#ffffff';
+    $footerInk = \App\Domain\Cms\ShellDesign::footerForeground($footerContrast);
+@endphp
+<link rel="stylesheet" href="{{ asset('css/cms-footer-design.css') }}?v={{ filemtime(public_path('css/cms-footer-design.css')) }}">
+<div class="cms-footer-region" style="--cms-shell-contrast:{{ $footerContrast }};--cms-shell-oncontrast:{{ $footerInk }};--cms-shell-paper:{{ $footerPaper }}">
+<footer data-shell-footer data-shell-appearance="light" data-shell-business="{{ $design['business'] }}" data-shell-style="unified" class="jw-shell-footer cms-footer">
+    <div class="cms-footer-intro">
+        <section><a href="{{ route('storefront.home') }}" class="cms-footer-brand">{{ $footerBrand }}</a>@if(filled($design['tagline']))<p class="cms-footer-description">{{ $design['tagline'] }}</p>@endif</section>
+        @if(filled($design['contactEmail']))<section class="cms-footer-contact"><h2>Contact</h2><a href="mailto:{{ $design['contactEmail'] }}">{{ $design['contactEmail'] }}</a></section>@endif
+    </div>
+    @if($footerSections->where('is_active', true)->isNotEmpty())
+    <div class="cms-footer-navigation">
+        @foreach($footerSections->where('is_active', true) as $section)
+        <nav aria-label="{{ $section->label }}"><h2>{{ $section->label }}</h2>
+            @foreach($section->children->where('is_active', true) as $link)
+            <a href="{{ $link->url }}" @if($link->is_external) target="_blank" rel="noopener" @endif><span>{{ $link->label }}</span>@if(filled($link->badge))<em class="cms-footer-badge" style="{{ \App\Support\MenuBadgePalette::inlineStyle($link->badge_color) }}">{{ $link->badge }}</em>@endif</a>
+            @endforeach
+        </nav>
+        @endforeach
+    </div>
+    @endif
+    <div class="cms-footer-wordmark" aria-hidden="true">{{ $footerBrand }}</div>
+    <div data-privacy-entry class="cms-footer-legal">© {{ date('Y') }} {{ $footerBrand }}. All rights reserved.</div>
 </footer>
+</div>

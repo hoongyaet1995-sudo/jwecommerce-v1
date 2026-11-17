@@ -10,6 +10,19 @@ final class ShellDesign
             || (str_starts_with($url, '/') && ! str_starts_with($url, '//') && ! preg_match('/[\\\\\x00-\x20]/', $url))
             || (str_starts_with($url, 'https://') && MediaUrlPolicy::isSafe($url));
     }
+    /** Same contextual surface foreground as the existing JS onColor resolver. */
+    public static function footerForeground(string $background): string
+    {
+        if (!preg_match('/^#[a-f0-9]{6}$/i', $background)) return '#ffffff';
+        $channels = array_map(fn ($channel) => hexdec($channel) / 255, str_split(substr($background, 1), 2));
+        $linear = array_map(fn ($value) => $value <= 0.04045 ? $value / 12.92 : (($value + 0.055) / 1.055) ** 2.4, $channels);
+        $luminance = $linear[0] * .2126 + $linear[1] * .7152 + $linear[2] * .0722;
+        $dark = ((21 / 255 + .055) / 1.055) ** 2.4;
+        $whiteRatio = 1.05 / ($luminance + .05);
+        $darkRatio = (max($luminance, $dark) + .05) / (min($luminance, $dark) + .05);
+        return $whiteRatio >= $darkRatio ? '#ffffff' : '#151515';
+    }
+
     public static function defaults(string $business = 'commerce'): array
     {
         return ['business' => $business, 'style' => 'editorial', 'appearance' => 'light',

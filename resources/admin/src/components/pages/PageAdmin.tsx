@@ -11,7 +11,7 @@ import {History as PageHistoryIcon} from 'lucide-react';
 import {AiPageGenerator} from './AiPageGenerator';
 import {pageSourceSignature} from '../../cms/cmsAiGenerator';
 import {BuilderShellHeader} from '../menus/BuilderShellHeader';
-import {ShellDesignPreview} from '../menus/ShellDesignEditor';
+import {StorefrontFooter} from '../menus/StorefrontFooter';
 import {resolveHeaderPresentation} from '../../cms/headerPresentation';
 import {PageStyleSettings} from './PageStyleSettings';
 import {createPortal} from 'react-dom';
@@ -119,6 +119,7 @@ export const PageAdmin: React.FC = () => {
     shopSettings,
     storefrontShellSettings,
     headerMenus,
+    footerMenus,
     selectedPageId,
     setSelectedPageId,
     addToast
@@ -1481,7 +1482,7 @@ export const PageAdmin: React.FC = () => {
             </div>
 
             {/* Simulated Storefront Footer */}
-            {(storefrontShellSettings.shellDesign??currentPage.shellDesign) ? <ShellDesignPreview value={(storefrontShellSettings.shellDesign??currentPage.shellDesign)!} brand={shopSettings.shopName||'JW Studio'} footer footerOnly/> : <>            <div className="p-8 bg-black border-t border-neutral-800 text-neutral-500 text-xs text-center">
+            {(storefrontShellSettings.shellDesign??currentPage.shellDesign) ? <StorefrontFooter value={(storefrontShellSettings.shellDesign??currentPage.shellDesign)!} brand={shopSettings.shopName||'JW Studio'} menus={footerMenus} palette={resolvePageStyle(currentPage.style,adminRuntimePayload.context.themePalette)?.palette??adminRuntimePayload.context.themePalette}/> : <>            <div className="p-8 bg-black border-t border-neutral-800 text-neutral-500 text-xs text-center">
               <p className="font-semibold text-neutral-400 mb-1">AURORA UNIVERSAL ECOMMERCE</p>
               <p className="text-[11px]">All changes sync live to customer storefront routes.</p>
             </div></>}

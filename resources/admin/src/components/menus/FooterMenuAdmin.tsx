@@ -1,3 +1,8 @@
+import {resolvePageStyle} from '../../cms/pageStyle';
+import {StorefrontFooter} from './StorefrontFooter';
+import {shellDesignDefaults} from '../../cms/shellDesign';
+import {useCmsBrand} from '../../cms/useCmsBrand';
+import {storefrontContentVariables} from '../pages/PageSectionContainer';
 import React, { useState } from 'react';
 import { useAdmin } from '../../context/AdminContext';
 import { FooterMenuL1, FooterMenuL2, MenuLinkType } from '../../types';
@@ -22,6 +27,8 @@ import {
 export const FooterMenuAdmin: React.FC = () => {
   const {
     footerMenus,
+    storefrontShellSettings,
+    shopSettings,
     saveFooterMenuL1,
     deleteFooterMenuL1,
     saveFooterMenuL2,
@@ -31,6 +38,9 @@ export const FooterMenuAdmin: React.FC = () => {
     pages
   } = useAdmin();
 
+  const cmsBrand=useCmsBrand();
+  const footerHome=pages.find(page=>page.isHomepage);
+  const footerPalette=resolvePageStyle(footerHome?.style,cmsBrand?.palette)?.palette??cmsBrand?.palette;
   const [showFooterSimulator, setShowFooterSimulator] = useState(false);
 
   // Modals state
@@ -97,7 +107,7 @@ export const FooterMenuAdmin: React.FC = () => {
             }`}
           >
             <Eye className="w-3.5 h-3.5" />
-            <span>{showFooterSimulator ? 'Hide Footer Preview' : 'Live Store Footer'}</span>
+            <span>{showFooterSimulator ? 'Hide Footer Preview' : 'Footer Preview'}</span>
           </button>
 
           <button
@@ -110,58 +120,7 @@ export const FooterMenuAdmin: React.FC = () => {
         </div>
       </div>
 
-      {/* Live Storefront Footer Simulator */}
-      {showFooterSimulator && (
-        <div className="p-6 rounded-3xl bg-neutral-950 border border-neutral-800 text-white shadow-2xl space-y-6">
-          <div className="flex items-center justify-between pb-3 border-b border-neutral-800 text-xs">
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-              <span className="font-bold text-neutral-200">Customer Viewport: Live Storefront Footer</span>
-            </div>
-            <span className="text-[11px] text-neutral-400">Desktop 4-Column Layout Preview</span>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 py-2">
-            {footerMenus.map((sec) => (
-              <div key={sec.id} className="space-y-3">
-                <h4 className="text-xs font-bold tracking-wider uppercase text-neutral-200 pb-1 border-b border-neutral-800/80">
-                  {sec.sectionTitle}
-                </h4>
-                <ul className="space-y-2">
-                  {sec.links.map((link) => (
-                    <li key={link.id}>
-                      <a
-                        href="#preview"
-                        onClick={(e) => e.preventDefault()}
-                        className="group flex items-center gap-1.5 text-xs text-neutral-400 hover:text-white transition-colors"
-                      >
-                        <span>{link.title}</span>
-                        {link.badge && (
-                          <span className="text-[9px] px-1 py-0.2 rounded bg-indigo-500/30 text-indigo-300 font-medium">
-                            {link.badge}
-                          </span>
-                        )}
-                        {link.isExternal && <ExternalLink className="w-2.5 h-2.5 opacity-60" />}
-                      </a>
-                    </li>
-                  ))}
-                  {sec.links.length === 0 && (
-                    <li className="text-[11px] text-neutral-600 italic">No links in this section</li>
-                  )}
-                </ul>
-              </div>
-            ))}
-          </div>
-
-          <div className="pt-4 border-t border-neutral-900 flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-neutral-500">
-            <span>© 2026 Aurora Commerce Inc. All rights reserved.</span>
-            <div className="flex gap-4">
-              <span>GDPR / CCPA Ready</span>
-              <span>PCI DSS Certified</span>
-            </div>
-          </div>
-        </div>
-      )}
+      {showFooterSimulator && <div style={storefrontContentVariables(storefrontShellSettings.contentWidth)}><StorefrontFooter value={storefrontShellSettings.shellDesign??shellDesignDefaults()} brand={shopSettings.shopName||'Store'} menus={footerMenus} palette={footerPalette}/></div>}
 
       {/* 2-Tier Hierarchy Admin Sections */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
