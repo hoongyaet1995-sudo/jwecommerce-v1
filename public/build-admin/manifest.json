@@ -111,9 +111,9 @@
     "file": "assets/malaysia-proud-CoWH8gQK.png",
     "src": "../../public/cms/connected/assets/show-photo/malaysia-proud.png"
   },
-  "C:/Users/User/.codex/worktrees/template-resilience-20261117/jwstudio-ecommerce/public/css/cms-shell-design.css": {
-    "file": "assets/cms-shell-design-CgEQMW9q.css",
-    "src": "C:/Users/User/.codex/worktrees/template-resilience-20261117/jwstudio-ecommerce/public/css/cms-shell-design.css"
+  "C:/Users/User/.codex/worktrees/header-glass-release-20261117/jwstudio-ecommerce/public/css/cms-shell-design.css": {
+    "file": "assets/cms-shell-design-DsQzaQV-.css",
+    "src": "C:/Users/User/.codex/worktrees/header-glass-release-20261117/jwstudio-ecommerce/public/css/cms-shell-design.css"
   },
   "_AddSectionModal-CXBPFoFe.js": {
     "file": "assets/AddSectionModal-CXBPFoFe.js",
@@ -168,7 +168,7 @@
     "src": "_index-DXiqtMvw.css"
   },
   "src/main.tsx": {
-    "file": "assets/main-D5a-JcyV.js",
+    "file": "assets/main-DEwW-DOI.js",
     "name": "main",
     "src": "src/main.tsx",
     "isEntry": true,
@@ -184,11 +184,11 @@
       "assets/index-DXiqtMvw.css"
     ],
     "assets": [
-      "assets/cms-shell-design-CgEQMW9q.css"
+      "assets/cms-shell-design-DsQzaQV-.css"
     ]
   },
   "src/previews/inventory48/Inventory48Runtime.tsx": {
-    "file": "assets/Inventory48Runtime-XJ4JLVYf.js",
+    "file": "assets/Inventory48Runtime-vd5LnA15.js",
     "name": "Inventory48Runtime",
     "src": "src/previews/inventory48/Inventory48Runtime.tsx",
     "isDynamicEntry": true,

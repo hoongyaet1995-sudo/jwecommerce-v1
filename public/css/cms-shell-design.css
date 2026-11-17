@@ -51,7 +51,16 @@
 
 /* Unified approved JW shell. Legacy saved style keys remain readable, never author new compositions. */
 .jw-shell-header[data-shell-style=unified],.jw-shell-footer[data-shell-style=unified]{--shell-paper:var(--cms-shell-paper,#fff);--shell-ink:var(--cms-shell-ink,#0a0b0b);--shell-line:#dedfdd;--shell-hover:var(--cms-shell-primary,#ffb4df);font-family:Arial,sans-serif}
-.jw-shell-header[data-shell-style=unified]{--shell-hover:#f2f3f1;padding:24px 0 14px;background:color-mix(in srgb,var(--shell-paper) 88%,transparent);backdrop-filter:blur(16px);border:0}
+.jw-shell-header[data-shell-style=unified]{--shell-hover:#f2f3f1;padding:24px 0 14px;background:color-mix(in srgb,var(--shell-paper) 88%,transparent);backdrop-filter:blur(16px);border:0;transition:box-shadow .3s ease,padding .3s ease}
+/* Normal mode must not reveal the legacy dark wrapper through its surface. */
+.jw-shell-header[data-shell-style=unified][data-header-mode=normal]{background:var(--shell-paper)}
+/* Scrolled glass belongs to the shared shell, including its Builder preview.
+   Keep overlay-at-top modes unchanged; defeat legacy solid inner rows. */
+.jw-shell-header[data-shell-style=unified][data-header-mode=normal][data-header-scrolled=true][data-header-solid],
+.jw-shell-header[data-shell-style=unified][data-builder-shell][data-header-scrolled=true]{background:color-mix(in srgb,var(--shell-paper) 88%,transparent)!important;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.jw-shell-header[data-shell-style=unified][data-header-mode=normal][data-header-scrolled=true][data-header-solid] .jw-shell-main,
+.jw-shell-header[data-shell-style=unified][data-builder-shell][data-header-scrolled=true] .jw-shell-main{background:transparent!important}
+
 .jw-shell-header[data-shell-style=unified] .jw-shell-main{display:flex;box-sizing:border-box;width:100%;max-width:var(--storefront-content-width,1440px);min-height:54px;padding:0 var(--storefront-content-gutter,24px);gap:24px}
 .jw-shell-header[data-shell-style=unified] .jw-shell-brand{font:800 22px/1.2 Arial,sans-serif;letter-spacing:-.055em;flex-shrink:0}
 .jw-shell-header[data-shell-style=unified] .jw-shell-brand-logo{width:156px;max-width:156px;height:auto;max-height:54px}
@@ -79,3 +88,5 @@
 [data-builder-shell][data-mobile=false][data-shell-style=unified] .jw-shell-desktop{display:flex;gap:6px}
 [data-builder-shell][data-mobile=true][data-shell-style=unified] .jw-shell-main{display:grid;grid-template-columns:auto 1fr auto;min-height:54px;padding:0}
 [data-builder-shell][data-mobile=true][data-shell-style=unified] .jw-shell-brand{justify-self:start}
+
+@media(prefers-reduced-motion:reduce){.jw-shell-header[data-shell-style=unified]{transition:none}}
