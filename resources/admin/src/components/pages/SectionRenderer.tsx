@@ -1,3 +1,5 @@
+import './SectionSpacing.css';
+import {sectionSpacingStyle} from '../../cms/sectionSpacing';
 import {observeNeutralStarterMedia} from './NeutralStarterMedia';
 import {starterFonts} from '../../cms/starterTypography';
 import {isConnectedFamily} from '../../cms/connectedFamilies';
@@ -386,7 +388,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
         />
 
         {/* Content */}
-        <div data-cms-hero-safe className={`relative z-10 w-full py-20 ${section.containerMode==='full-bleed'?'max-w-[var(--cms-page-width)] mx-auto px-6 @min-[640px]:px-10 @min-[1024px]:px-16':''} ${
+        <div data-cms-hero-safe style={sectionSpacingStyle(section)} className={`relative z-10 w-full py-20 ${section.containerMode==='full-bleed'?'max-w-[var(--cms-page-width)] mx-auto px-6 @min-[640px]:px-10 @min-[1024px]:px-16':''} ${
           section.textAlignment === 'left' ? 'text-left' : section.textAlignment === 'right' ? 'text-right' : 'text-center'
         }`}>
           {(
@@ -646,7 +648,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
         />
 
         {/* Slide Content Layer */}
-        <div data-cms-hero-safe className={`relative z-10 w-full py-20 ${section.containerMode==='full-bleed'?'max-w-[var(--cms-page-width)] mx-auto px-6 @min-[640px]:px-10 @min-[1024px]:px-16':''} w-full transition-all duration-500 ${
+        <div data-cms-hero-safe style={sectionSpacingStyle(section)} className={`relative z-10 w-full py-20 ${section.containerMode==='full-bleed'?'max-w-[var(--cms-page-width)] mx-auto px-6 @min-[640px]:px-10 @min-[1024px]:px-16':''} w-full transition-all duration-500 ${
           section.textAlignment === 'left' ? 'text-left' : section.textAlignment === 'right' ? 'text-right' : 'text-center'
         }`}>
           {slideEyebrow(section,currentSlide)&&<MotionItem className={`flex ${section.textAlignment==='left'?'justify-start':section.textAlignment==='right'?'justify-end':'justify-center'}`}><SectionEyebrow section={section} item={currentSlide}/></MotionItem>}
@@ -771,7 +773,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
 
     return (
       <div
-        style={getPrimaryBtnStyle({ borderBottom: '1px solid rgba(255,255,255,0.1)' })}
+        style={getPrimaryBtnStyle({ ...sectionSpacingStyle(section),borderBottom: '1px solid rgba(255,255,255,0.1)' })}
         className="w-full bg-indigo-600 text-white text-xs font-bold uppercase tracking-widest py-2.5 overflow-hidden relative shadow-md"
       >
         <div className={`flex whitespace-nowrap gap-12 ${speedClass}`}>
@@ -2683,9 +2685,9 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
   if(section.type==='promotion_highlights'&&!isEditingMode&&!resolvePromotionCards(section,runtimeSection.promotions?.offers??[]).length)return null;
   const ownedAppearance=actionAppearanceCss(rawSection,section,resolvePageStyle(runtime.page.document.style,runtime.context.themePalette));
   return (
-    <section ref={starterRoot} data-cms-starter-design={rawSection.starterDesign} data-cms-unified-buttons={runtime.page.document.style?.unifiedButtons||rawSection.buttonRadius!==undefined||rawSection.buttonSize!==undefined?'':undefined} data-cms-shared-style={runtime.page.document.style&&!runtime.page.document.style.preserveLayout?'':undefined} data-cms-surface={rawSection.surface} data-cms-editor={isEditingMode?'':undefined}
+    <section data-cms-spacing={section.paddingY} ref={starterRoot} data-cms-starter-design={rawSection.starterDesign} data-cms-unified-buttons={runtime.page.document.style?.unifiedButtons||rawSection.buttonRadius!==undefined||rawSection.buttonSize!==undefined?'':undefined} data-cms-shared-style={runtime.page.document.style&&!runtime.page.document.style.preserveLayout?'':undefined} data-cms-surface={rawSection.surface} data-cms-editor={isEditingMode?'':undefined}
       id={`section-${section.id}`}
-      style={{...sectionRootStyle,...containedSurfaceBackground(section),...(sectionAnchorOffset(section)?{scrollMarginTop:sectionAnchorOffset(section)}:{}),...sectionBorderStyle(section),'--cms-page-width':section.containerMode==='full-bleed'?'100%':(runtime.page.document.containerWidth??'site')==='site'?'var(--storefront-content-width, 1280px)':runtime.page.document.containerWidth==='full'?'100%':runtime.page.document.containerWidth==='wide'?'1440px':'1280px',...(section.containerMode==='full-bleed'?{'--cms-page-gutter':'0px'}:(runtime.page.document.containerWidth??'site')==='site'?{'--cms-page-gutter':'var(--storefront-content-gutter, 24px)'}:{}),...(runtime.page.document.style&&runtime.page.document.style.unifiedButtons!==false?{'--cms-button-radius':`${rawSection.buttonRadius??runtime.page.document.style.buttonRadius??0}px`,'--cms-button-height':`${{compact:36,normal:44,large:52}[rawSection.buttonSize??runtime.page.document.style.buttonSize??'normal']}px`}: {}),...(rawSection.buttonRadius!==undefined?{'--cms-button-radius':`${rawSection.buttonRadius}px`}:{}),...(rawSection.buttonSize!==undefined?{'--cms-button-height':`${{compact:36,normal:44,large:52}[rawSection.buttonSize]}px`}:{})} as React.CSSProperties}
+      style={{'--cms-section-padding':sectionSpacingStyle(section)?.paddingBlock,...sectionRootStyle,...containedSurfaceBackground(section),...(sectionAnchorOffset(section)?{scrollMarginTop:sectionAnchorOffset(section)}:{}),...sectionBorderStyle(section),'--cms-page-width':section.containerMode==='full-bleed'?'100%':(runtime.page.document.containerWidth??'site')==='site'?'var(--storefront-content-width, 1280px)':runtime.page.document.containerWidth==='full'?'100%':runtime.page.document.containerWidth==='wide'?'1440px':'1280px',...(section.containerMode==='full-bleed'?{'--cms-page-gutter':'0px'}:(runtime.page.document.containerWidth??'site')==='site'?{'--cms-page-gutter':'var(--storefront-content-gutter, 24px)'}:{}),...(runtime.page.document.style&&runtime.page.document.style.unifiedButtons!==false?{'--cms-button-radius':`${rawSection.buttonRadius??runtime.page.document.style.buttonRadius??0}px`,'--cms-button-height':`${{compact:36,normal:44,large:52}[rawSection.buttonSize??runtime.page.document.style.buttonSize??'normal']}px`}: {}),...(rawSection.buttonRadius!==undefined?{'--cms-button-radius':`${rawSection.buttonRadius}px`}:{}),...(rawSection.buttonSize!==undefined?{'--cms-button-height':`${{compact:36,normal:44,large:52}[rawSection.buttonSize]}px`}:{})} as React.CSSProperties}
       onClickCapture={isEditingMode?event=>{
         const element=event.target as HTMLElement;
         const target=element.closest<HTMLElement>('[data-image-slot]')?.dataset.imageSlot;

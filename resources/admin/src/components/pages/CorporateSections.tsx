@@ -1,3 +1,4 @@
+import {sectionSpacingStyle} from '../../cms/sectionSpacing';
 import {SectionEyebrow} from './SectionEyebrow';
 import {isTeamStoryOverview} from '../../cms/teamStoryOverview';
 import {isImageHighlights,highlightItems} from '../../cms/imageHighlights';
@@ -25,7 +26,7 @@ export function CorporateHero({section:s,editing=false}:{section:PageSection;edi
   <div className="corp-centered-copy"><Copy s={s} hero/><div className="corp-actions"><Action s={s} editing={editing}/><Action s={s} editing={editing} secondary/></div></div>
   <div className="corp-centered-art">{s.mediaUrl?<><ScopedImage section={s} targetId="mediaUrl" src={s.mediaUrl} alt={s.mediaAlt||s.title} fetchPriority="high"/><div className="corp-art-activity" aria-hidden="true"><i/><i/><i/></div></>:editing?<p>Add hero artwork in Content → Images.</p>:null}</div>
  </div>;
- if(s.heroBannerPreset==='corporate-split-composite')return <div className="corp corp-hero-split" style={brand(s)} data-corporate="hero-split">
+ if(s.heroBannerPreset==='corporate-split-composite')return <div className="corp corp-hero-split" style={{...brand(s),...sectionSpacingStyle(s)}} data-corporate="hero-split">
   <div className="corp-hero-copy"><Copy s={s} hero/><div className="corp-actions"><Action s={s} editing={editing}/><Action s={s} editing={editing} secondary/></div></div>
   <div className="corp-hero-art">{s.mediaUrl?<ScopedImage section={s} targetId="mediaUrl" src={s.mediaUrl} alt={s.mediaAlt||s.title} fetchPriority="high"/>:editing?<p>Add hero artwork in Content → Images.</p>:null}</div>
  </div>;

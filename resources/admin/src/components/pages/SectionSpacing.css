@@ -1,0 +1,10 @@
+/* Shared outer spacing overrides fixed layout clamps only when a section or page
+   explicitly supplies paddingY. Wins over legacy mobile !important rules on these exact outer roots. Internal cards/media and native defaults are untouched. */
+section[data-cms-spacing] [data-page-container] > :is(.corp, .editorial-illustrated-cta, .cms-split-surface-wrap, .cms-wide-editorial, .plan-comparison, .framed-faq, .focused-steps, .scroll-stack, .knowledge-triptych, .image-flow) {
+ padding-block: var(--cms-section-padding) !important;
+}
+
+/* Unified pricing previously connected spacing to the bottom edge only. */
+section[data-cms-spacing] [data-page-container] > .jw-unified-pricing > .pricing-content {
+ padding-top: var(--pricing-space);
+}

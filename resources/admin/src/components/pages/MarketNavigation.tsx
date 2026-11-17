@@ -1,3 +1,4 @@
+import {sectionSpacingStyle} from '../../cms/sectionSpacing';
 import {SectionEyebrow} from './SectionEyebrow';
 import React from 'react';
 import {ArrowRight,Image} from 'lucide-react';
@@ -12,7 +13,7 @@ export function MarketNavigation({section,catalog,editing=false}:{section:PageSe
  const hero=section.shopNavigationPreset==='market-hero';
  const colors=section.customColors;
  const height=section.bannerHeight==='compact'?200:section.bannerHeight==='tall'?320:260;
- return <div data-market-navigation className={`@container w-full ${hero?'py-0':'py-6'}`} style={{color:colors?.titleColor??'#0c2337'}}>
+ return <div data-market-navigation className={`@container w-full ${hero?'py-0':'py-6'}`} style={{...sectionSpacingStyle(section),color:colors?.titleColor??'#0c2337'}}>
   {section.showSectionHeading!==false&&<header className="flex flex-wrap justify-between items-end gap-4 mb-5">
    <div>{<SectionEyebrow section={section}/>}<h2 data-cms-text="title" className="text-2xl font-bold whitespace-pre-line" style={typographyStyle(section,'title')}>{section.title}</h2>{section.content&&<p data-cms-text="content" className="mt-2 text-sm whitespace-pre-line" style={typographyStyle(section,'content')}>{section.content}</p>}</div>
    {section.buttonText&&shopNavigationHref(section.buttonLink??'')&&<a data-cms-button="primary" data-cms-button-kind="link" data-cms-action="button" href={shopNavigationHref(section.buttonLink??'')} onClick={e=>{if(editing)e.preventDefault()}} className="inline-flex gap-2 items-center text-xs">{section.buttonText}<ArrowRight size={14}/></a>}

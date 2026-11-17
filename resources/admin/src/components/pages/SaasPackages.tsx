@@ -1,3 +1,4 @@
+import {sectionSpacingStyle} from '../../cms/sectionSpacing';
 import {SectionEyebrow} from './SectionEyebrow';
 import {saasAction} from '../../cms/saasPackages';
 import React from 'react';
@@ -7,7 +8,7 @@ import {saasPriceText} from '../../cms/saasPackages';
 import {typographyStyle} from '../../cms/inspectorCapabilities';
 import './SaasSections.css';
 export function SaasPackages({section:s,currency,editing}:{section:PageSection;currency:string;editing:boolean}) {
- return <div className="jw-saas jw-saas-plans" data-saas-packages data-saas-tone={s.textColor==='dark'?'light':undefined} style={{color:s.textColor==='dark'?(s.customColors?.titleColor||'#0d1234'):undefined,'--saas-content':s.customColors?.contentColor||'#626981','--saas-accent':s.customColors?.primaryBtnBg||'#2860ff','--saas-violet':s.customColors?.eyebrowColor||'#6334ed'} as React.CSSProperties}>
+ return <div className="jw-saas jw-saas-plans" data-saas-packages data-saas-tone={s.textColor==='dark'?'light':undefined} style={{...sectionSpacingStyle(s),color:s.textColor==='dark'?(s.customColors?.titleColor||'#0d1234'):undefined,'--saas-content':s.customColors?.contentColor||'#626981','--saas-accent':s.customColors?.primaryBtnBg||'#2860ff','--saas-violet':s.customColors?.eyebrowColor||'#6334ed'} as React.CSSProperties}>
   <div className="jw-saas-heading"><div><SectionEyebrow section={s}/><h2 data-cms-text="title" style={typographyStyle(s,'title')}>{s.title}</h2></div><p data-cms-text="content" style={typographyStyle(s,'content')}>{s.content}</p></div>
   <div className="jw-saas-plan-grid">{s.items?.map(item=><article key={item.id} data-cms-item={item.id} className={`jw-saas-plan ${item.isHighlighted?'is-highlighted':''}`}>
    {item.isHighlighted&&item.highlightLabel&&<span className="jw-saas-ribbon">{item.highlightLabel}</span>}

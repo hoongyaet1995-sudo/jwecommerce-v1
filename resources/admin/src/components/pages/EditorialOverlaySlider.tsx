@@ -1,3 +1,4 @@
+import {sectionSpacingStyle} from '../../cms/sectionSpacing';
 import {SectionEyebrow} from './SectionEyebrow';
 import React from 'react';
 import {ArrowRight} from 'lucide-react';
@@ -21,7 +22,7 @@ export function EditorialOverlaySlider({section,index,onSelect,onPause,isEditing
    {item.videoUrl?<video src={item.videoUrl} poster={item.imageUrl} className="w-full h-full object-cover" muted playsInline loop autoPlay={!isEditingMode&&i===active}/>:item.imageUrl&&<ScopedImage section={section} targetId={`item:${item.id}:imageUrl`} src={item.imageUrl} alt={item.title||'Featured collection'} className="w-full h-full object-cover"/>}
   </div>)}
   <div aria-hidden="true" className="absolute inset-0 bg-black pointer-events-none" style={{opacity:(section.overlayOpacity??0)/100}}/>
-  <div data-cms-hero-safe className={`relative pointer-events-none w-full ${panoramic?'py-6':'py-12 @min-[640px]:py-12'} ${section.containerMode==='full-bleed'?'max-w-[var(--cms-page-width)] mx-auto px-6 @min-[640px]:px-10 @min-[1024px]:px-16':''}`}>
+  <div data-cms-hero-safe style={sectionSpacingStyle(section)} className={`relative pointer-events-none w-full ${panoramic?'py-6':'py-12 @min-[640px]:py-12'} ${section.containerMode==='full-bleed'?'max-w-[var(--cms-page-width)] mx-auto px-6 @min-[640px]:px-10 @min-[1024px]:px-16':''}`}>
    <div className={`pointer-events-auto max-w-[430px] ${panoramic?'p-6':'p-7 @min-[640px]:p-8'} ${fashion?'bg-transparent':'bg-[#faf8f1]/65'} ${placement}`} style={{textAlign:section.textAlignment??'left'}} aria-live={section.sliderAutoplay===false?'polite':'off'}>
     <SectionEyebrow section={section} item={slide}/>
     <h1 data-cms-text="title" data-cms-item={slide?.id} className="font-serif text-[42px] @min-[640px]:text-[56px] leading-[1.05] tracking-[-.025em] whitespace-pre-line mb-5" style={{color:colors?.titleColor??'#292b24',...typographyStyle(section,'title')}}>{slide?.title||(!slides.length?'Add your first slide':'')}</h1>
