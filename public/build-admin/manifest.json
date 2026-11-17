@@ -115,18 +115,18 @@
     "file": "assets/cms-shell-design-CgEQMW9q.css",
     "src": "C:/Users/User/.codex/worktrees/section-colors-release-20261116/jwstudio-ecommerce/public/css/cms-shell-design.css"
   },
-  "_AddSectionModal-B5ItVbm5.js": {
-    "file": "assets/AddSectionModal-B5ItVbm5.js",
+  "_AddSectionModal-CBIbHa5T.js": {
+    "file": "assets/AddSectionModal-CBIbHa5T.js",
     "name": "AddSectionModal",
     "imports": [
-      "_PageRuntimeContext-BTZ6MLLe.js"
+      "_PageRuntimeContext-B87T91fO.js"
     ]
   },
-  "_PageRuntimeContext-BTZ6MLLe.js": {
-    "file": "assets/PageRuntimeContext-BTZ6MLLe.js",
+  "_PageRuntimeContext-B87T91fO.js": {
+    "file": "assets/PageRuntimeContext-B87T91fO.js",
     "name": "PageRuntimeContext",
     "css": [
-      "assets/PageRuntimeContext-BwfqobWQ.css"
+      "assets/PageRuntimeContext-DKvzjVUl.css"
     ],
     "assets": [
       "assets/453f93ed7666790d-CCdVugut.woff2",
@@ -159,72 +159,72 @@
       "assets/malaysia-proud-CoWH8gQK.png"
     ]
   },
-  "_PageRuntimeContext-BwfqobWQ.css": {
-    "file": "assets/PageRuntimeContext-BwfqobWQ.css",
-    "src": "_PageRuntimeContext-BwfqobWQ.css"
+  "_PageRuntimeContext-DKvzjVUl.css": {
+    "file": "assets/PageRuntimeContext-DKvzjVUl.css",
+    "src": "_PageRuntimeContext-DKvzjVUl.css"
   },
-  "_index-DKzvJm-R.css": {
-    "file": "assets/index-DKzvJm-R.css",
-    "src": "_index-DKzvJm-R.css"
+  "_index-DXiqtMvw.css": {
+    "file": "assets/index-DXiqtMvw.css",
+    "src": "_index-DXiqtMvw.css"
   },
   "src/main.tsx": {
-    "file": "assets/main-D6rncCeS.js",
+    "file": "assets/main-DXiPDhQ4.js",
     "name": "main",
     "src": "src/main.tsx",
     "isEntry": true,
     "imports": [
-      "_PageRuntimeContext-BTZ6MLLe.js",
-      "_AddSectionModal-B5ItVbm5.js"
+      "_PageRuntimeContext-B87T91fO.js",
+      "_AddSectionModal-CBIbHa5T.js"
     ],
     "dynamicImports": [
       "src/previews/inventory48/Inventory48Runtime.tsx"
     ],
     "css": [
       "assets/main-lwU9mrON.css",
-      "assets/index-DKzvJm-R.css"
+      "assets/index-DXiqtMvw.css"
     ],
     "assets": [
       "assets/cms-shell-design-CgEQMW9q.css"
     ]
   },
   "src/previews/inventory48/Inventory48Runtime.tsx": {
-    "file": "assets/Inventory48Runtime-D-a6O9R4.js",
+    "file": "assets/Inventory48Runtime-4g8TRJwq.js",
     "name": "Inventory48Runtime",
     "src": "src/previews/inventory48/Inventory48Runtime.tsx",
     "isDynamicEntry": true,
     "imports": [
-      "_PageRuntimeContext-BTZ6MLLe.js",
+      "_PageRuntimeContext-B87T91fO.js",
       "src/main.tsx",
-      "_AddSectionModal-B5ItVbm5.js"
+      "_AddSectionModal-CBIbHa5T.js"
     ],
     "css": [
       "assets/Inventory48Runtime-DNZXllWr.css",
-      "assets/index-DKzvJm-R.css"
+      "assets/index-DXiqtMvw.css"
     ]
   },
   "src/public-page.tsx": {
-    "file": "assets/public-page-2FSYAkrL.js",
+    "file": "assets/public-page-5Yws45YP.js",
     "name": "public-page",
     "src": "src/public-page.tsx",
     "isEntry": true,
     "imports": [
-      "_PageRuntimeContext-BTZ6MLLe.js"
+      "_PageRuntimeContext-B87T91fO.js"
     ],
     "css": [
-      "assets/index-DKzvJm-R.css"
+      "assets/index-DXiqtMvw.css"
     ]
   },
   "src/section-preview/index.html": {
-    "file": "assets/section-preview-yBMQsLYt.js",
+    "file": "assets/section-preview-CfdFpscK.js",
     "name": "section-preview",
     "src": "src/section-preview/index.html",
     "isEntry": true,
     "imports": [
-      "_PageRuntimeContext-BTZ6MLLe.js",
-      "_AddSectionModal-B5ItVbm5.js"
+      "_PageRuntimeContext-B87T91fO.js",
+      "_AddSectionModal-CBIbHa5T.js"
     ],
     "css": [
-      "assets/section-preview-CdaB4S0b.css"
+      "assets/section-preview-CGtuXtoN.css"
     ]
   }
 }

@@ -1,0 +1,10 @@
+/* Opt-in only: absent authored alignment leaves every native layout untouched.
+   Text aligns inside existing regions; media, grids, numeric cells and forms do not move. */
+[data-cms-text-alignment] :is(h1,h2,h3,h4,p,blockquote,[data-cms-text="lead"],[data-cms-text="content"],[data-cms-text="secondaryTitle"],[data-cms-text="itemTitle"],[data-cms-text="itemContent"],[data-cms-eyebrow-region]):not(svg):not(table *):not(form *):not([data-cms-text="number"]){text-align:var(--cms-text-alignment)!important}
+[data-cms-text-alignment] [data-cms-eyebrow-region]{width:100%}
+[data-cms-text-alignment] [data-chapter-navigation]{justify-content:var(--cms-text-justify)}
+/* Each moving message has a bounded text region; ticker speed/track are unchanged. */
+[data-cms-text-alignment] [data-cms-ticker-message]{min-width:min(70vw,720px)}
+[data-cms-text-alignment] [data-cms-ticker-message]>[data-cms-text="itemTitle"]{flex:1}
+
+[data-cms-text-alignment] .jw-saas-addon-label{justify-content:var(--cms-text-justify)!important;text-align:var(--cms-text-alignment)!important}

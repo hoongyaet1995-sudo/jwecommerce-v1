@@ -36,7 +36,8 @@ export function renderedColorFields(s:PageSection):readonly string[]|undefined {
  if(s.type==='cta_strip'&&s.ctaPreset==='gradient-panel')return [...text,'primaryBtnBg','primaryBtnText'];
 }
 export function supportsDesignField(s:PageSection,key:string):boolean {
- if(isConnectedFamily(s)){if(key==='textAlignment')return connectedPassport(s)!.sectionFields.some(k=>k==='title'||k==='eyebrow');return ['paddingY','motionPreset','motionPace','customColors'].includes(key);}
+ if(key==='textAlignment')return true;
+ if(isConnectedFamily(s)){return ['paddingY','motionPreset','motionPace','customColors'].includes(key);}
  if(key==='paddingY')return layoutControlCapabilities(s).spacing;
  if(key==='textAlignment')return layoutControlCapabilities(s).alignment.length>1;
  if((isPlanComparison(s)||isFramedFaq(s))&&key==='textAlignment')return false;

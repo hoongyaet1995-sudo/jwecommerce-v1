@@ -10,7 +10,7 @@ it('retains old values across supported/fixed/supported layouts and resets one f
  const show=async(section:any)=>act(async()=>root.render(<SectionLayoutControls section={section} onChange={onChange}/>));
  try{
   await show(stored);expect(host.querySelectorAll('[data-layout-spacing],[data-layout-alignment]')).toHaveLength(2);
-  await show({...stored,shopNavigationPreset:'market-hero'});expect(host.querySelectorAll('[data-layout-spacing],[data-layout-alignment]')).toHaveLength(1);
+  await show({...stored,shopNavigationPreset:'market-hero'});expect(host.querySelectorAll('[data-layout-spacing],[data-layout-alignment]')).toHaveLength(2);
   await show(stored);expect(onChange).not.toHaveBeenCalled();expect(host.querySelector('[aria-label="Text alignment right"]')?.getAttribute('aria-pressed')).toBe('true');
   await act(async()=>(host.querySelector('[aria-label="Follow page spacing"]') as HTMLButtonElement).click());
   const resetSpacing={...stored};delete resetSpacing.paddingY;expect(onChange.mock.lastCall?.[0]).toEqual(resetSpacing);

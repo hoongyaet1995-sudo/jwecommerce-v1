@@ -1,3 +1,4 @@
+import './SectionTextAlignment.css';
 import './SectionSpacing.css';
 import {sectionSpacingStyle} from '../../cms/sectionSpacing';
 import {observeNeutralStarterMedia} from './NeutralStarterMedia';
@@ -778,7 +779,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
       >
         <div className={`flex whitespace-nowrap gap-12 ${speedClass}`}>
           {[...items, ...items, ...items].map((it, idx) => (
-            <div key={idx} className="flex items-center gap-3 shrink-0">
+            <div key={idx} data-cms-ticker-message className="flex items-center gap-3 shrink-0">
               <Sparkles className="w-3.5 h-3.5 opacity-80" />
               <span data-cms-text="itemTitle" data-cms-item={it.id} style={typographyStyle(section,'itemTitle')}>{it.title}</span>
               <span className="w-1.5 h-1.5 rounded-full bg-white/40" />
@@ -1125,7 +1126,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
       >
         {/* Section Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
-          <div className={`${section.textAlignment === 'center' ? 'text-center md:text-left' : section.textAlignment === 'right' ? 'text-right' : 'text-left'}`}>
+          <div className={`${section.textAlignment === 'center' ? 'text-center' : section.textAlignment === 'right' ? 'text-right' : 'text-left'}`}>
             {(
               <MotionItem><SectionEyebrow section={section}/></MotionItem>
             )}
@@ -2311,7 +2312,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
       <div className={`w-full ${getPaddingClass()}`}>
         {/* Header & Slider Navigation Arrows */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10">
-          <div className={`${section.textAlignment === 'center' ? 'text-center sm:text-left' : ''}`}>
+          <div className={`${section.textAlignment === 'center' ? 'text-center' : ''}`}>
             {(
               <MotionItem><SectionEyebrow section={section}/></MotionItem>
             )}
@@ -2685,9 +2686,9 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
   if(section.type==='promotion_highlights'&&!isEditingMode&&!resolvePromotionCards(section,runtimeSection.promotions?.offers??[]).length)return null;
   const ownedAppearance=actionAppearanceCss(rawSection,section,resolvePageStyle(runtime.page.document.style,runtime.context.themePalette));
   return (
-    <section data-cms-spacing={section.paddingY} ref={starterRoot} data-cms-starter-design={rawSection.starterDesign} data-cms-unified-buttons={runtime.page.document.style?.unifiedButtons||rawSection.buttonRadius!==undefined||rawSection.buttonSize!==undefined?'':undefined} data-cms-shared-style={runtime.page.document.style&&!runtime.page.document.style.preserveLayout?'':undefined} data-cms-surface={rawSection.surface} data-cms-editor={isEditingMode?'':undefined}
+    <section data-cms-text-alignment={rawSection.textAlignment} data-cms-spacing={section.paddingY} ref={starterRoot} data-cms-starter-design={rawSection.starterDesign} data-cms-unified-buttons={runtime.page.document.style?.unifiedButtons||rawSection.buttonRadius!==undefined||rawSection.buttonSize!==undefined?'':undefined} data-cms-shared-style={runtime.page.document.style&&!runtime.page.document.style.preserveLayout?'':undefined} data-cms-surface={rawSection.surface} data-cms-editor={isEditingMode?'':undefined}
       id={`section-${section.id}`}
-      style={{'--cms-section-padding':sectionSpacingStyle(section)?.paddingBlock,...sectionRootStyle,...containedSurfaceBackground(section),...(sectionAnchorOffset(section)?{scrollMarginTop:sectionAnchorOffset(section)}:{}),...sectionBorderStyle(section),'--cms-page-width':section.containerMode==='full-bleed'?'100%':(runtime.page.document.containerWidth??'site')==='site'?'var(--storefront-content-width, 1280px)':runtime.page.document.containerWidth==='full'?'100%':runtime.page.document.containerWidth==='wide'?'1440px':'1280px',...(section.containerMode==='full-bleed'?{'--cms-page-gutter':'0px'}:(runtime.page.document.containerWidth??'site')==='site'?{'--cms-page-gutter':'var(--storefront-content-gutter, 24px)'}:{}),...(runtime.page.document.style&&runtime.page.document.style.unifiedButtons!==false?{'--cms-button-radius':`${rawSection.buttonRadius??runtime.page.document.style.buttonRadius??0}px`,'--cms-button-height':`${{compact:36,normal:44,large:52}[rawSection.buttonSize??runtime.page.document.style.buttonSize??'normal']}px`}: {}),...(rawSection.buttonRadius!==undefined?{'--cms-button-radius':`${rawSection.buttonRadius}px`}:{}),...(rawSection.buttonSize!==undefined?{'--cms-button-height':`${{compact:36,normal:44,large:52}[rawSection.buttonSize]}px`}:{})} as React.CSSProperties}
+      style={{'--cms-text-alignment':rawSection.textAlignment,'--cms-text-justify':rawSection.textAlignment==='right'?'flex-end':rawSection.textAlignment==='center'?'center':'flex-start','--cms-section-padding':sectionSpacingStyle(section)?.paddingBlock,...sectionRootStyle,...containedSurfaceBackground(section),...(sectionAnchorOffset(section)?{scrollMarginTop:sectionAnchorOffset(section)}:{}),...sectionBorderStyle(section),'--cms-page-width':section.containerMode==='full-bleed'?'100%':(runtime.page.document.containerWidth??'site')==='site'?'var(--storefront-content-width, 1280px)':runtime.page.document.containerWidth==='full'?'100%':runtime.page.document.containerWidth==='wide'?'1440px':'1280px',...(section.containerMode==='full-bleed'?{'--cms-page-gutter':'0px'}:(runtime.page.document.containerWidth??'site')==='site'?{'--cms-page-gutter':'var(--storefront-content-gutter, 24px)'}:{}),...(runtime.page.document.style&&runtime.page.document.style.unifiedButtons!==false?{'--cms-button-radius':`${rawSection.buttonRadius??runtime.page.document.style.buttonRadius??0}px`,'--cms-button-height':`${{compact:36,normal:44,large:52}[rawSection.buttonSize??runtime.page.document.style.buttonSize??'normal']}px`}: {}),...(rawSection.buttonRadius!==undefined?{'--cms-button-radius':`${rawSection.buttonRadius}px`}:{}),...(rawSection.buttonSize!==undefined?{'--cms-button-height':`${{compact:36,normal:44,large:52}[rawSection.buttonSize]}px`}:{})} as React.CSSProperties}
       onClickCapture={isEditingMode?event=>{
         const element=event.target as HTMLElement;
         const target=element.closest<HTMLElement>('[data-image-slot]')?.dataset.imageSlot;
