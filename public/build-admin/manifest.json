@@ -115,19 +115,19 @@
     "file": "assets/cms-footer-design-HYE6XlF8.css",
     "src": "../../public/css/cms-footer-design.css"
   },
-  "C:/Users/User/.codex/worktrees/faq-release-20261117/jwstudio-ecommerce/public/css/cms-shell-design.css": {
+  "C:/Users/User/.codex/worktrees/text-toolbar-release-20261118/jwstudio-ecommerce/public/css/cms-shell-design.css": {
     "file": "assets/cms-shell-design-DsQzaQV-.css",
-    "src": "C:/Users/User/.codex/worktrees/faq-release-20261117/jwstudio-ecommerce/public/css/cms-shell-design.css"
+    "src": "C:/Users/User/.codex/worktrees/text-toolbar-release-20261118/jwstudio-ecommerce/public/css/cms-shell-design.css"
   },
-  "_AddSectionModal-CzIMaW0X.js": {
-    "file": "assets/AddSectionModal-CzIMaW0X.js",
+  "_AddSectionModal-DdXbX42B.js": {
+    "file": "assets/AddSectionModal-DdXbX42B.js",
     "name": "AddSectionModal",
     "imports": [
-      "_PageRuntimeContext-B1UEuueI.js"
+      "_PageRuntimeContext-Clp2OMz9.js"
     ]
   },
-  "_PageRuntimeContext-B1UEuueI.js": {
-    "file": "assets/PageRuntimeContext-B1UEuueI.js",
+  "_PageRuntimeContext-Clp2OMz9.js": {
+    "file": "assets/PageRuntimeContext-Clp2OMz9.js",
     "name": "PageRuntimeContext",
     "css": [
       "assets/PageRuntimeContext-DKvzjVUl.css"
@@ -172,19 +172,19 @@
     "src": "_index-DXiqtMvw.css"
   },
   "src/main.tsx": {
-    "file": "assets/main-ChjEwSZh.js",
+    "file": "assets/main-9AKopjtN.js",
     "name": "main",
     "src": "src/main.tsx",
     "isEntry": true,
     "imports": [
-      "_PageRuntimeContext-B1UEuueI.js",
-      "_AddSectionModal-CzIMaW0X.js"
+      "_PageRuntimeContext-Clp2OMz9.js",
+      "_AddSectionModal-DdXbX42B.js"
     ],
     "dynamicImports": [
       "src/previews/inventory48/Inventory48Runtime.tsx"
     ],
     "css": [
-      "assets/main-lwU9mrON.css",
+      "assets/main-CgWK3YC-.css",
       "assets/index-DXiqtMvw.css"
     ],
     "assets": [
@@ -193,14 +193,14 @@
     ]
   },
   "src/previews/inventory48/Inventory48Runtime.tsx": {
-    "file": "assets/Inventory48Runtime-CcVbeqfk.js",
+    "file": "assets/Inventory48Runtime-CGeub5UT.js",
     "name": "Inventory48Runtime",
     "src": "src/previews/inventory48/Inventory48Runtime.tsx",
     "isDynamicEntry": true,
     "imports": [
-      "_PageRuntimeContext-B1UEuueI.js",
+      "_PageRuntimeContext-Clp2OMz9.js",
       "src/main.tsx",
-      "_AddSectionModal-CzIMaW0X.js"
+      "_AddSectionModal-DdXbX42B.js"
     ],
     "css": [
       "assets/Inventory48Runtime-DNZXllWr.css",
@@ -208,25 +208,25 @@
     ]
   },
   "src/public-page.tsx": {
-    "file": "assets/public-page-Xd9tuEpH.js",
+    "file": "assets/public-page-DlulzSJq.js",
     "name": "public-page",
     "src": "src/public-page.tsx",
     "isEntry": true,
     "imports": [
-      "_PageRuntimeContext-B1UEuueI.js"
+      "_PageRuntimeContext-Clp2OMz9.js"
     ],
     "css": [
       "assets/index-DXiqtMvw.css"
     ]
   },
   "src/section-preview/index.html": {
-    "file": "assets/section-preview-kWfuqPzj.js",
+    "file": "assets/section-preview-nr7QdVDs.js",
     "name": "section-preview",
     "src": "src/section-preview/index.html",
     "isEntry": true,
     "imports": [
-      "_PageRuntimeContext-B1UEuueI.js",
-      "_AddSectionModal-CzIMaW0X.js"
+      "_PageRuntimeContext-Clp2OMz9.js",
+      "_AddSectionModal-DdXbX42B.js"
     ],
     "css": [
       "assets/section-preview-CGtuXtoN.css"

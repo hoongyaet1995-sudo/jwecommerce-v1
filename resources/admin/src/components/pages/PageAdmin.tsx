@@ -1,3 +1,4 @@
+import {BuilderTextToolbar,type RenderedText} from './BuilderTextToolbar';
 import {useCmsBrand} from '../../cms/useCmsBrand';
 import {resolvePageStyle} from '../../cms/pageStyle';
 import {isConnectedPage} from '../../cms/connectedPageTemplates';
@@ -155,6 +156,7 @@ export const PageAdmin: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'draft' | 'archived'>('all');
   const canvasScrollRef=useRef<HTMLDivElement>(null);
+  const [renderedText,setRenderedText]=useState<RenderedText|null>(null);
   const outlineScrollRequest=useRef(0);
   const selectOutlineSection=(sectionId:string)=>{
     setActiveSectionId(sectionId);
@@ -1489,10 +1491,13 @@ export const PageAdmin: React.FC = () => {
           </div>
         </div>
 
+        <BuilderTextToolbar canvasRef={canvasScrollRef} sections={currentPage.sections} activeSectionId={activeSectionId} pageId={currentPage.id} onChange={handleUpdateSection} onRendered={setRenderedText} onSelect={(sectionId,role)=>selectElement(sectionId,'typography',role)}/>
+
         {/* Right Panel: Section Inspector (Collapsible) */}
         {!isInspectorCollapsed ? (
           <div className="w-84 lg:w-96 flex-shrink-0 flex flex-col transition-all duration-300">
             <SectionInspector pagePreserveLayout={currentPage.style?.preserveLayout} pageButtonStyle={currentPage.style} pageSpacing={currentPage.style?.spacing} pageTypography={currentPage.style?.typography} pagePalette={currentPage.style?.palette} followTheme={currentPage.style?.colorSource==='theme'} promotionOffers={promotionOffers}
+                renderedText={renderedText?.sectionId===activeSection?.id?renderedText:undefined}
                 selectedElement={selectedElement?.sectionId===activeSection?.id?selectedElement:undefined}
               key={currentPage.id}
               pageId={currentPage.id}
