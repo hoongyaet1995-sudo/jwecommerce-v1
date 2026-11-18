@@ -2151,6 +2151,68 @@
       "enum": [
         "neutral-v1"
       ]
+    },
+    "textColorBinding": {
+      "type": "object",
+      "allowUnknownFields": false,
+      "fields": {
+        "source": {
+          "type": "string",
+          "required": true,
+          "enum": [
+            "auto",
+            "dark",
+            "light",
+            "custom"
+          ]
+        },
+        "color": {
+          "type": "string",
+          "pattern": "^#[a-fA-F0-9]{6}$"
+        }
+      },
+      "format": "textColorBinding"
+    },
+    "textColorRoleBindings": {
+      "type": "object",
+      "allowUnknownFields": false,
+      "fields": {
+        "eyebrow": {
+          "$ref": "textColorBinding"
+        },
+        "title": {
+          "$ref": "textColorBinding"
+        },
+        "lead": {
+          "$ref": "textColorBinding"
+        },
+        "content": {
+          "$ref": "textColorBinding"
+        },
+        "itemTitle": {
+          "$ref": "textColorBinding"
+        },
+        "itemContent": {
+          "$ref": "textColorBinding"
+        },
+        "secondaryTitle": {
+          "$ref": "textColorBinding"
+        },
+        "label": {
+          "$ref": "textColorBinding"
+        },
+        "number": {
+          "$ref": "textColorBinding"
+        }
+      }
+    },
+    "textColorBindings": {
+      "type": "object",
+      "maxProperties": 500,
+      "additionalProperties": {
+        "$ref": "textColorRoleBindings"
+      },
+      "format": "textColorBindings"
     }
   },
   "section": {
@@ -2183,7 +2245,8 @@
           "colorOverrides",
           "buttonColors",
           "titleEmphasis",
-          "starterDesign"
+          "starterDesign",
+          "textColorBindings"
         ],
         "publishRequired": [
           "title"
@@ -2234,7 +2297,8 @@
           "colorOverrides",
           "buttonColors",
           "titleEmphasis",
-          "starterDesign"
+          "starterDesign",
+          "textColorBindings"
         ],
         "publishRequired": [
           "title"
@@ -2282,7 +2346,8 @@
           "mediaAlt",
           "connectedLayoutMemory",
           "connectedVisualContext",
-          "starterDesign"
+          "starterDesign",
+          "textColorBindings"
         ],
         "publishRequired": [
           "title"
@@ -2326,7 +2391,8 @@
           "colorOverrides",
           "buttonColors",
           "titleEmphasis",
-          "starterDesign"
+          "starterDesign",
+          "textColorBindings"
         ],
         "publishRequired": [
           "title"
@@ -2372,7 +2438,8 @@
           "colorOverrides",
           "buttonColors",
           "titleEmphasis",
-          "starterDesign"
+          "starterDesign",
+          "textColorBindings"
         ],
         "publishRequired": [
           "title"
@@ -2407,7 +2474,8 @@
           "colorOverrides",
           "buttonColors",
           "titleEmphasis",
-          "starterDesign"
+          "starterDesign",
+          "textColorBindings"
         ],
         "publishRequired": [
           "title"
@@ -2467,7 +2535,8 @@
           "buttonColors",
           "itemLayoutMode",
           "titleEmphasis",
-          "starterDesign"
+          "starterDesign",
+          "textColorBindings"
         ],
         "publishRequired": [
           "title"
@@ -2505,7 +2574,8 @@
           "colorOverrides",
           "buttonColors",
           "titleEmphasis",
-          "starterDesign"
+          "starterDesign",
+          "textColorBindings"
         ],
         "publishRequired": [
           "title"
@@ -2539,7 +2609,8 @@
           "colorOverrides",
           "buttonColors",
           "titleEmphasis",
-          "starterDesign"
+          "starterDesign",
+          "textColorBindings"
         ],
         "publishRequired": [
           "title"
@@ -2579,7 +2650,8 @@
           "imageSlots",
           "connectedLayoutMemory",
           "connectedVisualContext",
-          "starterDesign"
+          "starterDesign",
+          "textColorBindings"
         ],
         "publishRequired": [
           "title"
@@ -2614,7 +2686,8 @@
           "colorOverrides",
           "buttonColors",
           "titleEmphasis",
-          "starterDesign"
+          "starterDesign",
+          "textColorBindings"
         ],
         "publishRequired": [
           "title"
@@ -2667,7 +2740,8 @@
           "colorOverrides",
           "buttonColors",
           "titleEmphasis",
-          "starterDesign"
+          "starterDesign",
+          "textColorBindings"
         ],
         "publishRequired": [
           "title",
@@ -2709,7 +2783,8 @@
           "colorOverrides",
           "buttonColors",
           "titleEmphasis",
-          "starterDesign"
+          "starterDesign",
+          "textColorBindings"
         ],
         "publishRequired": [
           "title"
@@ -2757,7 +2832,8 @@
           "colorOverrides",
           "buttonColors",
           "titleEmphasis",
-          "starterDesign"
+          "starterDesign",
+          "textColorBindings"
         ],
         "publishRequired": [
           "title"
@@ -2802,7 +2878,8 @@
           "buttonColors",
           "titleEmphasis",
           "pricingMatrix",
-          "starterDesign"
+          "starterDesign",
+          "textColorBindings"
         ],
         "publishRequired": [
           "title"
@@ -2857,7 +2934,8 @@
           "mediaAlt",
           "connectedLayoutMemory",
           "connectedVisualContext",
-          "starterDesign"
+          "starterDesign",
+          "textColorBindings"
         ],
         "publishRequired": [
           "title"
@@ -2891,7 +2969,8 @@
           "colorOverrides",
           "buttonColors",
           "titleEmphasis",
-          "starterDesign"
+          "starterDesign",
+          "textColorBindings"
         ],
         "publishRequired": [
           "title"
@@ -2929,7 +3008,8 @@
           "colorOverrides",
           "buttonColors",
           "titleEmphasis",
-          "starterDesign"
+          "starterDesign",
+          "textColorBindings"
         ],
         "publishRequired": [
           "title"
@@ -2965,7 +3045,8 @@
           "colorOverrides",
           "buttonColors",
           "titleEmphasis",
-          "starterDesign"
+          "starterDesign",
+          "textColorBindings"
         ],
         "publishRequired": [
           "title"
@@ -3010,7 +3091,8 @@
           "mediaAlt",
           "connectedLayoutMemory",
           "connectedVisualContext",
-          "starterDesign"
+          "starterDesign",
+          "textColorBindings"
         ],
         "publishRequired": [
           "title"
@@ -3049,7 +3131,8 @@
           "colorOverrides",
           "buttonColors",
           "titleEmphasis",
-          "starterDesign"
+          "starterDesign",
+          "textColorBindings"
         ],
         "publishRequired": [
           "title"
@@ -3084,7 +3167,8 @@
           "colorOverrides",
           "buttonColors",
           "titleEmphasis",
-          "starterDesign"
+          "starterDesign",
+          "textColorBindings"
         ],
         "publishRequired": [
           "title"
@@ -3129,7 +3213,8 @@
           "connectedDiagram",
           "connectedLayoutMemory",
           "connectedVisualContext",
-          "starterDesign"
+          "starterDesign",
+          "textColorBindings"
         ],
         "publishRequired": [
           "title"
@@ -3184,7 +3269,8 @@
           "connectedDiagram",
           "connectedLayoutMemory",
           "connectedVisualContext",
-          "starterDesign"
+          "starterDesign",
+          "textColorBindings"
         ],
         "publishRequired": [
           "title"
@@ -3231,7 +3317,8 @@
           "colorOverrides",
           "buttonColors",
           "titleEmphasis",
-          "starterDesign"
+          "starterDesign",
+          "textColorBindings"
         ],
         "publishRequired": [
           "title"
@@ -3271,7 +3358,8 @@
           "colorOverrides",
           "buttonColors",
           "titleEmphasis",
-          "starterDesign"
+          "starterDesign",
+          "textColorBindings"
         ],
         "publishRequired": [
           "title"
@@ -3308,7 +3396,8 @@
           "colorOverrides",
           "buttonColors",
           "titleEmphasis",
-          "starterDesign"
+          "starterDesign",
+          "textColorBindings"
         ],
         "publishRequired": [
           "title"
@@ -3354,7 +3443,8 @@
           "connectedDiagram",
           "connectedLayoutMemory",
           "connectedVisualContext",
-          "starterDesign"
+          "starterDesign",
+          "textColorBindings"
         ],
         "publishRequired": [
           "title"
@@ -3400,7 +3490,8 @@
           "items",
           "connectedLayoutMemory",
           "connectedVisualContext",
-          "starterDesign"
+          "starterDesign",
+          "textColorBindings"
         ],
         "publishRequired": [
           "title"
@@ -3437,7 +3528,8 @@
           "colorOverrides",
           "buttonColors",
           "titleEmphasis",
-          "starterDesign"
+          "starterDesign",
+          "textColorBindings"
         ],
         "publishRequired": [
           "title"
@@ -3481,7 +3573,8 @@
           "colorOverrides",
           "buttonColors",
           "titleEmphasis",
-          "starterDesign"
+          "starterDesign",
+          "textColorBindings"
         ],
         "publishRequired": [
           "title"
@@ -3524,7 +3617,8 @@
           "colorOverrides",
           "buttonColors",
           "titleEmphasis",
-          "starterDesign"
+          "starterDesign",
+          "textColorBindings"
         ],
         "publishRequired": [
           "title"
@@ -3559,7 +3653,8 @@
           "colorOverrides",
           "buttonColors",
           "titleEmphasis",
-          "starterDesign"
+          "starterDesign",
+          "textColorBindings"
         ],
         "publishRequired": [
           "title"
@@ -3601,7 +3696,8 @@
           "colorOverrides",
           "buttonColors",
           "titleEmphasis",
-          "starterDesign"
+          "starterDesign",
+          "textColorBindings"
         ],
         "publishRequired": [
           "title"
@@ -3639,7 +3735,8 @@
           "colorOverrides",
           "buttonColors",
           "titleEmphasis",
-          "starterDesign"
+          "starterDesign",
+          "textColorBindings"
         ],
         "publishRequired": [
           "title"

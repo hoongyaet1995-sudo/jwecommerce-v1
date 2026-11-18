@@ -25,7 +25,7 @@ export function ChapterNavigation({section,isEditingMode}:{section:PageSection;i
   return()=>{window.removeEventListener('scroll',scroll);cancelAnimationFrame(frame);};
  },[signature,isEditingMode]);
  return <nav style={sectionSpacingStyle(section)} aria-label={section.title||'Page chapters'} data-chapter-navigation className="flex flex-wrap gap-x-6 @min-[640px]:gap-x-16 border-b border-neutral-300">
-  {chapters.map((chapter,index)=><a data-cms-text="label" key={chapter.id} href={`#section-${chapter.id}`} aria-current={active===chapter.id?'location':undefined} onClick={event=>{if(isEditingMode)event.preventDefault();else setActive(chapter.id);}} style={{...({color:active===chapter.id?(section.customColors?.eyebrowColor??'#4f46e5'):section.customColors?.contentColor,borderColor:active===chapter.id?(section.customColors?.eyebrowColor??'#4f46e5'):'transparent'}),...typographyStyle(section,'label')}} className="inline-flex gap-4 py-5 border-b-2 -mb-px text-sm font-semibold">
+  {chapters.map((chapter,index)=><a data-cms-text="label" data-cms-item={section.items?.[index]?.id??chapter.id} key={chapter.id} href={`#section-${chapter.id}`} aria-current={active===chapter.id?'location':undefined} onClick={event=>{if(isEditingMode)event.preventDefault();else setActive(chapter.id);}} style={{...({color:active===chapter.id?(section.customColors?.eyebrowColor??'#4f46e5'):section.customColors?.contentColor,borderColor:active===chapter.id?(section.customColors?.eyebrowColor??'#4f46e5'):'transparent'}),...typographyStyle(section,'label')}} className="inline-flex gap-4 py-5 border-b-2 -mb-px text-sm font-semibold">
    <span>{String(index+1).padStart(2,'0')}</span><span>{chapter.subtitle||chapter.title}</span>
   </a>)}
  </nav>;

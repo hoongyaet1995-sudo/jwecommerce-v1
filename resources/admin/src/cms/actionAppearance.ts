@@ -1,3 +1,4 @@
+import {textColorBindingCss} from './textColorBindings';
 import {connectedPassport} from './connectedFamilies';
 import {isUnifiedPricing} from './unifiedPricing';
 import type {PageSection} from '../types';
@@ -59,8 +60,9 @@ export function actionAppearanceCss(raw:PageSection,resolved:PageSection,page?:P
   const local=raw.typography?.[role],inherited=page?.typography?.[role];
   const owned=local?.colorOverride||(!local?.color&&inherited?.colorOverride);
   const legacyKey=role==='eyebrow'?'eyebrowColor':role==='title'||role==='itemTitle'?'titleColor':'contentColor';
-  const color=raw.starterDesign==='neutral-v1'?(local?.color??inherited?.color??(raw.colorOverrides?.includes(legacyKey)?raw.customColors?.[legacyKey]:undefined)):owned?(local?.colorOverride?local.color:inherited?.color):undefined;
+  const color=raw.starterDesign==='neutral-v1'?(local?.color??(inherited?.colorOverride?inherited.color:undefined)??(raw.colorOverrides?.includes(legacyKey)?raw.customColors?.[legacyKey]:undefined)):owned?(local?.colorOverride?local.color:inherited?.color):(local?.inheritPage?undefined:local?.color)??(raw.colorOverrides?.includes(legacyKey)?raw.customColors?.[legacyKey]:undefined);
   if(color){rule(`[data-cms-text="${role}"]`,`color:${color}!important;`);rule(`[data-cms-text="${role}"] :where(h1,h2,h3,h4,p,span,strong,small,em)`,`color:inherit!important;`);}
  }
+ rules.push(textColorBindingCss(raw,resolved.brandPalette??raw.brandPalette??page?.palette??demoPalette));
  return rules.join('\n');
 }

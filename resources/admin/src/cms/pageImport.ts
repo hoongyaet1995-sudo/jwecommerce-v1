@@ -352,6 +352,11 @@ function validateValue(value: unknown, unresolvedSchema: ContractSchema, path: s
     fail(path, 'Media must use a managed asset URL or a safe public HTTPS URL.');
   }
 
+  if(schema.format==='textColorBinding'&&isObject(value)){
+    if(value.source==='custom'&&(typeof value.color!=='string'||!/^#[a-fA-F0-9]{6}$/.test(value.color)))fail(path,'Choose a valid custom text color.');
+    if(value.source!=='custom'&&Object.prototype.hasOwnProperty.call(value,'color'))fail(path,'Palette bindings do not store fixed colors.');
+  }
+  if(schema.format==='textColorBindings'&&isObject(value))for(const target of Object.keys(value))if(target!=='$section'&&!/^[a-zA-Z0-9_.:-]{1,160}$/.test(target))fail(path,'Use a stable text item identity.');
   if (schema.type === 'array' && Array.isArray(value) && schema.maxItems!==undefined && value.length>schema.maxItems) fail(path,'Too many entries.');
   if(schema.type==='object'&&isObject(value)&&schema.additionalProperties){if(schema.maxProperties!==undefined&&Object.keys(value).length>schema.maxProperties)fail(path,'Too many values.');for(const [key,entry] of Object.entries(value))validateValue(entry,schema.additionalProperties,pathFor(path,key));}
   if (schema.type === 'array' && Array.isArray(value) && schema.items) {

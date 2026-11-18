@@ -17,10 +17,12 @@ it('gives neutral CTA channels their own readable normal and hover colors',()=>{
  expect(css).toContain('[data-cms-button="primary"][data-cms-button-kind="button"]{background:#ffffff!important;color:#18232b!important;');
  expect(css).toContain(':hover{background:#183b49!important;color:#ffffff!important;opacity:1!important;}');
 });
-it('does not rewrite unmarked legacy styles, source data or authored colors',()=>{
+it('registers legacy foregrounds without rewriting paint, geometry, source data or authored colors',()=>{
  const s={...starter,typography:{content:{color:'#123456',colorOverride:true}},buttonColors:{primaryText:'#abcdef'},colorOverrides:['titleColor' as const],customColors:{titleColor:'#654321'}};
  const before=JSON.stringify(s);const page={palette:stylePresets[1].palette};
- expect(defaultSectionColorCss({...s,starterDesign:undefined},resolveStyledSection(s,page),page)).toBe('');
+ const legacyCss=defaultSectionColorCss({...s,starterDesign:undefined},resolveStyledSection(s,page),page);
+ expect(legacyCss).toContain('--cms-auto-ink:');
+ expect(legacyCss).not.toMatch(/\{[^}]*\b(?:background|padding|margin|opacity|font-size):/);
  const css=actionAppearanceCss(s,resolveStyledSection(s,page),page);
  expect(css).toContain('[data-cms-text="content"]{color:#123456!important;}');
  expect(css).toContain('[data-cms-button="primary"]{color:#abcdef!important;}');
@@ -57,5 +59,7 @@ it('retains authored selected-tab ink while repairing only automatic starter ink
  expect(css).toContain('.corp-tablist button[aria-selected="true"]');
  expect(css).toContain('color:#ffcc33!important;');
  expect(JSON.stringify(authored)).toBe(before);
- expect(defaultSectionColorCss({...authored,starterDesign:undefined},resolveStyledSection(authored,page),page)).toBe('');
+ const legacyCss=defaultSectionColorCss({...authored,starterDesign:undefined},resolveStyledSection(authored,page),page);
+ expect(legacyCss).toContain('color:#ffcc33!important;');
+ expect(legacyCss).not.toContain('background:');
 });

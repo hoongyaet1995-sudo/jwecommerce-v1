@@ -688,6 +688,7 @@ export type SectionMotionPreset = 'subtle-lift' | 'fade-in' | 'smooth-zoom' | 'd
 export type SectionImageSlot = Pick<PageSection, 'mediaAlt' | 'imageRatio' | 'imagePosition' | 'imageFit' | 'imageWidth' | 'imageShape' | 'imageOverlay' | 'imageOverlayOpacity' | 'imageForeground' | 'imageForegroundColor' | 'imageForegroundOpacity'> & {target:string};
 
 export interface PageSection {
+  textColorBindings?: import('../cms/textColorBindings').TextColorBindings;
   /** Versioned defaults opt-in; never applied while loading existing pages. */
   starterDesign?: 'neutral-v1';
   promotionSource?: 'automatic'|'manual';

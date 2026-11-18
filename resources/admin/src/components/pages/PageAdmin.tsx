@@ -143,8 +143,8 @@ export const PageAdmin: React.FC = () => {
   const [historyOpen,setHistoryOpen]=useState(false);
   const aiHistorySource=useRef(false);
   const [editingPageId, setEditingPageId] = useState<string | null>(selectedPageId || null);
-  const [selectedElement,setSelectedElement]=useState<{sectionId:string;target:string;role?:string;revision:number}|null>(null);
-  const selectElement=(sectionId:string,target:string,role?:string)=>{setActiveSectionId(sectionId);setIsInspectorCollapsed(false);setSelectedElement(previous=>({sectionId,target,role,revision:(previous?.revision??0)+1}));};
+  const [selectedElement,setSelectedElement]=useState<{sectionId:string;target:string;role?:string;itemId?:string;revision:number}|null>(null);
+  const selectElement=(sectionId:string,target:string,role?:string,itemId?:string)=>{setActiveSectionId(sectionId);setIsInspectorCollapsed(false);setSelectedElement(previous=>({sectionId,target,role,itemId,revision:(previous?.revision??0)+1}));};
   const [promotionOffers,setPromotionOffers]=useState<PromotionOffer[]>([]);
   const [selectedImage, setSelectedImage] = useState<{sectionId:string;target:string}|null>(null);
     const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
@@ -1491,7 +1491,7 @@ export const PageAdmin: React.FC = () => {
           </div>
         </div>
 
-        <BuilderTextToolbar canvasRef={canvasScrollRef} sections={currentPage.sections} activeSectionId={activeSectionId} pageId={currentPage.id} onChange={handleUpdateSection} onRendered={setRenderedText} onSelect={(sectionId,role)=>selectElement(sectionId,'typography',role)}/>
+        <BuilderTextToolbar canvasRef={canvasScrollRef} sections={currentPage.sections} activeSectionId={activeSectionId} pageId={currentPage.id} onChange={handleUpdateSection} onRendered={setRenderedText} onSelect={(sectionId,role,itemId)=>selectElement(sectionId,'typography',role,itemId)}/>
 
         {/* Right Panel: Section Inspector (Collapsible) */}
         {!isInspectorCollapsed ? (

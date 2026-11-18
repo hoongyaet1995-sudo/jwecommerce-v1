@@ -13,5 +13,6 @@ export function duplicateSection(section:PageSection):PageSection {
   for(const [oldId,newId] of itemIds)if(slot.target.startsWith(`item:${oldId}:`))return {...slot,target:`item:${newId}:${slot.target.slice(`item:${oldId}:`.length)}`};
   return slot;
  });
+ if(copy.textColorBindings)copy.textColorBindings=Object.fromEntries(Object.entries(copy.textColorBindings).map(([id,value])=>[itemIds.get(id)??id,value]));
  return copy;
 }

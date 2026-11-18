@@ -4,9 +4,9 @@ import type {TextRole} from '../../cms/inspectorCapabilities';
 import {targetRole,headingSelection,type HeadingSelection} from '../../cms/textToolbar';
 import {FloatingTextToolbar} from './FloatingTextToolbar';
 
-type Target={sectionId:string;role:TextRole;element:HTMLElement;selection?:HeadingSelection};
-export type RenderedText={sectionId:string;role:TextRole;fontSize:number;fontWeight:number;color:string};
-type Props={canvasRef:React.RefObject<HTMLDivElement|null>;sections:PageSection[];activeSectionId:string|null;pageId:string;onChange:(s:PageSection)=>void;onRendered?:(value:RenderedText|null)=>void;onSelect:(id:string,role:TextRole)=>void};
+type Target={sectionId:string;role:TextRole;itemId?:string;element:HTMLElement;selection?:HeadingSelection};
+export type RenderedText={sectionId:string;role:TextRole;itemId?:string;fontSize:number;fontWeight:number;color:string};
+type Props={canvasRef:React.RefObject<HTMLDivElement|null>;sections:PageSection[];activeSectionId:string|null;pageId:string;onChange:(s:PageSection)=>void;onRendered?:(value:RenderedText|null)=>void;onSelect:(id:string,role:TextRole,itemId?:string)=>void};
 /** Builder-only adapter. Content, persistence and style ownership stay in the existing Passport. */
 export function BuilderTextToolbar({canvasRef,sections,activeSectionId,pageId,onChange,onSelect,onRendered}:Props){
  const [target,setTarget]=useState<Target|null>(null);
@@ -18,7 +18,7 @@ export function BuilderTextToolbar({canvasRef,sections,activeSectionId,pageId,on
   const open=(event:MouseEvent)=>{const node=event.target;if(!(node instanceof HTMLElement)||node.closest('[data-cms-source],form,input,textarea,select,[contenteditable="true"]'))return;
    const root=node.closest<HTMLElement>('section[id^="section-"]');const s=sections.find(s=>root?.id===`section-${s.id}`);if(!s)return;
    const role=targetRole(s,node);if(!role)return;const element=node.closest<HTMLElement>('[data-cms-text]')!;
-   event.preventDefault();const selection=headingSelection(s,element,window.getSelection());setTarget({sectionId:s.id,role,element,selection});onSelect(s.id,role);
+   event.preventDefault();const selection=headingSelection(s,element,window.getSelection());const itemId=element.closest<HTMLElement>('[data-cms-item]')?.dataset.cmsItem;setTarget({sectionId:s.id,role,itemId,element,selection});if(itemId)onSelect(s.id,role,itemId);else onSelect(s.id,role);
   };
   const close=()=>setTarget(null);const key=(e:KeyboardEvent)=>{if(e.key==='Escape')close()};
   canvas.addEventListener('contextmenu',open);canvas.addEventListener('pointerdown',close);window.addEventListener('keydown',key);
@@ -36,7 +36,7 @@ export function BuilderTextToolbar({canvasRef,sections,activeSectionId,pageId,on
   window.addEventListener('scroll',position,true);window.addEventListener('resize',position);
   return()=>{observer?.disconnect();window.removeEventListener('scroll',position,true);window.removeEventListener('resize',position)};
  },[target,section,canvasRef]);
- useEffect(()=>{onRendered?.(target&&placement?{sectionId:target.sectionId,role:target.role,...placement.computed}:null)},[target,placement]);
+ useEffect(()=>{onRendered?.(target&&placement?{sectionId:target.sectionId,role:target.role,itemId:target.itemId,...placement.computed}:null)},[target,placement]);
  if(!target||!section||!placement||!targetRole(section,target.element))return null;
- return <FloatingTextToolbar section={section} role={target.role} position={placement} computed={placement.computed} selection={target.selection} onChange={onChange} onClose={()=>setTarget(null)}/>;
+ return <FloatingTextToolbar section={section} role={target.role} itemId={target.itemId} position={placement} computed={placement.computed} selection={target.selection} onChange={onChange} onClose={()=>setTarget(null)}/>;
 }

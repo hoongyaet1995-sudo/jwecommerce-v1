@@ -270,6 +270,14 @@ final class PageDocumentContract
             }
         }
 
+        if (($schema['format'] ?? null) === 'textColorBinding' && (is_array($value) || $value instanceof stdClass)) {
+            $binding = (array) $value;
+            if (($binding['source'] ?? null) === 'custom' && (!is_string($binding['color'] ?? null) || !preg_match('/^#[a-fA-F0-9]{6}$/', $binding['color']))) $this->addError($errors,$path,'Choose a valid custom text color.');
+            if (($binding['source'] ?? null) !== 'custom' && array_key_exists('color',$binding)) $this->addError($errors,$path,'Palette bindings do not store fixed colors.');
+        }
+        if (($schema['format'] ?? null) === 'textColorBindings' && (is_array($value) || $value instanceof stdClass)) {
+            foreach ((array) $value as $target => $binding) if ($target !== '$section' && !preg_match('/^[a-zA-Z0-9_.:-]{1,160}$/D',(string) $target)) $this->addError($errors,$path,'Use a stable text item identity.');
+        }
         if (($schema['type'] ?? null) === 'array' && isset($schema['maxItems']) && count($value)>$schema['maxItems']) $this->addError($errors,$path,'Too many entries.');
         if (($schema['type'] ?? null) === 'object' && isset($schema['additionalProperties'])) {
             if (isset($schema['maxProperties']) && count((array)$value)>$schema['maxProperties']) $this->addError($errors,$path,'Too many values.');

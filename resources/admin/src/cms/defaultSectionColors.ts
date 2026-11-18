@@ -15,16 +15,20 @@ export function readableDefaultColor(foreground:string,background:string,minimum
  return target;
 }
 const idSelector=(id:string)=>'#'+('section-'+id).replace(/[^a-zA-Z0-9_-]/g,c=>'\\'+c.codePointAt(0)!.toString(16)+' ');
-/** Existing Passport roles, scoped to the approved unified starters only.
+/** Existing Passport roles, shared by legacy and unified starters.
  * Local panel variables separate foreground ink from paint/background tokens.
  * Authored role and action overrides are applied afterwards by actionAppearanceCss.
  */
 export function defaultSectionColorCss(raw:PageSection,resolved:PageSection,page?:PageStyle):string {
- if(raw.starterDesign!=='neutral-v1')return '';
+ const neutral=raw.starterDesign==='neutral-v1';
  const p=resolved.brandPalette??raw.brandPalette??page?.palette??demoPalette;
  const bg=resolved.customColors?.customBgColor??(raw.surface==='contrast'?(p.contrast??p.ink):p.paper);
  const root=idSelector(raw.id),rules:string[]=[];
- const add=(selector:string,declarations:string)=>rules.push(`${root}${selector?' :where('+selector+')':''}{${declarations}}`);
+ const add=(selector:string,declarations:string)=>{
+  // Legacy documents receive foreground registration only: no repaint or opacity changes.
+  const value=neutral?declarations:declarations.split(';').filter(d=>/^--cms-auto-|^color:/.test(d)).join(';')+';';
+  if(value!==';')rules.push(`${root}${selector?' :where('+selector+')':''}{${value}}`);
+ };
  const context=(background:string,ink=p.ink,muted=p.muted)=>`--cms-auto-ink:${colorContrast(ink,background)>=7?ink:readableDefaultColor(onColor(background)==='#ffffff'?p.light:ink,background,7)};--cms-auto-muted:${readableDefaultColor(muted,background,onColor(background)==='#ffffff'?8:5.5)};--cms-auto-accent:${readableDefaultColor(p.accent,background,7)};color:var(--cms-auto-ink);`;
  const dark=p.contrast??p.ink;
  add('',context(bg));
@@ -41,6 +45,10 @@ export function defaultSectionColorCss(raw:PageSection,resolved:PageSection,page
  add('[class~="bg-white/10"], [class~="bg-emerald-500/20"]',`background:${p.secondary}!important;${context(p.secondary)}`);
  add('[class~="bg-white"], [class~="bg-neutral-50"]',`background:${p.paper};${context(p.paper)}`);
  add('.grid.grid-cols-12[class~="bg-black/40"]',`background:${p.secondary}!important;${context(p.secondary)}`);
+ if(!neutral&&/^#[\da-f]{6}$/i.test(bg)){
+  const headerPaint='#'+bg.slice(1).match(/../g)!.map(c=>Math.round(parseInt(c,16)*.57+7.65).toString(16).padStart(2,'0')).join('');
+  add('.grid.grid-cols-12[class~="bg-black/40"]',context(headerPaint));
+ }
  add('[class~="bg-[#121316]"]',context('#121316'));
  add('[class~="bg-neutral-950/85"]',context('#353535'));
  add('[data-contact-location] .bg-neutral-100',context('#f5f5f5'));
@@ -54,19 +62,24 @@ export function defaultSectionColorCss(raw:PageSection,resolved:PageSection,page
  add('[data-cms-text] :where(p,span,strong,em,small,footer)','color:inherit!important;');
  add('[data-cms-title-emphasis], .subpage-hero-copy h1 em, .mini-stat strong[data-cms-text]','color:var(--cms-auto-accent)!important;');
  // The existing eyebrow capsule owns a real background independently of the section.
- add('.cms-eyebrow',`background:${p.secondary};color:${readableDefaultColor(p.secondaryInk,p.secondary)}!important;`);
- add('.cms-eyebrow[data-eyebrow-background="dark"]',`background:#151515;color:#ffffff!important;`);
- add('.cms-eyebrow[data-eyebrow-background="light"]','background:#ffffff;color:#151515!important;');
+ add('.cms-eyebrow',`background:${p.secondary};${context(neutral?p.secondary:'#ffffff',p.secondaryInk)}color:var(--cms-auto-ink)!important;`);
+ if(!neutral)add('.cms-eyebrow[data-eyebrow-tone="contrast"]','--cms-auto-ink:#ffffff;--cms-auto-muted:#ffffff;color:#ffffff!important;');
+ add('.cms-eyebrow[data-eyebrow-background="dark"]',`background:#151515;${context('#151515')}color:var(--cms-auto-ink)!important;`);
+ add('.cms-eyebrow[data-eyebrow-background="light"]',`background:#ffffff;${context('#ffffff')}color:var(--cms-auto-ink)!important;`);
  add('.hero-subcopy, .subpage-hero-copy > p, .about-story-copy p, .live-check-list li','color:var(--cms-auto-muted)!important;');
 
  // Shared native panels retain their geometry; only their default paint/ink changes.
- add('.feature-tile',`background:${p.secondary};${context(p.secondary)}`);
+ add('.feature-tile',`background:${p.secondary};${context(neutral?p.secondary:'#f1f1ef')}`);
  add('.feature-tile-lead, .feature-tile-dark, .dark-panel, .performance-card, .outcome-wide, .process-wheel',`background:${dark};${context(dark)}`);
+ if(!neutral){add('.feature-tile-lead',context(resolved.customColors?.titleColor??p.ink));add('.live-feature-bento .feature-tile-lead',context('#111111'));}
  add('.feature-tile-pink',`background:${p.accent};${context(p.accent)}`);
- add('.hero-shell',context(raw.surface==='contrast'?bg:'#f1f1ef'));
+ add('.hero-shell',context(neutral&&raw.surface==='contrast'?bg:'#f1f1ef'));
+ if(!neutral)add('.hero-shell .cms-eyebrow[data-eyebrow-tone="contrast"]:not([data-eyebrow-background])',`${context('#f2f2f0')}color:var(--cms-auto-ink)!important;`);
+ add('.home-hero-comment',context('#717271','#ffffff','#ffffff'));
+ if(!neutral){add('.button-dark',context(resolved.customColors?.titleColor??p.ink));add('.button-light',context('#ffffff'));}
  add('.outcome-yellow',context('#fde589'));
  add('.outcome-grey, .about-story-copy .eyebrow',context('#f0f0f0'));
- if(raw.surface==='contrast')add('.outcome-grey',context(bg));
+ if(neutral&&raw.surface==='contrast')add('.outcome-grey',context(bg));
  add('.outcome-grey strong b','color:var(--cms-auto-ink)!important;');
  add('.channel-strip > span, .plan-price-period, .corp-addon-label','color:var(--cms-auto-muted)!important;opacity:1!important;');
  add('.channel-list b, .corp-addon-price','color:var(--cms-auto-ink)!important;');
@@ -85,6 +98,8 @@ export function defaultSectionColorCss(raw:PageSection,resolved:PageSection,page
  add('.solution-overlay a',context('#ffffff'));
  add('.tag-row span',context('#202321'));
  add('.eyebrow',`background:${p.secondary};${context(p.secondary)}`);
+ add('.eyebrow-dark',context(neutral?p.secondary:'#171918'));
+ add('.ecommerce-comparison .eyebrow-dark',context('#ffffff'));
  add('.service-process-panel, .service-process-grid article',context('#090a09'));
  add('.service-highlight-grid article',context(raw.surface==='contrast'?bg:'#f1f1ef'));
  add('.service-highlight-grid article:nth-child(2)',context(p.accent));
@@ -131,6 +146,8 @@ export function defaultSectionColorCss(raw:PageSection,resolved:PageSection,page
   add('[data-editorial-gallery="staggered-focus-cards"] article:nth-child(2) .corp-connection-copy',`background:${p.ink};${context(p.ink)}`);
  }
  add('.corp-workflow, .corp-workflow-caption, .corp-support-overlay',`background:${p.secondary};${context(p.secondary)}`);
+ if(!neutral)add('.corp-pricing-card-faq .corp-starter-answers details',context(resolved.customColors?.customBgColor??p.paper));
+ if(!neutral)add('.corp-support .corp-secondary, .corp-picture-story .corp-secondary, .corp-hero-split .corp-secondary','color:var(--cms-auto-ink)!important;');
  add('.corp-network-steps > div',`background:${p.paper};${context(p.paper)}`);
  // Announcement is painted with the primary button background, not the section surface.
  if(raw.type==='announcement_bar')add('[data-cms-text="itemTitle"]',`color:${readableDefaultColor(p.light,resolved.customColors?.primaryBtnBg??p.accent)}!important;`);
@@ -149,5 +166,7 @@ export function defaultSectionColorCss(raw:PageSection,resolved:PageSection,page
  if(!raw.colorOverrides?.includes('customBgColor'))add('[data-editorial-gradient-hero] > .absolute.pointer-events-none',`background:linear-gradient(90deg,${bg} 0%,${bg}F2 65%,${bg}CC 100%)!important;`);
  // Source-only cards sometimes use a translucent pale panel inside a Contrast section.
  add('[data-cms-button][data-cms-button-kind="link"]','color:var(--cms-auto-ink)!important;opacity:1!important;');
+ // These gallery variants already expose a foreground paired with their actual local paint.
+ add('[data-editorial-gallery="image-cards-contrast"] .corp-connection-copy, [data-editorial-gallery="staggered-focus-cards"] .corp-connection-copy','--cms-auto-ink:var(--card-copy-ink,var(--card-ink));--cms-auto-muted:var(--card-copy-ink,var(--card-ink));');
  return rules.join('\n');
 }

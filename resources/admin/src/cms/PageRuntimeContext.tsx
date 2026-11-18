@@ -1,3 +1,4 @@
+import {isTextColorBindings} from './textColorBindings';
 import {parseDraftImport} from './pageImport';
 import {connectedLayouts} from './connectedFamilies';
 import {isButtonColors} from './actionAppearance';
@@ -275,6 +276,7 @@ export const PAGE_SECTION_BOOTSTRAP_FIELD_RULES = {
   promotionSource:{kind:'optional-enum',values:['automatic','manual']},
   promotionLayout:{kind:'optional-enum',values:['side','above']},
   showOfferBadges:{kind:'optional-boolean'},
+  textColorBindings:{kind:'nested'},
   typography: {kind:'nested'},
   motionPreset: {kind: 'optional-enum', values: ['subtle-lift', 'fade-in', 'smooth-zoom', 'dynamic-pop', 'none']},
   id: {kind: 'required-string'},
@@ -545,6 +547,7 @@ const isPageSection = (value: unknown): value is PageSection => {
     )))) return false;
   if ('colorOverrides' in value&&(!Array.isArray(value.colorOverrides)||!value.colorOverrides.every(k=>['eyebrowColor','titleColor','contentColor','primaryBtnBg','primaryBtnText','secondaryBtnBg','secondaryBtnText','customBgColor'].includes(k))))return false;
   if ('buttonColors' in value && !isButtonColors(value.buttonColors)) return false;
+  if ('textColorBindings' in value && !isTextColorBindings(value.textColorBindings))return false;
   if ('typography' in value && !isTypography(value.typography)) return false;
   if ('brandPalette' in value && !isPalette(value.brandPalette)) return false;
   if ('imageSlots' in value) {

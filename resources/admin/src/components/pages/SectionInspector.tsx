@@ -1257,7 +1257,7 @@ interface SectionInspectorProps {
   pageButtonStyle?:Pick<PageStyle,'buttonRadius'|'buttonSize'>;
   pageSpacing?:PageStyle['spacing'];
   promotionOffers?:PromotionOffer[];
-  selectedElement?:{target:string;role?:string;revision:number};
+  selectedElement?:{target:string;role?:string;itemId?:string;revision:number};
   selectedImage?:string;
   onSelectImage?:(target:string)=>void;
   pageId: string;
@@ -1915,7 +1915,7 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
               value={sectionColors?.customBgColor || ''}
               onChange={val => {const next={...section,customColors:{...section.customColors,customBgColor:val},colorOverrides:[...new Set([...(section.colorOverrides??[]),'customBgColor' as const])]};delete next.surface;onChange(next)}}
             />
-          )}</>}/></div></details></div><div hidden={inspectorTab!=='design'}>{supportsMediaWidth(section)&&<div className="pb-4"><WidthChoiceCards label="Media width" value={section.mediaContainerMode??(section.layoutPreset==='editorial-cover'&&section.containerMode==='full-bleed'?'full-bleed':'page')} onChange={value=>onChange({...section,mediaContainerMode:value})}/><p className="mt-2 text-xs text-neutral-500">Changes the media region only. Text stays aligned with the section container. Full-width split media stacks below the text.</p></div>}<TypographySettings renderedText={renderedText} preserveLayout={pagePreserveLayout} inheritedPalette={effectivePagePalette} inheritedTypography={pageTypography} section={section} onChange={onChange} selectedRole={textRole} onSelectRole={setTextRole}/><SectionButtonSettings section={section} onChange={onChange} pageStyle={{...pageButtonStyle,...(effectivePagePalette?{palette:effectivePagePalette}:{})}}/>{imageTargets(section).length>0&&<details data-inspector-image-design open={selectedElement?.target==='image'} className="cms-settings-group"><summary>Image appearance</summary><div className="cms-settings-group-content">            {/* Dark Overlay Opacity */}
+          )}</>}/></div></details></div><div hidden={inspectorTab!=='design'}>{supportsMediaWidth(section)&&<div className="pb-4"><WidthChoiceCards label="Media width" value={section.mediaContainerMode??(section.layoutPreset==='editorial-cover'&&section.containerMode==='full-bleed'?'full-bleed':'page')} onChange={value=>onChange({...section,mediaContainerMode:value})}/><p className="mt-2 text-xs text-neutral-500">Changes the media region only. Text stays aligned with the section container. Full-width split media stacks below the text.</p></div>}<TypographySettings colorItemId={selectedElement?.itemId??(selectedElement?.target.startsWith('items:')?selectedElement.target.split(':')[1]:undefined)} renderedText={renderedText} preserveLayout={pagePreserveLayout} inheritedPalette={effectivePagePalette} inheritedTypography={pageTypography} section={section} onChange={onChange} selectedRole={textRole} onSelectRole={setTextRole}/><SectionButtonSettings section={section} onChange={onChange} pageStyle={{...pageButtonStyle,...(effectivePagePalette?{palette:effectivePagePalette}:{})}}/>{imageTargets(section).length>0&&<details data-inspector-image-design open={selectedElement?.target==='image'} className="cms-settings-group"><summary>Image appearance</summary><div className="cms-settings-group-content">            {/* Dark Overlay Opacity */}
             {hasSectionField('overlayOpacity') && (
             <div>
               <div className="flex items-center justify-between text-neutral-600 dark:text-neutral-400 mb-1">
