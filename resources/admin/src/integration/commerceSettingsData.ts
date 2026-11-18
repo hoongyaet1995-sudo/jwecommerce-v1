@@ -1,3 +1,4 @@
+import {inFlightSettingsRead, invalidateSettingsRead} from './inFlightSettingsRead';
 import {SettingsReadError} from './settingsReadError';
 import type { LaravelAdminBootstrap } from '../types';
 import type { GeneralShippingRate } from '../types/shipping';
@@ -24,17 +25,21 @@ type ResponsePayload = { data: CommerceSettingsDocument; message?: string; error
 
 export const fetchCommerceSettings = async (bootstrap: LaravelAdminBootstrap): Promise<CommerceSettingsDocument> => {
   if (!bootstrap.commerceSettingsUrl) throw new SettingsReadError('Commerce settings',undefined,'response');
+  return inFlightSettingsRead(bootstrap.commerceSettingsUrl, async () => {
   let response:Response;
   try {response=await window.fetch(bootstrap.commerceSettingsUrl, { credentials: 'same-origin', headers: { Accept: 'application/json' } });}
   catch {throw new SettingsReadError('Commerce settings',undefined,'network');}
   if (!response.ok) throw new SettingsReadError('Commerce settings',response.status);
   try {const payload=await response.json() as ResponsePayload;if(!payload?.data||!Array.isArray(payload.data.shippingRates)||!Array.isArray(payload.data.currencies))throw new Error();return payload.data;}
   catch {throw new SettingsReadError('Commerce settings',response.status,'response');}
+  });
 };
 
 export const saveCommerceSettings = async (bootstrap: LaravelAdminBootstrap, document: Omit<CommerceSettingsDocument, 'returnPolicy'> & { returnPolicy?: ReturnPolicySettings }): Promise<CommerceSettingsDocument> => {
   if (!bootstrap.commerceSettingsUrl) throw new Error('Commerce settings API is unavailable.');
+  invalidateSettingsRead(bootstrap.commerceSettingsUrl);
   const response = await window.fetch(bootstrap.commerceSettingsUrl, { method: 'PUT', credentials: 'same-origin', headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': bootstrap.csrfToken }, body: JSON.stringify(document) });
+  invalidateSettingsRead(bootstrap.commerceSettingsUrl);
   const payload = await response.json().catch(() => null) as ResponsePayload | null;
   if (!response.ok || !payload?.data) throw new Error(payload?.errors ? Object.values(payload.errors).flat().join(' ') : payload?.message ?? 'Commerce settings save failed.');
   return payload.data;
@@ -46,12 +51,14 @@ const saveOfflinePaymentSetting = async (
   document: Partial<Pick<CommerceSettingsDocument, 'bankTransfer' | 'codConfig' | 'shippingRates'>>,
 ): Promise<CommerceSettingsDocument> => {
   if (!bootstrap.commerceSettingsUrl) throw new Error('Commerce settings API is unavailable.');
+  invalidateSettingsRead(bootstrap.commerceSettingsUrl);
   const response = await window.fetch(`${bootstrap.commerceSettingsUrl}/${suffix}`, {
     method: 'PUT',
     credentials: 'same-origin',
     headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': bootstrap.csrfToken },
     body: JSON.stringify(document),
   });
+  invalidateSettingsRead(bootstrap.commerceSettingsUrl);
   const payload = await response.json().catch(() => null) as ResponsePayload | null;
   if (!response.ok || !payload?.data) throw new Error(payload?.errors ? Object.values(payload.errors).flat().join(' ') : payload?.message ?? 'Commerce settings save failed.');
   return payload.data;
@@ -77,11 +84,13 @@ export const saveReturnPolicyConfiguration = async (
   returnPolicy: ReturnPolicySettings,
 ): Promise<CommerceSettingsDocument> => {
   if (!bootstrap.commerceSettingsUrl) throw new Error('Commerce settings API is unavailable.');
+  invalidateSettingsRead(bootstrap.commerceSettingsUrl);
   const response = await window.fetch(`${bootstrap.commerceSettingsUrl}/return-policy`, {
     method: 'PUT', credentials: 'same-origin',
     headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': bootstrap.csrfToken },
     body: JSON.stringify({ returnPolicy }),
   });
+  invalidateSettingsRead(bootstrap.commerceSettingsUrl);
   const payload = await response.json().catch(() => null) as ResponsePayload | null;
   if (!response.ok || !payload?.data) throw new Error(payload?.errors ? Object.values(payload.errors).flat().join(' ') : payload?.message ?? 'Return policy save failed.');
   return payload.data;

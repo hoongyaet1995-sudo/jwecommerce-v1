@@ -1,13 +1,16 @@
+import {inFlightSettingsRead, invalidateSettingsRead} from './inFlightSettingsRead';
 import {SettingsReadError} from './settingsReadError';
 import type { ShopGeneralSettings, LaravelAdminBootstrap } from '../types';
 
 export async function loadShopBranding(): Promise<Partial<ShopGeneralSettings>> {
+  return inFlightSettingsRead('/admin/api/shop-branding', async () => {
   let response:Response;
   try {response=await fetch('/admin/api/shop-branding', { headers: { Accept: 'application/json' }, credentials: 'same-origin' });}
   catch {throw new SettingsReadError('Shop profile',undefined,'network');}
   if (!response.ok) throw new SettingsReadError('Shop profile',response.status);
   try {const payload=await response.json();if(!payload?.data||typeof payload.data!=='object'||Array.isArray(payload.data))throw new Error();return payload.data;}
   catch {throw new SettingsReadError('Shop profile',response.status,'response');}
+  });
 }
 
 async function rasterize(source: string): Promise<{logoPng: string; iconPng: string}> {
@@ -35,11 +38,13 @@ async function rasterize(source: string): Promise<{logoPng: string; iconPng: str
 
 export async function persistShopBranding(bootstrap: LaravelAdminBootstrap, profile: ShopGeneralSettings, previousLogo: string): Promise<Partial<ShopGeneralSettings>> {
   const images = profile.shopLogo && profile.shopLogo !== previousLogo ? await rasterize(profile.shopLogo) : {};
+  invalidateSettingsRead('/admin/api/shop-branding');
   const response = await fetch('/admin/api/shop-branding', {
     method: 'PUT', credentials: 'same-origin',
     headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': bootstrap.csrfToken },
     body: JSON.stringify({ profile: { ...profile, shopLogo: undefined }, ...images }),
   });
+  invalidateSettingsRead('/admin/api/shop-branding');
   const payload = await response.json();
   if (!response.ok) throw new Error(payload.errors ? Object.values(payload.errors).flat().join(' ') : payload.message || 'Could not save the shop profile.');
   if (payload.data.faviconUrl) {

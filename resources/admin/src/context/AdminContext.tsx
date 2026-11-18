@@ -578,6 +578,9 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   useEffect(() => subscribeToSectionChanges(setCurrentSectionState), []);
 
+  // CMS needs page, catalog, navigation and brand settings, not operational queues.
+  const loadOperationalData = !(['pages-builder', 'storefront', 'storefront-header-announcement', 'website-design', 'menu-header', 'menu-footer'] as NavSection[]).includes(currentSection);
+
   useEffect(() => {
     let active = true;
 
@@ -602,6 +605,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, []);
 
   useEffect(() => {
+    if (!loadOperationalData) return;
     let active = true;
     void fetchEasyParcelProvider(laravelBootstrap).then((provider) => {
       if (active) {
@@ -614,15 +618,17 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return () => { active = false; };
   // Laravel emits this immutable bootstrap once per admin app load.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loadOperationalData]);
 
   useEffect(() => {
+    if (!loadOperationalData) return;
     void fetchTaxClasses(laravelBootstrap).then(document => {
       setTaxClasses(document.classes);
     }).catch(() => undefined);
-  }, []);
+  }, [loadOperationalData]);
 
   useEffect(() => {
+    if (!loadOperationalData) return;
     let active = true;
     void fetchOrders(laravelBootstrap).then(loaded => { if (active) setOrders(loaded); }).catch(() => {
       if (active) addToast({ type: 'error', title: 'Orders Unavailable', message: 'Unable to load orders from MySQL.' });
@@ -630,7 +636,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return () => { active = false; };
   // Laravel emits this immutable bootstrap once per admin app load.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loadOperationalData]);
 
   useEffect(() => {
     if (currentSection !== 'orders') return;
@@ -657,6 +663,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [currentSection]);
 
   useEffect(() => {
+    if (!loadOperationalData) return;
     let active = true;
     void fetchShipments(laravelBootstrap).then((loaded) => {
       if (active) setShipmentParcels(loaded);
@@ -666,9 +673,10 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return () => { active = false; };
   // Laravel emits this immutable bootstrap once per admin app load.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loadOperationalData]);
 
   useEffect(() => {
+    if (!loadOperationalData) return;
     let active = true;
     void fetchReviewsData(laravelBootstrap).then((loadedReviews) => {
       if (active) setReviews(loadedReviews);
@@ -678,7 +686,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return () => { active = false; };
   // Laravel emits this immutable bootstrap once per admin app load.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loadOperationalData]);
 
   useEffect(() => {
     let active = true;
@@ -724,6 +732,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, []);
 
   useEffect(() => {
+    if (!loadOperationalData) return;
     let active = true;
     void fetchCustomerDirectoryData(laravelBootstrap).then(data => {
       if (active && data) setCustomers(customerDirectoryToCustomers(data));
@@ -733,7 +742,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return () => { active = false; };
   // Laravel emits this immutable bootstrap once per admin app load.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loadOperationalData]);
 
   useEffect(() => {
     let active = true;
@@ -831,11 +840,12 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [marketplaceInventory, setMarketplaceInventory] = useState<MarketplaceInventoryItem[]>([]);
   const [syncLogs, setSyncLogs] = useState<MarketplaceSyncLog[]>([]);
   useEffect(() => {
+    if (!loadOperationalData) return;
     const refresh = () => void fetchHubEventLogs().then(setSyncLogs).catch(() => undefined);
     refresh();
     const timer = window.setInterval(refresh, 30000);
     return () => window.clearInterval(timer);
-  }, []);
+  }, [loadOperationalData]);
   const [selectedMarketplaceOrderId, setSelectedMarketplaceOrderId] = useState<string | null>(null);
 
   // Malaysia Shipping Module State
@@ -2280,10 +2290,11 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   useEffect(() => {
+    if (!loadOperationalData) return;
     void refreshEasyParcelWebhookReceipts().catch(() => undefined);
   // Laravel emits this immutable bootstrap once per admin app load.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loadOperationalData]);
 
   const saveCourierConfig = (config: CourierConfig) => {
     if (config.courierCode !== 'easyparcel') {
