@@ -172,7 +172,7 @@
     "src": "_index-CRmHGHf0.css"
   },
   "src/main.tsx": {
-    "file": "assets/main-LSyrYf-a.js",
+    "file": "assets/main-Dp95u5Gh.js",
     "name": "main",
     "src": "src/main.tsx",
     "isEntry": true,
@@ -193,7 +193,7 @@
     ]
   },
   "src/previews/inventory48/Inventory48Runtime.tsx": {
-    "file": "assets/Inventory48Runtime-C7l3yuLQ.js",
+    "file": "assets/Inventory48Runtime-2mq4UWId.js",
     "name": "Inventory48Runtime",
     "src": "src/previews/inventory48/Inventory48Runtime.tsx",
     "isDynamicEntry": true,
