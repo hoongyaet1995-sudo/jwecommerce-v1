@@ -24,7 +24,7 @@ it('deduplicates controls, preserves local styles through page palette edits, an
  const local=host.querySelector('[data-test-section]')!,pagePanel=host.querySelector('[data-cms-page-settings]')!;
  await act(async()=>button(pagePanel,'Page palette: Clean modern').click());expect(latest!.sections[0].typography?.title).toEqual({fontSize:36,color:'#ffcc99'});expect(latest!.style?.palette).toEqual(stylePresets[1].palette);expect(button(pagePanel,'Page palette: Clean modern').getAttribute('aria-pressed')).toBe('true');
  const design=[...local.querySelectorAll<HTMLButtonElement>('[role=tab]')].find(b=>b.textContent==='design')!;await act(async()=>design.click());expect(local.textContent).not.toContain('Quick Theme Presets');expect(local.textContent).not.toContain('Micro Color Controls');expect(local.querySelectorAll('[data-section-surface]')).toHaveLength(1);expect(local.querySelector('[data-section-action-colors]')).toBeNull();expect(pagePanel.querySelectorAll('[data-page-palette-picker]')).toHaveLength(1);
- await act(async()=>button(local,'Reset heading to page default').click());expect(latest!.sections[0].surface).toBe('contrast');expect(resolveStyledSection(latest!.sections[0],latest!.style).typography?.title?.fontSize).toBe(50);
+ await act(async()=>button(local,'Reset role styles').click());expect(latest!.sections[0].surface).toBe('contrast');expect(resolveStyledSection(latest!.sections[0],latest!.style).typography?.title?.fontSize).toBe(50);
  await act(async()=>button(local,'Restore shared section defaults').click());expect(latest!.sections[0].surface).toBeUndefined();expect(latest!.sections[0].title).toBe('Keep content');expect(latest!.sections[0].motionPreset).toBe('subtle-lift');
  await act(async()=>root.unmount());host.remove();vi.unstubAllGlobals();
 });
@@ -32,9 +32,9 @@ it('deduplicates controls, preserves local styles through page palette edits, an
 it('keeps button color overrides separate from retained surface seeds',async()=>{
  const host=document.createElement('div');document.body.append(host);const root=createRoot(host);let latest:PageSection;
  function Editor(){const [s,set]=useState<PageSection>({id:'colors',type:'cta_strip',title:'Title',isVisible:true,surface:'contrast',customColors:{primaryBtnBg:'#ffcc99'},buttonColors:{primaryBg:'#abcdef'}});latest=s;return <SectionButtonSettings section={s} onChange={set}/>;}
- await act(async()=>root.render(<Editor/>));const input=host.querySelector<HTMLInputElement>('[aria-label="Primary button background"]')!,picker=host.querySelector<HTMLInputElement>('[aria-label="Primary button background picker"]')!;
- expect(input.value).toBe(picker.value);expect(input.value).toBe('#abcdef');
- await act(async()=>{input.value='#123456';input.dispatchEvent(new FocusEvent('focusout',{bubbles:true}));});expect(latest!.buttonColors?.primaryBg).toBe('#123456');expect(latest!.customColors?.primaryBtnBg).toBe('#ffcc99');
+ await act(async()=>root.render(<Editor/>));const input=host.querySelector<HTMLInputElement>('[aria-label="Primary Background"]')!;
+ expect(input.value).toBe('#abcdef');
+ await act(async()=>{Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')!.set!.call(input,'#123456');input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));});expect(latest!.buttonColors?.primaryBg).toBe('#123456');expect(latest!.customColors?.primaryBtnBg).toBe('#ffcc99');
  await act(async()=>root.unmount());host.remove();
 });
 
