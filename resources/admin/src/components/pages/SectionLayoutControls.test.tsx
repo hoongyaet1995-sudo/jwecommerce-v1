@@ -11,10 +11,10 @@ it('retains old values across supported/fixed/supported layouts and resets one f
  try{
   await show(stored);expect(host.querySelectorAll('[data-layout-spacing],[data-layout-alignment]')).toHaveLength(2);
   await show({...stored,shopNavigationPreset:'market-hero'});expect(host.querySelectorAll('[data-layout-spacing],[data-layout-alignment]')).toHaveLength(2);
-  await show(stored);expect(onChange).not.toHaveBeenCalled();expect(host.querySelector('[aria-label="Text alignment right"]')?.getAttribute('aria-pressed')).toBe('true');
-  await act(async()=>(host.querySelector('[aria-label="Follow page spacing"]') as HTMLButtonElement).click());
+  await show(stored);expect(onChange).not.toHaveBeenCalled();expect(host.querySelector('[data-layout-alignment] [data-choice-value="right"]')?.getAttribute('aria-pressed')).toBe('true');
+  await act(async()=>(host.querySelector('[data-layout-spacing] [data-choice-value=""]') as HTMLButtonElement).click());
   const resetSpacing={...stored};delete resetSpacing.paddingY;expect(onChange.mock.lastCall?.[0]).toEqual(resetSpacing);
-  await act(async()=>(host.querySelector('[aria-label="Use layout alignment"]') as HTMLButtonElement).click());
+  await act(async()=>(host.querySelector('[data-layout-alignment] [data-choice-value=""]') as HTMLButtonElement).click());
   const resetAlignment={...stored};delete resetAlignment.textAlignment;expect(onChange.mock.lastCall?.[0]).toEqual(resetAlignment);
  }finally{await act(async()=>root.unmount());}
 });

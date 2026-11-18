@@ -2958,9 +2958,7 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
         {/* 9. Layout, Columns & Styling */}
         <div hidden={inspectorTab!=='design'} data-inspector-group={24}><details className="cms-settings-group"><summary>Layout & spacing</summary><div className="cms-settings-group-content">
         <div className="space-y-3">
-          <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 block">
-            Layout & Theme
-          </label>
+
 
           <SectionLayoutControls section={section} onChange={onChange} pageSpacing={pageSpacing}/>
 
