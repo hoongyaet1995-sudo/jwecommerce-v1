@@ -51,9 +51,8 @@ import {SectionBorderSettings} from './SectionBorderSettings';
 import {ChapterSettings} from './ChapterSettings';
 import {CtaStripSettings} from './CtaStripSettings';
 import { useAdminCurrency } from '../../context/useAdminCurrency';
-import { MOTION_PRESET_DETAILS } from './motion/CmsMotionWrapper';
+import { SectionMotionControls } from './SectionMotionControls';
 import { SectionMotionPreset } from '../../types';
-import { Play } from 'lucide-react';
 import React, { useRef } from 'react';
 import {ImageTargetInspector} from './ImageTargetInspector';
 import {imageTargets,updateImageTarget} from '../../cms/imageTargets';
@@ -2968,82 +2967,16 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
         </div>
         </div></details></div>
 
-        {/* 9. Entrance Motion & Stagger Presets */}
-        <div hidden={inspectorTab!=='design'||!supportsDesignField(section,'motionPreset')} data-inspector-group={25}><details className="cms-settings-group"><summary>Motion</summary><div className="cms-settings-group-content"><div className="pt-4 border-t border-neutral-200 dark:border-neutral-800 space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-indigo-500" />
-              <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-900 dark:text-white">
-                Entrance Motion
-              </label>
+        {/* 9. Entrance Motion */}
+        <div hidden={inspectorTab !== 'design' || !supportsDesignField(section, 'motionPreset')} data-inspector-group={25}>
+          <details className="cms-settings-group">
+            <summary>Motion</summary>
+            <div className="cms-settings-group-content">
+              <SectionMotionControls section={section} onChange={onChange}
+                onReplay={onReplayMotion} onApplyAll={onApplyMotionToAll}/>
             </div>
-            <div className="flex items-center gap-1.5">
-              {onReplayMotion && (
-                <button
-                  type="button"
-                  onClick={onReplayMotion}
-                  className="text-[10px] font-semibold text-neutral-600 dark:text-neutral-300 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-1 cursor-pointer transition-colors px-2 py-0.5 rounded-md bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700"
-                  title="Replay entrance motion in live preview"
-                >
-                  <Play className="w-2.5 h-2.5 text-indigo-500" /> Replay
-                </button>
-              )}
-              {onApplyMotionToAll && (
-                <button
-                  type="button"
-                  onClick={() => onApplyMotionToAll(section.motionPreset || 'subtle-lift')}
-                  className="text-[10px] font-semibold text-neutral-600 dark:text-neutral-300 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-1 cursor-pointer transition-colors px-2 py-0.5 rounded-md bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700"
-                  title="Apply this motion preset to all sections on the current page"
-                >
-                  <Layers className="w-2.5 h-2.5 text-indigo-500" /> Apply All
-                </button>
-              )}
-            </div>
-          </div>
-
-          <label className="block text-xs text-neutral-500">Pace<select aria-label="Section motion pace" className="w-full mt-2 rounded-lg border dark:border-neutral-700 bg-transparent p-2" value={section.motionPace??''} onChange={e=>{const next={...section};if(e.target.value)next.motionPace=e.target.value as 'smooth'|'relaxed';else delete next.motionPace;onChange(next)}}><option value="">Follow page / layout</option><option value="smooth">Smooth · 0.8s</option><option value="relaxed">Relaxed · 1.1s</option></select></label>
-          <div className="grid grid-cols-1 gap-1.5">
-            {(
-              [
-                'subtle-lift',
-                'fade-in',
-                'smooth-zoom',
-                'dynamic-pop',
-                'none'
-              ] as SectionMotionPreset[]
-            ).map(presetKey => {
-              const info = MOTION_PRESET_DETAILS[presetKey];
-              const isSelected = (section.motionPreset || 'subtle-lift') === presetKey;
-              return (
-                <button
-                  key={presetKey}
-                  type="button"
-                  onClick={() => updateField('motionPreset', presetKey)}
-                  className={`w-full p-2.5 rounded-xl border text-left flex items-start justify-between transition-all cursor-pointer ${
-                    isSelected
-                      ? 'border-indigo-600 bg-indigo-50/80 dark:bg-indigo-950/40 text-indigo-950 dark:text-white ring-1 ring-indigo-500 shadow-xs'
-                      : 'border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-800/30 text-neutral-700 dark:text-neutral-300 hover:border-neutral-300 dark:hover:border-neutral-700'
-                  }`}
-                >
-                  <div className="space-y-0.5 pr-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold">{info.label}</span>
-                      <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-indigo-500/15 text-indigo-600 dark:text-indigo-300 font-semibold">
-                        {info.iconTag}
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-neutral-500 dark:text-neutral-400 leading-tight">
-                      {info.desc}
-                    </p>
-                  </div>
-                  {isSelected && (
-                    <Check className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5" />
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div></div></details></div>
+          </details>
+        </div>
 
       </div>
     </div>
