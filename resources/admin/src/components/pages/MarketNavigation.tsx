@@ -23,7 +23,7 @@ export function MarketNavigation({section,catalog,editing=false}:{section:PageSe
     {card.image?<ScopedImage section={section} targetId={`item:${item.id}:imageUrl`} src={card.image} alt={card.title} className="absolute inset-0 w-full h-full object-cover"/>:<div className="absolute inset-0 bg-neutral-100 flex items-center justify-center"><Image size={28}/></div>}
     <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-r from-white/60 via-white/15 to-transparent pointer-events-none"/>
     <div className={`relative z-10 w-full ${large?'p-7 @min-[640px]:p-10':'p-6'}`}>
-     <div className={large?'max-w-[85%] @min-[640px]:max-w-[65%]':'max-w-[65%]'}>
+     <div data-cms-align-reading className={large?'max-w-[85%] @min-[640px]:max-w-[65%]':'max-w-[65%]'}>
       {item.subtitle&&<p data-cms-item={item.id} data-cms-text="label" className="text-[10px] mb-3 uppercase tracking-widest" style={typographyStyle(section,'label')}>{item.subtitle}</p>}
       <h3 data-cms-item={item.id} data-cms-text={large?'lead':'itemTitle'} className={`font-bold whitespace-pre-line leading-tight ${large?'text-[clamp(32px,5cqw,58px)]':'text-xl'}`} style={typographyStyle(section,large?'lead':'itemTitle')}>{card.title}</h3>
       {item.description&&<p data-cms-item={item.id} data-cms-text="itemContent" className="text-sm mt-3 whitespace-pre-line leading-snug" style={{color:colors?.contentColor,...typographyStyle(section,'itemContent')}}>{item.description}</p>}

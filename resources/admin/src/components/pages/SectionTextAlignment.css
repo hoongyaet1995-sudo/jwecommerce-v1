@@ -8,3 +8,66 @@
 [data-cms-text-alignment] [data-cms-ticker-message]>[data-cms-text="itemTitle"]{flex:1}
 
 [data-cms-text-alignment] .jw-saas-addon-label{justify-content:var(--cms-text-justify)!important;text-align:var(--cms-text-alignment)!important}
+
+/* Authored alignment is opt-in. Missing values keep each layout's native geometry.
+   One Passport field drives reading columns, capsules and action groups; no saved defaults. */
+[data-cms-text-alignment="left"]{--cms-align-start:0px;--cms-align-end:auto;--cms-align-self:start}
+[data-cms-text-alignment="center"]{--cms-align-start:auto;--cms-align-end:auto;--cms-align-self:center}
+[data-cms-text-alignment="right"]{--cms-align-start:auto;--cms-align-end:0px;--cms-align-self:end}
+
+/* Bounded reading blocks retain their max-width but share the selected anchor. */
+[data-cms-text-alignment] :is(h1,h2,h3,h4,p,blockquote,[data-cms-text].block):not(table *):not(form *):not(button *):not(.plan-comparison-name>*){
+ text-align:var(--cms-text-alignment)!important;
+ margin-inline-start:var(--cms-align-start)!important;margin-inline-end:var(--cms-align-end)!important;
+ min-width:0;box-sizing:border-box;
+}
+[data-cms-text-alignment] :is(h1,h2,p,blockquote):not(table *):not(form *):not(button *){width:100%}
+[data-cms-text-alignment] :is(.corp-pricing-band-heading,.compare-quote,.hero-copy,.subpage-hero-copy,.narrow-heading,.section-heading,.faq-heading,.platform-intro,.corp-centered-copy,.corp-builder-heading,.corp-connection-copy,.corp-steps-heading,.cms-wide-editorial-header,.jw-saas-copy,.corp-payment-copy,.scroll-stack>header){
+ width:100%;text-align:var(--cms-text-alignment)!important;
+ margin-inline-start:var(--cms-align-start)!important;margin-inline-end:var(--cms-align-end)!important;
+}
+[data-cms-text-alignment] :is(div,header,article,figcaption):has(> :is(h1,h2,[data-cms-eyebrow-region],[data-cms-text="itemTitle"],[data-cms-text="itemContent"])):not(table *):not(form *){text-align:var(--cms-text-alignment)!important}
+[data-cms-text-alignment] [data-cms-eyebrow-region]{display:flex!important;justify-content:var(--cms-text-justify)!important;min-width:0}
+[data-cms-text-alignment] [data-cms-eyebrow-region]>[data-cms-eyebrow]{flex:0 1 auto}
+
+/* Move the action group, not the text/icon geometry inside individual buttons. */
+[data-cms-text-alignment] :is(.hero-actions,.corp-actions,.final-panel,.corp-gradient-panel,.performance-stat,.mini-stat){text-align:var(--cms-text-alignment)!important}
+[data-cms-text-alignment] :is(.hero-actions,.corp-actions,.performance-stat,.mini-stat),
+[data-cms-text-alignment] :is(div,nav):has(>a[data-cms-action]):not(form *):not(table *){justify-content:var(--cms-text-justify)!important}
+[data-cms-text-alignment] :is(div,nav):has(>div>[data-cms-action]):not(form *):not(table *){text-align:var(--cms-text-alignment)}
+
+/* Flexible text carriers beside fixed caption indices, benefit icons and FAQ signs. */
+[data-cms-text-alignment] [data-cms-align-caption],
+[data-cms-text-alignment] .corp-benefits li>div,
+[data-cms-text-alignment] [data-cms-align-question]{flex:1 1 0%;min-width:0;text-align:var(--cms-text-alignment)!important}
+[data-cms-text-alignment] :is(summary,button)>[data-cms-text="itemTitle"]{flex:1 1 0%;min-width:0;text-align:var(--cms-text-alignment)!important}
+[data-cms-text-alignment] :is(summary,button)>[aria-hidden="true"]{flex-shrink:0}
+[data-cms-text-alignment] :is([data-cms-text="label"],.focused-steps-kicker,.corp-starter-name,.corp-addon-label):not(svg):not(table *):not(form *){text-align:var(--cms-text-alignment)!important}
+[data-cms-text-alignment] :is(.plan-comparison-top,.plan-comparison-name,.corp-addon-identity,.corp-pricing-band-facts){justify-content:var(--cms-text-justify)!important;text-align:var(--cms-text-alignment)!important}
+[data-cms-text-alignment] :is(.plan-comparison-price,.corp-starter-price,.corp-pricing-band-description,.corp-starter-card){text-align:var(--cms-text-alignment)!important}
+[data-cms-text-alignment] :is(.plan-comparison-badge,.rounded-full[data-cms-text="label"]){text-align:center!important;justify-content:center!important}
+[data-cms-text-alignment] .corp-workflow>div{text-align:var(--cms-text-alignment)!important}
+[data-cms-text-alignment] .service-story-copy>.eyebrow{margin-inline-start:var(--cms-align-start);margin-inline-end:var(--cms-align-end)}
+[data-cms-text-alignment] .service-story-copy{text-align:var(--cms-text-alignment)!important}
+@container (max-width:640px){[data-cms-text-alignment] [data-cms-text="label"]{text-align:var(--cms-text-alignment)}}
+
+[data-cms-text-alignment] .outcome-card>[data-cms-text="number"]{text-align:var(--cms-text-alignment)!important}
+
+/* Bounded copy carriers keep their reading measure and follow the chosen edge. */
+[data-cms-text-alignment] :is([data-cms-align-reading],.compare-quote,.corp-pricing-band-heading,div[data-cms-text="content"],div[data-cms-text="lead"],div[data-cms-text="secondaryTitle"]) {
+ width:100%; box-sizing:border-box; text-align:var(--cms-text-alignment)!important;
+ margin-inline-start:var(--cms-align-start)!important;
+ margin-inline-end:var(--cms-align-end)!important;
+}
+[data-cms-text-alignment] :is(div,nav):has(>div>[data-cms-action]):not(form *):not(table *),
+[data-cms-text-alignment] .corp-starter-price {justify-content:var(--cms-text-justify)!important}
+[data-cms-text-alignment] .corp-pricing-card-faq .corp-addon-identity {align-items:var(--cms-text-justify)!important}
+[data-cms-text-alignment] .corp-pricing-card-faq .corp-addon-identity>div {width:100%;text-align:var(--cms-text-alignment)!important}
+@container cms-connected (max-width:809px) {
+ [data-cms-text-alignment] :is(.hero-actions,.section-heading) {align-items:var(--cms-text-justify)!important}
+}
+
+/* Explicit alignment gives stacked headings and actions one common reading edge. */
+[data-cms-text-alignment] .section-heading {flex-direction:column;align-items:var(--cms-text-justify)!important}
+[data-cms-text-alignment] .section-heading>div {width:100%}
+[data-cms-text-alignment] .tag-row {justify-content:var(--cms-text-justify)!important}

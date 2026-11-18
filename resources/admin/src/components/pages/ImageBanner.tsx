@@ -12,7 +12,7 @@ export function ImageBanner({section,isEditingMode}:{section:PageSection;isEditi
  return <div data-image-banner className={`@container w-full ${spacing}`}>
   <div className={`relative isolate overflow-hidden bg-neutral-800 text-white flex items-center ${height}`}>
    {section.mediaUrl && <ScopedImage section={section} targetId="mediaUrl" src={section.mediaUrl} alt="" className="absolute inset-0 w-full h-full object-cover"/>}
-   <div className={`relative z-10 pointer-events-none w-full mx-auto py-10 px-6 @min-[640px]:px-10 ${section.containerMode==='full-bleed'?'max-w-[var(--cms-page-width)] @min-[1024px]:px-16':''}`}><div className="max-w-[440px]">
+   <div className={`relative z-10 pointer-events-none w-full mx-auto py-10 px-6 @min-[640px]:px-10 ${section.containerMode==='full-bleed'?'max-w-[var(--cms-page-width)] @min-[1024px]:px-16':''}`}><div data-cms-align-reading className="max-w-[440px]">
     {<MotionItem><SectionEyebrow section={section}/></MotionItem>}
     <MotionItem><h2 data-cms-text="title" style={{...({color:colors?.titleColor}),...typographyStyle(section,'title')}} className="text-3xl @min-[640px]:text-4xl font-extrabold tracking-tight leading-[1.08] whitespace-pre-line break-words">{section.title}</h2></MotionItem>
     {section.content && <MotionItem><p data-cms-text="content" style={{...({color:colors?.contentColor}),...typographyStyle(section,'content')}} className="mt-5 text-sm leading-relaxed whitespace-pre-line break-words">{section.content}</p></MotionItem>}

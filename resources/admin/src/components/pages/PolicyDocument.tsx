@@ -28,7 +28,7 @@ export function PolicyDocument({section,isEditingMode=false,embedded=false}:{sec
     <button type="button" aria-expanded={expanded} aria-controls={`${section.id}-directory`} onClick={()=>setExpanded(!expanded)} className="@min-[900px]:hidden w-full text-left p-3 border border-neutral-200 rounded text-sm font-semibold">On this page <span aria-hidden="true" className="float-right">{expanded?'−':'+'}</span></button>
     <div id={`${section.id}-directory`} className={`${expanded?'block':'hidden'} @min-[900px]:block`}><p className="hidden @min-[900px]:block text-xs uppercase tracking-widest text-neutral-500 mb-3">On this page</p>{contents}</div>
    </aside>:null}
-   <div className={`min-w-0 ${directory?'':'max-w-[800px] mx-auto'}`}>
+   <div data-cms-align-reading className={`min-w-0 ${directory?'':'max-w-[800px] mx-auto'}`}>
     {section.showSectionHeading!==false&&<header className={embedded?'mb-8':'mb-8 rounded-lg bg-neutral-500/5 p-6'}>
    {<SectionEyebrow section={section}/>}
    <h2 data-cms-text="title" style={style('title')} className="text-3xl font-extrabold tracking-tight whitespace-pre-line">{section.title}</h2>
