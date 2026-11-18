@@ -8,6 +8,12 @@ export const sectionTextTarget='$section';
 export const itemTextRoles:readonly TextRole[]=['itemTitle','itemContent','label','number'];
 /** Fixed Section fields keep their existing Passport role; repeaters require stable IDs. */
 export function requiresTextColorItem(section:PageSection,role:TextRole):boolean{
+ if((role==='itemTitle'||role==='itemContent')&&(
+  section.type==='product_listing'||section.type==='payment_methods'||
+  (section.type==='delivery_table'||section.type==='chapter_block'&&section.chapterPreset==='delivery')&&section.deliverySource!=='manual'
+ ))return false;
+ if(role==='label'&&section.type==='split_hero')return false;
+ if(section.type==='hero_slider'&&['eyebrow','title','content'].includes(role))return true;
  if(role==='number'&&section.type==='chapter_block')return false;
  if(role==='label'&&(
   section.type==='media_gallery'&&section.galleryPreset==='photo-marquee'||
@@ -21,6 +27,17 @@ export function getTextColorBinding(section:PageSection,role:TextRole,itemId?:st
 export function setTextColorBinding(section:PageSection,role:TextRole,itemId:string|undefined,binding:TextColorBinding):PageSection{
  const value=binding.source==='custom'?binding:{source:binding.source};
  return {...section,textColorBindings:{...section.textColorBindings,[itemId??sectionTextTarget]:{...section.textColorBindings?.[itemId??sectionTextTarget],[role]:value}}};
+}
+export function resetTextColorBinding(section:PageSection,role:TextRole,itemId?:string):PageSection{
+ const target=itemId??sectionTextTarget;
+ const bindings={...section.textColorBindings};
+ if(!bindings[target]?.[role])return section;
+ const roles={...bindings[target]};
+ delete roles[role];
+ if(Object.keys(roles).length)bindings[target]=roles;else delete bindings[target];
+ const next={...section};
+ if(Object.keys(bindings).length)next.textColorBindings=bindings;else delete next.textColorBindings;
+ return next;
 }
 const escape=(s:string)=>s.replace(/[^a-zA-Z0-9_-]/g,c=>'\\'+c.codePointAt(0)!.toString(16)+' ');
 /** Same appearance pipeline as Passport typography. No DOM mutation or palette snapshots. */

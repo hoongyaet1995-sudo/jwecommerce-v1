@@ -1,7 +1,7 @@
 import React,{useEffect,useLayoutEffect,useState} from 'react';
 import type {PageSection} from '../../types';
 import type {TextRole} from '../../cms/inspectorCapabilities';
-import {targetRole,headingSelection,type HeadingSelection} from '../../cms/textToolbar';
+import {targetRole,resolveTextTarget,headingSelection,type HeadingSelection} from '../../cms/textToolbar';
 import {FloatingTextToolbar} from './FloatingTextToolbar';
 
 type Target={sectionId:string;role:TextRole;itemId?:string;element:HTMLElement;selection?:HeadingSelection};
@@ -15,11 +15,13 @@ export function BuilderTextToolbar({canvasRef,sections,activeSectionId,pageId,on
  useEffect(()=>{setTarget(null)},[pageId]);
  useEffect(()=>{if(target&&target.sectionId!==activeSectionId)setTarget(null)},[activeSectionId,target?.sectionId]);
  useEffect(()=>{const canvas=canvasRef.current;if(!canvas)return;
-  const open=(event:MouseEvent)=>{const node=event.target;if(!(node instanceof HTMLElement)||node.closest('[data-cms-source],form,input,textarea,select,[contenteditable="true"]'))return;
+  const open=(event:MouseEvent)=>{const node=event.target;if(!(node instanceof HTMLElement)||node.closest('form,input,textarea,select,[contenteditable="true"]'))return;
    const root=node.closest<HTMLElement>('section[id^="section-"]');const s=sections.find(s=>root?.id===`section-${s.id}`);if(!s)return;
    if(node.closest('[data-image-slot]')&&!node.closest('[data-cms-text]')){setTarget(null);return;}
-   const role=targetRole(s,node);if(!role)return;const element=node.closest<HTMLElement>('[data-cms-text]')!;
-   event.preventDefault();const selection=headingSelection(s,element,window.getSelection());const itemId=element.closest<HTMLElement>('[data-cms-item]')?.dataset.cmsItem;setTarget({sectionId:s.id,role,itemId,element,selection});if(itemId)onSelect(s.id,role,itemId);else onSelect(s.id,role);
+   const hit=resolveTextTarget(s,node);if(!hit){setTarget(null);return;}
+   const {role,element,itemId}=hit;
+   event.preventDefault();const selection=headingSelection(s,element,window.getSelection());
+   setTarget({sectionId:s.id,role,itemId,element,selection});if(itemId)onSelect(s.id,role,itemId);else onSelect(s.id,role);
   };
   const close=()=>setTarget(null);const key=(e:KeyboardEvent)=>{if(e.key==='Escape')close()};
   canvas.addEventListener('contextmenu',open);canvas.addEventListener('pointerdown',close);window.addEventListener('keydown',key);

@@ -1,9 +1,18 @@
 import type {PageSection} from '../types';
 import {textRoles,textRoleLabels,type TextRole,type TextStyle} from './inspectorCapabilities';
 import {resetTextProperty} from './styleInheritance';
+export function resolveTextTarget(section:PageSection,node:Element){
+ if(node.closest('form,input,textarea,select,[contenteditable="true"]'))return;
+ const element=node.closest<HTMLElement>('[data-cms-text]');
+ const role=element?.dataset.cmsText as TextRole|undefined;
+ if(!element||!role||!textRoles(section).includes(role))return;
+ if(element.closest('[data-cms-source]')&&!element.hasAttribute('data-cms-source-typography'))return;
+ const owner=element.closest<HTMLElement>('[data-cms-item]');
+ const itemId=owner?.dataset.cmsItem;
+ return {element,role,itemId};
+}
 export function targetRole(section:PageSection,node:HTMLElement):TextRole|undefined{
- const text=node.closest<HTMLElement>('[data-cms-text]');const role=text?.dataset.cmsText as TextRole|undefined;
- return role&&textRoles(section).includes(role)?role:undefined;
+ return resolveTextTarget(section,node)?.role;
 }
 export function roleScope(role:TextRole):string{
  return ['itemTitle','itemContent','label','number'].includes(role)?'All items: '+textRoleLabels[role]:'This section: '+textRoleLabels[role];

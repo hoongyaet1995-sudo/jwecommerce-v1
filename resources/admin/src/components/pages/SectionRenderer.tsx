@@ -1,3 +1,4 @@
+import {resolveTextTarget} from '../../cms/textToolbar';
 import './SectionTextAlignment.css';
 import './SectionSpacing.css';
 import {sectionSpacingStyle} from '../../cms/sectionSpacing';
@@ -2696,9 +2697,13 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
         if(selection&&!selection.isCollapsed&&selection.containsNode(element,true))return;
         const target=element.closest<HTMLElement>('[data-image-slot]')?.dataset.imageSlot;
         if(target){event.preventDefault();onSelectImage?.(target);return;}
+        const hit=resolveTextTarget(rawSection,element);
+        if(hit){
+          const {role,itemId}=hit;
+          onSelectElement?.(itemId?`items:${itemId}`:role,role);
+          return;
+        }
         if(element.closest('[data-cms-source]')){event.preventDefault();onSelectElement?.('source');return;}
-        const text=element.closest<HTMLElement>('[data-cms-text]');
-        if(text){const role=text.dataset.cmsText!;const item=text.dataset.cmsItem;onSelectElement?.(item?`items:${item}`:({eyebrow:'eyebrow',secondaryTitle:'subtitle',label:'items',number:'items',title:'title',lead:'leadText',content:'content',itemTitle:'itemTitle',itemContent:'itemContent'} as Record<string,string>)[role],role);return;}
         const action=element.closest<HTMLElement>('[data-cms-action],[data-editorial-action]');
         if(action){event.preventDefault();onSelectElement?.(action.dataset.cmsItem?`items:${action.dataset.cmsItem}`:'button');return;}
         if(element.closest('form'))onSelectElement?.('form');

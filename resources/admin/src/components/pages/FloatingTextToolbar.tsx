@@ -1,4 +1,4 @@
-import {setTextColorBinding} from '../../cms/textColorBindings';
+import {resetTextRole} from '../../cms/styleInheritance';
 import {TextColorSourceControl} from './TextColorSourceControl';
 import React from 'react';
 import {createPortal} from 'react-dom';
@@ -31,7 +31,7 @@ export function FloatingTextToolbar({section,role,position,computed,selection,it
    <button title="Use layout alignment" aria-label="Use layout alignment" onClick={()=>{const s={...section};delete s.textAlignment;onChange(s)}}><RotateCcw size={14}/></button>
    {role==='title'&&<><span className="bubble-divider"/><button title={selection?'Emphasize only “'+selection.text+'”':'Select part of this heading, then right-click'} aria-label="Emphasize selection" disabled={!validSelection} onClick={()=>emphasis(true)}>Emphasis</button><button title="Clear emphasis in the selected text" aria-label="Clear selected emphasis" disabled={!validSelection} onClick={()=>emphasis(false)}><Eraser size={15}/></button></>}
    <span className="bubble-divider"/>
-   <button title="Reset text role style" aria-label="Reset text style" onClick={()=>{let s=section;for(const key of ['fontFamily','fontSize','fontWeight'] as const)s=editTextStyle(s,role,{[key]:undefined});onChange(setTextColorBinding(s,role,itemId,{source:'auto'}))}}>Reset</button>
+   <button title="Reset role styles; keep color sources" aria-label="Reset role styles" onClick={()=>onChange(resetTextRole(section,role))}><RotateCcw size={14}/> Reset</button>
    <button title="Close toolbar" aria-label="Close text toolbar" onClick={onClose}><X size={14}/></button>
   </div>
  </div>,document.body);
