@@ -1,3 +1,5 @@
+import {updateImageTarget} from '../../cms/imageTargets';
+import {BuilderImageToolbar} from './BuilderImageToolbar';
 import {BuilderTextToolbar,type RenderedText} from './BuilderTextToolbar';
 import {useCmsBrand} from '../../cms/useCmsBrand';
 import {resolvePageStyle} from '../../cms/pageStyle';
@@ -1491,6 +1493,14 @@ export const PageAdmin: React.FC = () => {
           </div>
         </div>
 
+        <BuilderImageToolbar canvasRef={canvasScrollRef} sections={currentPage.sections} activeSectionId={activeSectionId} pageId={currentPage.id}
+          onPatch={(pageId,sectionId,target,patch)=>{
+            void updatePageSection(pageId,sectionId,latest=>updateImageTarget(latest,target,patch)).then(updated=>{if(updated) schedulePage(updated);});
+          }}
+          onSelect={(sectionId,target)=>{
+            selectElement(sectionId,'image');
+            setSelectedImage({sectionId,target});
+          }}/>
         <BuilderTextToolbar canvasRef={canvasScrollRef} sections={currentPage.sections} activeSectionId={activeSectionId} pageId={currentPage.id} onChange={handleUpdateSection} onRendered={setRenderedText} onSelect={(sectionId,role,itemId)=>selectElement(sectionId,'typography',role,itemId)}/>
 
         {/* Right Panel: Section Inspector (Collapsible) */}

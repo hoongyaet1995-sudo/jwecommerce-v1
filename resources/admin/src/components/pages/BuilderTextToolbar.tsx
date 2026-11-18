@@ -17,6 +17,7 @@ export function BuilderTextToolbar({canvasRef,sections,activeSectionId,pageId,on
  useEffect(()=>{const canvas=canvasRef.current;if(!canvas)return;
   const open=(event:MouseEvent)=>{const node=event.target;if(!(node instanceof HTMLElement)||node.closest('[data-cms-source],form,input,textarea,select,[contenteditable="true"]'))return;
    const root=node.closest<HTMLElement>('section[id^="section-"]');const s=sections.find(s=>root?.id===`section-${s.id}`);if(!s)return;
+   if(node.closest('[data-image-slot]')&&!node.closest('[data-cms-text]')){setTarget(null);return;}
    const role=targetRole(s,node);if(!role)return;const element=node.closest<HTMLElement>('[data-cms-text]')!;
    event.preventDefault();const selection=headingSelection(s,element,window.getSelection());const itemId=element.closest<HTMLElement>('[data-cms-item]')?.dataset.cmsItem;setTarget({sectionId:s.id,role,itemId,element,selection});if(itemId)onSelect(s.id,role,itemId);else onSelect(s.id,role);
   };
