@@ -26,6 +26,7 @@ import {NewsletterLayoutSettings} from './InlineNewsletter';
 import {contentFieldKeys,sectionContentFields} from '../../cms/contentCapabilities';
 import {SaasLayoutSettings,SaasItemSettings} from './SaasSettings';
 import {VisualChoiceSelect} from './VisualChoiceSelect';
+import {ImageChoiceDropdown} from './ImageChoiceDropdown';
 import {EditorialStoryCardSettings} from './EditorialStoryCardSettings';
 import {ContentDisclosure} from './ContentDisclosure';
 import {SectionLayoutGroup,hasSectionLayout} from './SectionLayoutGroup';
@@ -891,22 +892,16 @@ const CustomBackgroundControls: React.FC<CustomBackgroundControlsProps> = ({ val
             </div>
           </div>
 
-          {/* Radial Position Select */}
-          <div className="space-y-1">
-            <span className="text-[10px] font-semibold text-neutral-500 dark:text-neutral-400 block">
-              Spotlight Origin Position
-            </span>
-            <VisualChoiceSelect
-              aria-label="Spotlight origin position"
-              value={radialPos}
-              onChange={e => handleApplyRadial(fromColor, toColor, e.target.value)}
-              className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white font-medium cursor-pointer"
-            >
-              {RADIAL_POSITIONS.map(pos => (
-                <option key={pos.id} value={pos.id}>{pos.label}</option>
-              ))}
-            </VisualChoiceSelect>
-          </div>
+          <ImageChoiceDropdown overlay label="Spotlight Origin" value={radialPos} unmatchedLabel="Existing position"
+            options={RADIAL_POSITIONS.map(({id,label})=>[id,label])}
+            onChange={value=>handleApplyRadial(fromColor,toColor,value)}
+            icon={index=>{
+              const [x,y]=[[9,9],[9,4],[9,14],[4,4],[14,4]][index];
+              return <svg aria-hidden="true" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.4" className="shrink-0 text-neutral-500 dark:text-neutral-300">
+                <rect x="1.5" y="1.5" width="15" height="15" rx="2"/>
+                <circle cx={x} cy={y} r="2" fill="currentColor" stroke="none"/>
+              </svg>;
+            }}/>
         </div>
       )}
 
@@ -937,22 +932,6 @@ const CustomBackgroundControls: React.FC<CustomBackgroundControlsProps> = ({ val
         </div>
       )}
 
-      {/* Manual Raw CSS Value Input for Advanced Users */}
-      <div className="pt-2 border-t border-neutral-200 dark:border-neutral-700/80 space-y-1">
-        <label className="text-[10px] font-semibold text-neutral-500 dark:text-neutral-400 block">
-          Direct CSS Background String
-        </label>
-        <input
-          type="text"
-          value={value || ''}
-          onChange={e => onChange(e.target.value)}
-          placeholder="linear-gradient(...) or #hex"
-          className="w-full px-2.5 py-1.5 text-[11px] font-mono rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white"
-        />
-        <p className="text-[9px] text-neutral-400">
-          Supports full CSS gradient syntax, hex codes, or rgba values.
-        </p>
-      </div>
     </div>
   );
 };

@@ -167,12 +167,12 @@
     "file": "assets/PageRuntimeContext-Dx6YkQZU.css",
     "src": "_PageRuntimeContext-Dx6YkQZU.css"
   },
-  "_index-VTGA6NY4.css": {
-    "file": "assets/index-VTGA6NY4.css",
-    "src": "_index-VTGA6NY4.css"
+  "_index-BrlI8afc.css": {
+    "file": "assets/index-BrlI8afc.css",
+    "src": "_index-BrlI8afc.css"
   },
   "src/main.tsx": {
-    "file": "assets/main-CI1oUzyD.js",
+    "file": "assets/main-pquHKKmq.js",
     "name": "main",
     "src": "src/main.tsx",
     "isEntry": true,
@@ -185,7 +185,7 @@
     ],
     "css": [
       "assets/main-Zg1rF_j1.css",
-      "assets/index-VTGA6NY4.css"
+      "assets/index-BrlI8afc.css"
     ],
     "assets": [
       "assets/cms-footer-design-HYE6XlF8.css",
@@ -193,7 +193,7 @@
     ]
   },
   "src/previews/inventory48/Inventory48Runtime.tsx": {
-    "file": "assets/Inventory48Runtime-DDWYhwyY.js",
+    "file": "assets/Inventory48Runtime-C6lmOIMm.js",
     "name": "Inventory48Runtime",
     "src": "src/previews/inventory48/Inventory48Runtime.tsx",
     "isDynamicEntry": true,
@@ -204,11 +204,11 @@
     ],
     "css": [
       "assets/Inventory48Runtime-DNZXllWr.css",
-      "assets/index-VTGA6NY4.css"
+      "assets/index-BrlI8afc.css"
     ]
   },
   "src/public-page.tsx": {
-    "file": "assets/public-page-IIrM4lVO.js",
+    "file": "assets/public-page-icLAJz68.js",
     "name": "public-page",
     "src": "src/public-page.tsx",
     "isEntry": true,
@@ -216,11 +216,11 @@
       "_PageRuntimeContext-DMYfohaz.js"
     ],
     "css": [
-      "assets/index-VTGA6NY4.css"
+      "assets/index-BrlI8afc.css"
     ]
   },
   "src/section-preview/index.html": {
-    "file": "assets/section-preview-HAWCPDNW.js",
+    "file": "assets/section-preview-BX3EKG0E.js",
     "name": "section-preview",
     "src": "src/section-preview/index.html",
     "isEntry": true,
@@ -229,7 +229,7 @@
       "_AddSectionModal-BJruCw2I.js"
     ],
     "css": [
-      "assets/section-preview-Bep3NF2R.css"
+      "assets/section-preview-DcWA0GN6.css"
     ]
   }
 }

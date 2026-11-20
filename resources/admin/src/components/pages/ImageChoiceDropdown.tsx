@@ -6,16 +6,20 @@ type Props = {
   value: string;
   options: Array<[string, string]>;
   disabled?: boolean;
+  unmatchedLabel?: string;
   fullWidthOverlay?: boolean;
   overlay?: boolean;
   onChange: (value: string) => void;
   icon: (index: number) => React.ReactNode;
 };
 
-export function ImageChoiceDropdown({label, value, options, disabled, onChange, icon, fullWidthOverlay=false, overlay=fullWidthOverlay}: Props) {
+export function ImageChoiceDropdown({label, value, options, disabled, unmatchedLabel, onChange, icon, fullWidthOverlay=false, overlay=fullWidthOverlay}: Props) {
   const root = useRef<HTMLDetailsElement>(null);
   const trigger = useRef<HTMLElement>(null);
-  const current = Math.max(0, options.findIndex(([key]) => key === value));
+  const selected = options.findIndex(([key]) => key === value);
+  const current = Math.max(0, selected);
+  const displayLabel = selected < 0 && unmatchedLabel ? unmatchedLabel : options[current][1];
+  const pressed = unmatchedLabel ? selected : current;
   useEffect(() => {
     const closeOutside = (event: PointerEvent) => {
       if (event.target instanceof Node && !root.current?.contains(event.target)) root.current?.removeAttribute('open');
@@ -42,12 +46,12 @@ export function ImageChoiceDropdown({label, value, options, disabled, onChange, 
         const index = choices.indexOf(document.activeElement as HTMLButtonElement);
         choices[index < 0 ? current : (index + choices.length + (event.key==='ArrowDown'?1:-1)) % choices.length]?.focus();
       }}>
-        <summary ref={element=>{trigger.current=element;}} aria-label={label+': '+options[current][1]} className={row+' cursor-pointer list-none bg-neutral-100 dark:bg-neutral-800'}>
-          {icon(current)}<span className="min-w-0 flex-1 truncate">{options[current][1]}</span><ChevronDown aria-hidden size={14} strokeWidth={2} className="shrink-0 text-neutral-500 transition-transform group-open/image-choice:rotate-180 dark:text-neutral-400"/>
+        <summary ref={element=>{trigger.current=element;}} aria-label={label+': '+displayLabel} className={row+' cursor-pointer list-none bg-neutral-100 dark:bg-neutral-800'}>
+          {icon(current)}<span className="min-w-0 flex-1 truncate">{displayLabel}</span><ChevronDown aria-hidden size={14} strokeWidth={2} className="shrink-0 text-neutral-500 transition-transform group-open/image-choice:rotate-180 dark:text-neutral-400"/>
         </summary>
         <div className={`mt-1 rounded-md border border-neutral-300 bg-white p-1 shadow-md dark:border-neutral-700 dark:bg-neutral-900 ${overlay?'absolute inset-x-0 top-full z-20 max-h-56 overflow-y-auto':''}`}>
-          {options.map(([key, text], index)=><button key={key} type="button" data-choice-value={key} aria-pressed={index===current} className={row+' hover:bg-neutral-100 focus-visible:bg-neutral-100 dark:hover:bg-neutral-800 dark:focus-visible:bg-neutral-800'} onClick={()=>{onChange(key);close();}}>
-            {icon(index)}<span className="flex-1">{text}</span>{index===current&&<span aria-hidden>✓</span>}
+          {options.map(([key, text], index)=><button key={key} type="button" data-choice-value={key} aria-pressed={index===pressed} className={row+' hover:bg-neutral-100 focus-visible:bg-neutral-100 dark:hover:bg-neutral-800 dark:focus-visible:bg-neutral-800'} onClick={()=>{onChange(key);close();}}>
+            {icon(index)}<span className="flex-1">{text}</span>{index===pressed&&<span aria-hidden>✓</span>}
           </button>)}
         </div>
       </details>}
