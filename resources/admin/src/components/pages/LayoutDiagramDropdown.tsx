@@ -6,7 +6,8 @@ import thumbnails from '../../cms/inspectorLayoutThumbnails.json';
 
 type LayoutValue = string | boolean;
 type Choice<T extends LayoutValue> = {value:T; label:string; diagram:React.ReactNode; disabled?:boolean};
-type Preview = {card:number; layout:string; image:string};
+type Preview = {image:string} & ({card:number; layout:string} | {desktop:string; mobile:string});
+const imageRoot = '/images/cms/layout-thumbnails/';
 const catalog: Readonly<Record<string, Record<string, Preview>>> = thumbnails;
 
 export function LayoutDiagramDropdown<T extends LayoutValue>({label,value,choices,onChange,disabled}:{
@@ -32,7 +33,7 @@ export function LayoutDiagramDropdown<T extends LayoutValue>({label,value,choice
         const current=previews?.[String(choices[index].value)];
         return current ? <img aria-hidden="true" alt="" loading="lazy" width={56} height={38}
           className="h-[38px] w-14 shrink-0 rounded-md border border-neutral-300 object-cover dark:border-neutral-700"
-          src={'/images/cms/layout-thumbnails/'+current.image}/> :
+          src={imageRoot+current.image}/> :
           <span aria-hidden="true" className="relative block h-[38px] w-14 shrink-0 overflow-hidden rounded-md bg-neutral-200 dark:bg-neutral-700">
             <span className="absolute inset-0 block h-[76px] w-28 origin-top-left scale-50 grayscale">{choices[index].diagram}</span>
           </span>;
@@ -48,7 +49,13 @@ export function LayoutDiagramDropdown<T extends LayoutValue>({label,value,choice
             <button type="button" className="rounded border px-2 py-1 aria-pressed:bg-neutral-300 dark:aria-pressed:bg-neutral-700" aria-pressed={mobile} onClick={()=>setMobile(true)}>Mobile</button>
             <button type="button" className="rounded border px-2 py-1" onClick={()=>dialog.current?.close()}>Close preview</button>
           </div>
-          <SectionLayoutPreview card={preview.card} layout={preview.layout} title={selected.label} full mobile={mobile}/>
+          {'desktop' in preview ? (
+            <a href={imageRoot+(mobile ? preview.mobile : preview.desktop)} target="_blank" rel="noopener"
+              className="block" aria-label="Open full preview">
+              <img className="mx-auto h-auto max-w-full rounded" src={imageRoot+(mobile ? preview.mobile : preview.desktop)}
+                alt={selected.label+(mobile ? ' — mobile default layout' : ' — desktop default layout')}/>
+            </a>
+          ) : <SectionLayoutPreview card={preview.card} layout={preview.layout} title={selected.label} full mobile={mobile}/>}
         </div>}
       </dialog>
     </div>}

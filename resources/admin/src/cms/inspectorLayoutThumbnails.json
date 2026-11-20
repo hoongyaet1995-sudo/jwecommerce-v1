@@ -833,5 +833,17 @@
       "layout": "",
       "image": "179-1280.png"
     }
+  },
+  "promotion_highlights": {
+    "side": {
+      "image": "promotion-side-image.png",
+      "desktop": "promotion-side-desktop.png",
+      "mobile": "promotion-side-mobile.png"
+    },
+    "above": {
+      "image": "promotion-above-image.png",
+      "desktop": "promotion-above-desktop.png",
+      "mobile": "promotion-above-mobile.png"
+    }
   }
 }
