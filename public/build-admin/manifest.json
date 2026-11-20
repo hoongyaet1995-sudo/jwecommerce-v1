@@ -119,19 +119,15 @@
     "file": "assets/cms-shell-design-DsQzaQV-.css",
     "src": "C:/Users/User/.codex/worktrees/motion-dropdown-release/public/css/cms-shell-design.css"
   },
-  "_AddSectionModal-cDdG9j2W.js": {
-    "file": "assets/AddSectionModal-cDdG9j2W.js",
+  "_AddSectionModal-B8acKlIH.js": {
+    "file": "assets/AddSectionModal-B8acKlIH.js",
     "name": "AddSectionModal",
     "imports": [
-      "_PageRuntimeContext-Q99GxmHL.js"
+      "_PageRuntimeContext-BVaLRaPJ.js"
     ]
   },
-  "_PageRuntimeContext-Dx6YkQZU.css": {
-    "file": "assets/PageRuntimeContext-Dx6YkQZU.css",
-    "src": "_PageRuntimeContext-Dx6YkQZU.css"
-  },
-  "_PageRuntimeContext-Q99GxmHL.js": {
-    "file": "assets/PageRuntimeContext-Q99GxmHL.js",
+  "_PageRuntimeContext-BVaLRaPJ.js": {
+    "file": "assets/PageRuntimeContext-BVaLRaPJ.js",
     "name": "PageRuntimeContext",
     "css": [
       "assets/PageRuntimeContext-Dx6YkQZU.css"
@@ -167,18 +163,22 @@
       "assets/malaysia-proud-CoWH8gQK.png"
     ]
   },
+  "_PageRuntimeContext-Dx6YkQZU.css": {
+    "file": "assets/PageRuntimeContext-Dx6YkQZU.css",
+    "src": "_PageRuntimeContext-Dx6YkQZU.css"
+  },
   "_index-CkNkapAZ.css": {
     "file": "assets/index-CkNkapAZ.css",
     "src": "_index-CkNkapAZ.css"
   },
   "src/main.tsx": {
-    "file": "assets/main-D-LicEGG.js",
+    "file": "assets/main-C6aA1HhA.js",
     "name": "main",
     "src": "src/main.tsx",
     "isEntry": true,
     "imports": [
-      "_PageRuntimeContext-Q99GxmHL.js",
-      "_AddSectionModal-cDdG9j2W.js"
+      "_PageRuntimeContext-BVaLRaPJ.js",
+      "_AddSectionModal-B8acKlIH.js"
     ],
     "dynamicImports": [
       "src/previews/inventory48/Inventory48Runtime.tsx"
@@ -193,14 +193,14 @@
     ]
   },
   "src/previews/inventory48/Inventory48Runtime.tsx": {
-    "file": "assets/Inventory48Runtime-DVveI-12.js",
+    "file": "assets/Inventory48Runtime-ks91t73-.js",
     "name": "Inventory48Runtime",
     "src": "src/previews/inventory48/Inventory48Runtime.tsx",
     "isDynamicEntry": true,
     "imports": [
-      "_PageRuntimeContext-Q99GxmHL.js",
+      "_PageRuntimeContext-BVaLRaPJ.js",
       "src/main.tsx",
-      "_AddSectionModal-cDdG9j2W.js"
+      "_AddSectionModal-B8acKlIH.js"
     ],
     "css": [
       "assets/Inventory48Runtime-DNZXllWr.css",
@@ -208,25 +208,25 @@
     ]
   },
   "src/public-page.tsx": {
-    "file": "assets/public-page-4COFUgi5.js",
+    "file": "assets/public-page-DldGudic.js",
     "name": "public-page",
     "src": "src/public-page.tsx",
     "isEntry": true,
     "imports": [
-      "_PageRuntimeContext-Q99GxmHL.js"
+      "_PageRuntimeContext-BVaLRaPJ.js"
     ],
     "css": [
       "assets/index-CkNkapAZ.css"
     ]
   },
   "src/section-preview/index.html": {
-    "file": "assets/section-preview-B8Ks5Ltq.js",
+    "file": "assets/section-preview-DxTx_HCo.js",
     "name": "section-preview",
     "src": "src/section-preview/index.html",
     "isEntry": true,
     "imports": [
-      "_PageRuntimeContext-Q99GxmHL.js",
-      "_AddSectionModal-cDdG9j2W.js"
+      "_PageRuntimeContext-BVaLRaPJ.js",
+      "_AddSectionModal-B8acKlIH.js"
     ],
     "css": [
       "assets/section-preview-DFoc5lP8.css"

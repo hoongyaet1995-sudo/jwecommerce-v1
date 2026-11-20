@@ -26,7 +26,8 @@ import {
   Bot,
   Tag,
   Percent,
-  Plug
+  Plug,
+  Users
 } from 'lucide-react';
 
 export const AdminSidebar: React.FC<{ isOpen: boolean; onCloseMobile?: () => void }> = ({
@@ -136,8 +137,7 @@ export const AdminSidebar: React.FC<{ isOpen: boolean; onCloseMobile?: () => voi
   const isCommerceActive =
     currentSection === 'commerce' ||
     currentSection === 'enquiries' ||
-    currentSection === 'orders' ||
-    currentSection === 'customers';
+    currentSection === 'orders';
 
   const isShippingActive = currentSection === 'shipping-malaysia';
 
@@ -164,7 +164,7 @@ export const AdminSidebar: React.FC<{ isOpen: boolean; onCloseMobile?: () => voi
     },
     {
       id: 'commerce' as NavSection,
-      label: 'Orders & CRM',
+      label: 'Order & Enquiry',
       icon: ShoppingBag,
       isActive: isCommerceActive,
       badge: pendingStoreOrders > 0 ? `${pendingStoreOrders} New` : undefined,
@@ -173,8 +173,13 @@ export const AdminSidebar: React.FC<{ isOpen: boolean; onCloseMobile?: () => voi
         { id: 'commerce' as NavSection, label: 'Overview Hub' },
         { id: 'enquiries' as NavSection, label: 'Enquiries' },
         { id: 'orders' as NavSection, label: 'Orders & Fulfillment' },
-        { id: 'customers' as NavSection, label: 'Customer Directory' },
       ],
+    },
+    {
+      id: 'customers' as NavSection,
+      label: 'Customer',
+      icon: Users,
+      isActive: currentSection === 'customers',
     },
     {
       id: 'shipping-malaysia' as NavSection,
@@ -192,11 +197,9 @@ export const AdminSidebar: React.FC<{ isOpen: boolean; onCloseMobile?: () => voi
     },
     {
       id: 'catalog' as NavSection,
-      label: 'Products & Catalog',
+      label: 'Product & Catalog',
       icon: Package,
       isActive: isCatalogActive,
-      badge: pendingReviewsCount > 0 ? `${pendingReviewsCount} Review${pendingReviewsCount > 1 ? 's' : ''}` : `${products.length} Items`,
-      badgeVariant: pendingReviewsCount > 0 ? 'warning' : 'default',
       subItems: [
         { id: 'catalog' as NavSection, label: 'Overview Hub' },
         { id: 'catalog-products' as NavSection, label: 'Product Matrix' },
@@ -207,22 +210,18 @@ export const AdminSidebar: React.FC<{ isOpen: boolean; onCloseMobile?: () => voi
     },
     {
       id: 'promotions' as NavSection,
-      label: 'Promotions & Discounts',
+      label: 'Promotion & Discount',
       icon: Tag,
       isActive: currentSection === 'promotions',
-      badge: 'Mix&Match',
-      badgeVariant: 'warning',
     },
   ];
 
   const salesChannelsNav = [
     {
       id: 'marketplace' as NavSection,
-      label: 'Marketplace OMS',
+      label: 'Marketplace',
       icon: Store,
       isActive: isMarketplaceActive,
-      badge: pendingMpOrders > 0 ? `${pendingMpOrders} Pending` : `${connectedStoresCount}/4`,
-      badgeVariant: pendingMpOrders > 0 ? 'warning' : 'success',
       subItems: [
         { id: 'marketplace' as NavSection, label: 'Overview Hub' },
         { id: 'marketplace-auth' as NavSection, label: 'Connect Store' },
@@ -234,11 +233,9 @@ export const AdminSidebar: React.FC<{ isOpen: boolean; onCloseMobile?: () => voi
     },
     {
       id: 'storefront' as NavSection,
-      label: 'Storefront CMS',
+      label: 'Website',
       icon: LayoutTemplate,
       isActive: isStorefrontActive,
-      badge: `${pages.length} Pages`,
-      badgeVariant: 'info',
       subItems: [
         { id: 'storefront' as NavSection, label: 'Overview Hub' },
         { id: 'storefront-header-announcement' as NavSection, label: 'Header & Footer' },
