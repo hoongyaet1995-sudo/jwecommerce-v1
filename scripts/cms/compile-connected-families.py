@@ -186,6 +186,9 @@ for page in manifest['pages']:
     if id(n) in static_slots:return 'detail(s,'+J(static_slots[id(n)])+')?.description'
     return J(str(n))
    if n.name in ['script','style']:return 'null'
+   if 'subpage-proof' in n.get('class',[]):
+    slots=[static_slots[id(child)] for label in n.find_all('span',recursive=False) for child in label.children if id(child) in static_slots]
+    return 'h(ConnectedProofLabels,{section:s,ariaLabel:'+J(n.get('aria-label'))+',slots:'+J(slots)+'})'
    if 'step-dots' in n.get('class',[]):return 'h("div",{className:"step-dots",role:"tablist"},orbit.map(entry=>h("button",{key:entry.id,type:"button",role:"tab","aria-label":entry.title,"aria-selected":entry.id===activeStepId,className:entry.id===activeStepId?"is-active":"",onClick:()=>setSelectedStep(entry.id)})))'
    if n.name=='small' and n.find_parent(class_='process-step') and item:return 'h("small",{},String(orbit.findIndex(peer=>peer.id==='+item+'.id)+1).padStart(2,"0"))'
    if n.name=='span' and 'process-wheel' in n.parent.get('class',[]):return 'h("span",{},String(orbit.length)+" connected steps")'
@@ -259,7 +262,7 @@ import {typographyStyle} from '../../cms/inspectorCapabilities';
 import {shopNavigationHref as linkHref} from '../../cms/shopNavigation';
 import type {ConnectedSection} from '../../cms/connectedFamilies';
 import {connectedPassport} from '../../cms/connectedFamilies';
-import {AuthoredInline,action,detail,group,nodeId} from './ConnectedNativePrimitives';
+import {AuthoredInline,ConnectedProofLabels,action,detail,group,nodeId} from './ConnectedNativePrimitives';
 import './ConnectedNative.css';
 const h=React.createElement;
 export function ConnectedNativeComposition({section:s,editing=false}:{section:ConnectedSection;editing?:boolean}){const tabs=group(s,'tabs');const [selectedTab,setActiveTab]=React.useState('');const activeEntry=tabs.find(item=>item.id===selectedTab)||tabs[0];const activeTab=activeEntry?.id;const orbitGroup=connectedPassport(s)?.groups.find(g=>g.kind==='orbit')?.id;const orbit=orbitGroup?group(s,orbitGroup):[];const [selectedStep,setSelectedStep]=React.useState('');const activeStepId=orbit.some(item=>item.id===selectedStep)?selectedStep:orbit[0]?.id;const stepIds=orbit.map(item=>item.id).join('|');React.useEffect(()=>{if(orbit.length<2)return;const timer=setInterval(()=>{if(document.hidden||matchMedia('(prefers-reduced-motion:reduce)').matches)return;setSelectedStep(current=>{const index=orbit.findIndex(item=>item.id===current);return orbit[((index<0?0:index)+1)%orbit.length].id;});},4200);return()=>clearInterval(timer);},[stepIds]);switch(s.connectedDiagram){

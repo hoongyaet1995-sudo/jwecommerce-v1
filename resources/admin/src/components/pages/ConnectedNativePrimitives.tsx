@@ -2,6 +2,13 @@ import React from 'react';
 import type {ConnectedSection} from '../../cms/connectedFamilies';
 import {shopNavigationHref} from '../../cms/shopNavigation';
 export const detail=(section:ConnectedSection,slot:string)=>section.items?.find(item=>item.layoutGroup==='details'&&item.layoutSlot===slot);
+export function ConnectedProofLabels({section,ariaLabel,slots}:{section:ConnectedSection;ariaLabel?:string;slots:string[]}){
+ const labels=slots.flatMap(slot=>{
+  const text=detail(section,slot)?.description;
+  return text?.trim()?[<span key={slot}>{text}</span>]:[];
+ });
+ return labels.length?<div aria-label={ariaLabel} className="subpage-proof">{labels}</div>:null;
+}
 export const group=(section:ConnectedSection,id:string)=>(section.items??[]).filter(item=>item.layoutGroup===id);
 export const nodeId=(section:ConnectedSection,id:string)=>`${section.id}-native-${id}`;
 export function action(event:React.MouseEvent,destination:unknown,editing:boolean){const href=shopNavigationHref(typeof destination==='string'?destination:'');if(editing||!href){event.preventDefault();return;}if(href==='#storefront-support-widget'){const launcher=document.getElementById('sf-support-launcher');if(launcher){event.preventDefault();launcher.click();}}}

@@ -1,10 +1,18 @@
 import type {PageSection,SectionItem} from '../types';
 import source from './connectedFamilyMetadata.json';
+import illustrationNames from './illustrationLabelNames.json';
 export const connectedLayouts=['hero-centered','hero-split','cards-grid','cards-bento','cards-compact','story-rows','story-split','process-cards','process-orbit','metrics-bento','metrics-row','comparison-narrative','preview-tabs','sticky-stack','logo-marquee','faq-list','closing-cta'] as const;
 export type ConnectedItem=SectionItem&{layoutGroup?:string;layoutVariant?:number;layoutSlot?:string};
 export type ConnectedSection=PageSection&{connectedLayout?:typeof connectedLayouts[number];connectedDiagram?:keyof typeof source;connectedVisualContext?:'default'|'commerce'|'operations'|'workflow'|'fulfilment'|'website';connectedLayoutMemory?:Partial<Record<typeof connectedLayouts[number],keyof typeof source>>;items?:ConnectedItem[]};
-export type ConnectedPassport={family:string;layout:string;type:string;groups:Array<{id:string;label:string;kind:string;fields:string[];min:number;max:number}>;details:Array<{slot:string;label:string;field:string;role:string}>;textRoles:string[];sectionFields:string[];actions:{primary:{button:boolean;link:boolean};secondary:{button:boolean;link:boolean}}};
-export const connectedFamilyMetadata=source as Record<string,ConnectedPassport>;
+type IllustrationSlot={slot:string;label:string;field:string;role:string};
+export type ConnectedPassport={family:string;layout:string;type:string;groups:Array<{id:string;label:string;kind:string;fields:string[];min:number;max:number}>;details:IllustrationSlot[];textRoles:string[];sectionFields:string[];actions:{primary:{button:boolean;link:boolean};secondary:{button:boolean;link:boolean}}};
+const names:Record<string,Record<string,string>>=illustrationNames;
+export const connectedFamilyMetadata:Record<string,ConnectedPassport>=Object.fromEntries(
+ Object.entries(source).map(([id,meta])=>[id,{
+  ...meta,
+  details:meta.details.map((slot,index)=>({...slot,label:names[id]?.[slot.slot]??`Illustration field ${index+1}`}))
+ }])
+);
 export const connectedDiagramIds=Object.keys(source);
 export function isConnectedFamily(section:PageSection):section is ConnectedSection{const s=section as ConnectedSection;return !!s.connectedDiagram&&!!connectedFamilyMetadata[s.connectedDiagram]&&connectedFamilyMetadata[s.connectedDiagram].type===s.type&&connectedFamilyMetadata[s.connectedDiagram].layout===s.connectedLayout;}
 export function connectedPassport(section:PageSection):ConnectedPassport|undefined{
