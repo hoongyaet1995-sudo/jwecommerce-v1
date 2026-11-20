@@ -20,7 +20,7 @@ export function DeviceComparison({section,editing=false}:{section:PageSection;ed
 }
 export function TechComparisonSettings({section,onChange,mode}:{section:PageSection;onChange:(section:PageSection)=>void;mode:'content'|'design'}){
  if(section.type!=='comparison_matrix')return null;
- if(mode==='design')return <VisualChoiceSelect aria-label="Comparison layout" value={section.comparisonPreset??'default'} onChange={e=>onChange({...section,comparisonPreset:e.target.value as PageSection['comparisonPreset']})}><option value="default">Brand comparison</option><option value="device-table">Device comparison — devices and specifications</option></VisualChoiceSelect>;
+ if(mode==='design')return <VisualChoiceSelect layoutDropdown aria-label="Comparison layout" value={section.comparisonPreset??'default'} onChange={e=>onChange({...section,comparisonPreset:e.target.value as PageSection['comparisonPreset']})}><option value="default">Brand comparison</option><option value="device-table">Device comparison — devices and specifications</option></VisualChoiceSelect>;
  if(section.comparisonPreset!=='device-table')return null;
  const devices=(section.items??[]).filter(i=>i.subtitle==='device'),rows=(section.items??[]).filter(i=>i.subtitle!=='device');
  const change=(id:string,patch:Partial<SectionItem>)=>onChange({...section,items:section.items?.map(i=>i.id===id?{...i,...patch}:i)});

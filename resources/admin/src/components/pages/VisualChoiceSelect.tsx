@@ -1,7 +1,8 @@
 import {SharedLayoutDiagram,hasSharedDiagram} from './SharedLayoutDiagram';
 import React from 'react';
+import {LayoutDiagramDropdown} from './LayoutDiagramDropdown';
 
-type Props = Pick<React.SelectHTMLAttributes<HTMLSelectElement>, 'value'|'onChange'|'children'|'disabled'|'aria-label'> & {className?:string};
+type Props = Pick<React.SelectHTMLAttributes<HTMLSelectElement>, 'value'|'onChange'|'children'|'disabled'|'aria-label'> & {className?:string; layoutDropdown?:boolean};
 function options(nodes:React.ReactNode):React.ReactElement<{value:string|number;children:React.ReactNode;disabled?:boolean}>[] {
   return React.Children.toArray(nodes).flatMap(node=>React.isValidElement(node)?node.type===React.Fragment?options((node.props as {children:React.ReactNode}).children):node.type==='option'?[node as React.ReactElement<{value:string|number;children:React.ReactNode;disabled?:boolean}>]:[]:[]);
 }
@@ -72,6 +73,17 @@ function Diagram({value,label}:{value:string;label:string}) {
   return <svg aria-hidden="true" viewBox="0 0 100 68" className="w-full h-16 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-indigo-500 dark:text-indigo-400 fill-current">{drawing}</svg>;
 }
 /** Keep canonical option values and existing change callbacks; only change their presentation. */
-export function VisualChoiceSelect({value,onChange,children,disabled,'aria-label':label}:Props) {
+export function VisualChoiceSelect({value,onChange,children,disabled,layoutDropdown,'aria-label':label}:Props) {
+  if (layoutDropdown) {
+    const choices = options(children);
+    if (!choices.length) return null;
+    return <LayoutDiagramDropdown label={label ?? 'Section layout'} value={String(value ?? '')} disabled={disabled}
+      choices={choices.map(option => {
+        const key = String(option.props.value);
+        const text = String(option.props.children);
+        return {value:key,label:text,disabled:option.props.disabled,diagram:<Diagram value={key} label={text}/>};
+      })}
+      onChange={key => onChange?.({target:{value:key},currentTarget:{value:key}} as React.ChangeEvent<HTMLSelectElement>)}/>;
+  }
   return <div role="group" aria-label={label} className="grid grid-cols-2 gap-2 mt-2" data-visual-choice>{options(children).map(option=>{const key=String(option.props.value);const active=String(value)===key;return <button type="button" key={key} data-choice-value={key} aria-pressed={active} disabled={disabled||option.props.disabled} onClick={()=>onChange?.({target:{value:key},currentTarget:{value:key}} as React.ChangeEvent<HTMLSelectElement>)} className={`relative min-w-0 rounded-xl border p-2.5 text-left disabled:opacity-40 disabled:cursor-not-allowed ${active?'border-indigo-500 bg-indigo-500/10 ring-1 ring-indigo-500':'border-neutral-200 dark:border-neutral-700 hover:border-indigo-400'}`}><Diagram value={key} label={String(option.props.children)}/><span className="block mt-2 text-xs leading-relaxed text-neutral-800 dark:text-neutral-200">{option.props.children}</span>{active&&<span aria-hidden="true" className="absolute right-1.5 top-1.5 bg-indigo-600 text-white rounded-full w-4 h-4 text-center text-[10px]">✓</span>}</button>;})}</div>;
 }

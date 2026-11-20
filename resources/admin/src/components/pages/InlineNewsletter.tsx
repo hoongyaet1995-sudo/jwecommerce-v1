@@ -1,3 +1,4 @@
+import {LayoutDiagramDropdown} from './LayoutDiagramDropdown';
 import {SectionEyebrow} from './SectionEyebrow';
 import React from 'react';
 import type {PageSection} from '../../types';
@@ -8,5 +9,7 @@ export function InlineNewsletter({section,email,onEmail,onSubmit,success,error,c
 }
 export function NewsletterLayoutSettings({section,onChange}:{section:PageSection;onChange:(section:PageSection)=>void}) {
  if(section.type!=='newsletter_signup')return null;
- return <fieldset><legend className="text-xs font-bold uppercase mb-3">Newsletter layout</legend><div className="grid grid-cols-2 gap-2">{(['default','inline-signup'] as const).map(preset=><button type="button" key={preset} aria-pressed={(section.newsletterPreset??'default')===preset} onClick={()=>onChange({...section,newsletterPreset:preset})} className={`p-3 rounded-xl border text-left ${(section.newsletterPreset??'default')===preset?'border-indigo-500 bg-indigo-500/10':'border-neutral-200 dark:border-neutral-700'}`}><span aria-hidden="true" className={`flex gap-2 h-12 p-2 bg-neutral-100 dark:bg-neutral-800 ${preset==='default'?'flex-col':''}`}><span className="flex-1 bg-indigo-400/60"/><span className="flex-1 bg-indigo-400/60"/></span><span className="text-xs block mt-2">{preset==='default'?'Centered signup':'Inline signup strip'}</span></button>)}</div></fieldset>;
+ return <fieldset><legend className="text-xs font-bold uppercase mb-3">Newsletter layout</legend><LayoutDiagramDropdown label="Newsletter layout" value={section.newsletterPreset??'default'}
+ choices={(['default','inline-signup'] as const).map(preset=>({value:preset,label:preset==='default'?'Centered signup':'Inline signup strip',diagram:<span aria-hidden="true" className={`flex gap-2 h-12 p-2 bg-neutral-100 dark:bg-neutral-800 ${preset==='default'?'flex-col':''}`}><span className="flex-1 bg-neutral-400/60"/><span className="flex-1 bg-neutral-400/60"/></span>}))}
+ onChange={(preset)=>onChange({...section,newsletterPreset:preset})}/></fieldset>;
 }

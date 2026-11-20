@@ -11,5 +11,5 @@ export function SharedSectionLayout({section,onChange}:{section:PageSection;onCh
  if(!isConnectedFamily(section)&&!isUnifiedPricing(section))return null;
  const pricing=isUnifiedPricing(section),choices=pricing?['pricing-cards','pricing-matrix']:connectedLayoutChoices(section);
  const value=pricing?(section.pricingMatrix?.view==='matrix'?'pricing-matrix':'pricing-cards'):section.connectedLayout;
- return <SectionLayoutGroup section={section}><VisualChoiceSelect aria-label="Section layout" value={value} onChange={e=>onChange(pricing?{...section,pricingMatrix:{...section.pricingMatrix!,view:e.target.value==='pricing-matrix'?'matrix':'cards'}}:(isConnectedFamily(section)?connectedLayoutPatch(section,e.target.value):section))}>{choices.map(id=><option key={id} value={id}>{sharedLayoutLabels[id]}</option>)}</VisualChoiceSelect></SectionLayoutGroup>;
+ return <SectionLayoutGroup section={section}><VisualChoiceSelect layoutDropdown aria-label="Section layout" value={value} onChange={e=>onChange(pricing?{...section,pricingMatrix:{...section.pricingMatrix!,view:e.target.value==='pricing-matrix'?'matrix':'cards'}}:(isConnectedFamily(section)?connectedLayoutPatch(section,e.target.value):section))}>{choices.map(id=><option key={id} value={id}>{sharedLayoutLabels[id]}</option>)}</VisualChoiceSelect></SectionLayoutGroup>;
 }

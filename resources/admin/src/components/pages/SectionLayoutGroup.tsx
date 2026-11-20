@@ -1,5 +1,8 @@
-import React, {useState} from 'react';
+import React, {createContext, useContext, useState} from 'react';
 import type {PageSection} from '../../types';
+
+const LayoutSectionContext = createContext<PageSection | null>(null);
+export const useLayoutSection = () => useContext(LayoutSectionContext);
 
 const layoutTypes = new Set(['pricing_table','logo_cloud','hero_banner','testimonials_slider','comparison_matrix','newsletter_signup','hero_slider','announcement_bar','media_text_split','rich_text','product_listing','media_gallery','feature_cards','values_list','chapter_block','faq_accordion','cta_strip','policy_content','payment_methods','shop_navigation','promotion_highlights']);
 export function hasSectionLayout(section:PageSection) {
@@ -12,6 +15,6 @@ export function SectionLayoutGroup({section,children}:{section:PageSection;child
   const [open,setOpen]=useState(read);
   return <details key={section.type} className="cms-settings-group cms-section-layout" open={open} onToggle={event=>{const next=event.currentTarget.open;setOpen(next);try{localStorage.setItem(key,next?'open':'closed')}catch{}}}>
     <summary><span>Section layout<small className="block text-[11px] font-normal text-neutral-500 capitalize">{section.type.replace(/_/g,' ')}</small></span></summary>
-    <div className="cms-settings-group-content space-y-4">{children}</div>
+    <div className="cms-settings-group-content space-y-4"><LayoutSectionContext.Provider value={section}>{children}</LayoutSectionContext.Provider></div>
   </details>;
 }

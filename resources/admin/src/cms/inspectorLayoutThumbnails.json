@@ -1,0 +1,837 @@
+{
+  "hero_banner": {
+    "hero-centered": {
+      "card": 0,
+      "layout": "hero-centered",
+      "image": "0-1280.png"
+    },
+    "hero-split": {
+      "card": 0,
+      "layout": "hero-split",
+      "image": "1-1280.png"
+    },
+    "editorial-gradient": {
+      "card": 18,
+      "layout": "",
+      "image": "25-1280.png"
+    },
+    "corporate-centered-composite": {
+      "card": 76,
+      "layout": "",
+      "image": "83-1280.png"
+    },
+    "corporate-split-composite": {
+      "card": 77,
+      "layout": "",
+      "image": "84-1280.png"
+    },
+    "corporate-centered": {
+      "card": 83,
+      "layout": "",
+      "image": "90-1280.png"
+    },
+    "industrial-overlay": {
+      "card": 95,
+      "layout": "",
+      "image": "102-1280.png"
+    },
+    "default": {
+      "card": 103,
+      "layout": "",
+      "image": "110-1280.png"
+    }
+  },
+  "media_gallery": {
+    "preview-tabs": {
+      "card": 1,
+      "layout": "preview-tabs",
+      "image": "2-1280.png"
+    },
+    "sticky-stack": {
+      "card": 3,
+      "layout": "sticky-stack",
+      "image": "5-1280.png"
+    },
+    "story-rows": {
+      "card": 10,
+      "layout": "story-rows",
+      "image": "15-1280.png"
+    },
+    "story-split": {
+      "card": 10,
+      "layout": "story-split",
+      "image": "16-1280.png"
+    },
+    "industrial-mosaic": {
+      "card": 13,
+      "layout": "",
+      "image": "20-1280.png"
+    },
+    "album-browser": {
+      "card": 17,
+      "layout": "",
+      "image": "24-1280.png"
+    },
+    "photo-marquee": {
+      "card": 19,
+      "layout": "",
+      "image": "26-1280.png"
+    },
+    "portfolio-cards": {
+      "card": 20,
+      "layout": "",
+      "image": "27-1280.png"
+    },
+    "connected-feature-rows": {
+      "card": 44,
+      "layout": "",
+      "image": "51-1280.png"
+    },
+    "image-cards-four-mosaic": {
+      "card": 46,
+      "layout": "",
+      "image": "53-1280.png"
+    },
+    "image-cards-three": {
+      "card": 47,
+      "layout": "",
+      "image": "54-1280.png"
+    },
+    "corporate-connections": {
+      "card": 55,
+      "layout": "",
+      "image": "62-1280.png"
+    },
+    "corporate-illustrated-steps": {
+      "card": 56,
+      "layout": "",
+      "image": "63-1280.png"
+    },
+    "corporate-scenarios": {
+      "card": 57,
+      "layout": "",
+      "image": "64-1280.png"
+    },
+    "staggered-focus-cards": {
+      "card": 59,
+      "layout": "",
+      "image": "66-1280.png"
+    },
+    "image-cards-contrast": {
+      "card": 60,
+      "layout": "",
+      "image": "67-1280.png"
+    },
+    "image-cards-three-staggered": {
+      "card": 62,
+      "layout": "",
+      "image": "69-1280.png"
+    },
+    "focused-steps": {
+      "card": 71,
+      "layout": "",
+      "image": "78-1280.png"
+    },
+    "scroll-stack-cards": {
+      "card": 72,
+      "layout": "",
+      "image": "79-1280.png"
+    },
+    "editorial-knowledge-triptych": {
+      "card": 74,
+      "layout": "",
+      "image": "81-1280.png"
+    },
+    "image-flow": {
+      "card": 75,
+      "layout": "",
+      "image": "82-1280.png"
+    },
+    "product-preview-tabs": {
+      "card": 84,
+      "layout": "",
+      "image": "91-1280.png"
+    },
+    "routine-steps": {
+      "card": 114,
+      "layout": "",
+      "image": "121-1280.png"
+    },
+    "default": {
+      "card": 129,
+      "layout": "",
+      "image": "136-1280.png"
+    },
+    "editorial-montage": {
+      "card": 147,
+      "layout": "",
+      "image": "154-1280.png"
+    },
+    "editorial-cards": {
+      "card": 148,
+      "layout": "",
+      "image": "155-1280.png"
+    }
+  },
+  "stats_counter": {
+    "metrics-bento": {
+      "card": 2,
+      "layout": "metrics-bento",
+      "image": "3-1280.png"
+    },
+    "metrics-row": {
+      "card": 2,
+      "layout": "metrics-row",
+      "image": "4-1280.png"
+    }
+  },
+  "feature_cards": {
+    "process-orbit": {
+      "card": 4,
+      "layout": "process-orbit",
+      "image": "6-1280.png"
+    },
+    "process-cards": {
+      "card": 4,
+      "layout": "process-cards",
+      "image": "7-1280.png"
+    },
+    "cards-bento": {
+      "card": 8,
+      "layout": "cards-bento",
+      "image": "11-1280.png"
+    },
+    "cards-grid": {
+      "card": 8,
+      "layout": "cards-grid",
+      "image": "12-1280.png"
+    },
+    "cards-compact": {
+      "card": 8,
+      "layout": "cards-compact",
+      "image": "13-1280.png"
+    },
+    "industrial-process-split": {
+      "card": 14,
+      "layout": "",
+      "image": "21-1280.png"
+    },
+    "numbered-process": {
+      "card": 21,
+      "layout": "",
+      "image": "28-1280.png"
+    },
+    "saas-modules": {
+      "card": 87,
+      "layout": "",
+      "image": "94-1280.png"
+    },
+    "saas-addons": {
+      "card": 92,
+      "layout": "",
+      "image": "99-1280.png"
+    },
+    "industrial-cards": {
+      "card": 96,
+      "layout": "",
+      "image": "103-1280.png"
+    },
+    "industrial-process": {
+      "card": 97,
+      "layout": "",
+      "image": "104-1280.png"
+    },
+    "default": {
+      "card": 134,
+      "layout": "",
+      "image": "141-1280.png"
+    },
+    "editorial-columns": {
+      "card": 149,
+      "layout": "",
+      "image": "156-1280.png"
+    },
+    "service-highlights": {
+      "card": 159,
+      "layout": "",
+      "image": "166-1280.png"
+    }
+  },
+  "comparison_matrix": {
+    "comparison-narrative": {
+      "card": 5,
+      "layout": "comparison-narrative",
+      "image": "8-1280.png"
+    },
+    "device-table": {
+      "card": 31,
+      "layout": "",
+      "image": "38-1280.png"
+    },
+    "default": {
+      "card": 136,
+      "layout": "",
+      "image": "143-1280.png"
+    }
+  },
+  "logo_cloud": {
+    "logo-marquee": {
+      "card": 6,
+      "layout": "logo-marquee",
+      "image": "9-1280.png"
+    }
+  },
+  "cta_strip": {
+    "closing-cta": {
+      "card": 7,
+      "layout": "closing-cta",
+      "image": "10-1280.png"
+    },
+    "industrial-outline": {
+      "card": 16,
+      "layout": "",
+      "image": "23-1280.png"
+    },
+    "editorial-illustrated": {
+      "card": 48,
+      "layout": "",
+      "image": "55-1280.png"
+    },
+    "illustrated-panel-right": {
+      "card": 49,
+      "layout": "",
+      "image": "56-1280.png"
+    },
+    "illustrated-panel": {
+      "card": 50,
+      "layout": "",
+      "image": "57-1280.png"
+    },
+    "gradient-panel": {
+      "card": 51,
+      "layout": "",
+      "image": "58-1280.png"
+    },
+    "saas-closing": {
+      "card": 94,
+      "layout": "",
+      "image": "101-1280.png"
+    },
+    "image-banner": {
+      "card": 144,
+      "layout": "",
+      "image": "151-1280.png"
+    },
+    "default": {
+      "card": 145,
+      "layout": "",
+      "image": "152-1280.png"
+    },
+    "editorial-band": {
+      "card": 158,
+      "layout": "",
+      "image": "165-1280.png"
+    },
+    "help-panel": {
+      "card": 163,
+      "layout": "",
+      "image": "170-1280.png"
+    }
+  },
+  "faq_accordion": {
+    "faq-list": {
+      "card": 9,
+      "layout": "faq-list",
+      "image": "14-1280.png"
+    },
+    "pricing-card-faq": {
+      "card": 52,
+      "layout": "",
+      "image": "59-1280.png"
+    },
+    "pricing-band-faq": {
+      "card": 53,
+      "layout": "",
+      "image": "60-1280.png"
+    },
+    "corporate-starter-faq": {
+      "card": 54,
+      "layout": "",
+      "image": "61-1280.png"
+    },
+    "framed-faq": {
+      "card": 70,
+      "layout": "",
+      "image": "77-1280.png"
+    },
+    "saas-split": {
+      "card": 93,
+      "layout": "",
+      "image": "100-1280.png"
+    },
+    "industrial-split": {
+      "card": 98,
+      "layout": "",
+      "image": "105-1280.png"
+    },
+    "default": {
+      "card": 137,
+      "layout": "",
+      "image": "144-1280.png"
+    },
+    "minimal": {
+      "card": 162,
+      "layout": "",
+      "image": "169-1280.png"
+    }
+  },
+  "pricing_table": {
+    "pricing-cards": {
+      "card": 11,
+      "layout": "pricing-cards",
+      "image": "17-1280.png"
+    },
+    "pricing-matrix": {
+      "card": 11,
+      "layout": "pricing-matrix",
+      "image": "18-1280.png"
+    },
+    "plan-comparison": {
+      "card": 69,
+      "layout": "",
+      "image": "76-1280.png"
+    },
+    "saas-packages": {
+      "card": 91,
+      "layout": "",
+      "image": "98-1280.png"
+    },
+    "default": {
+      "card": 128,
+      "layout": "",
+      "image": "135-1280.png"
+    }
+  },
+  "rich_text": {
+    "industrial-split": {
+      "card": 12,
+      "layout": "",
+      "image": "19-1280.png"
+    },
+    "default": {
+      "card": 108,
+      "layout": "",
+      "image": "115-1280.png"
+    }
+  },
+  "product_listing": {
+    "industrial-related": {
+      "card": 15,
+      "layout": "",
+      "image": "22-1280.png"
+    },
+    "kids-grid": {
+      "card": 26,
+      "layout": "",
+      "image": "33-1280.png"
+    },
+    "kids-tabs": {
+      "card": 28,
+      "layout": "",
+      "image": "35-1280.png"
+    },
+    "tech-grid": {
+      "card": 29,
+      "layout": "",
+      "image": "36-1280.png"
+    },
+    "tech-tabs": {
+      "card": 32,
+      "layout": "",
+      "image": "39-1280.png"
+    },
+    "fashion-lookbook": {
+      "card": 37,
+      "layout": "",
+      "image": "44-1280.png"
+    },
+    "beauty-grid": {
+      "card": 113,
+      "layout": "",
+      "image": "120-1280.png"
+    },
+    "pantry-grid": {
+      "card": 118,
+      "layout": "",
+      "image": "125-1280.png"
+    },
+    "pantry-tabs": {
+      "card": 119,
+      "layout": "",
+      "image": "126-1280.png"
+    },
+    "editorial-tabs": {
+      "card": 123,
+      "layout": "",
+      "image": "130-1280.png"
+    },
+    "editorial-grid": {
+      "card": 124,
+      "layout": "",
+      "image": "131-1280.png"
+    },
+    "default": {
+      "card": 125,
+      "layout": "",
+      "image": "132-1280.png"
+    }
+  },
+  "testimonials_slider": {
+    "editorial-quote": {
+      "card": 22,
+      "layout": "",
+      "image": "29-1280.png"
+    },
+    "default": {
+      "card": 142,
+      "layout": "",
+      "image": "149-1280.png"
+    }
+  },
+  "media_text_split": {
+    "artisan-story": {
+      "card": 23,
+      "layout": "",
+      "image": "30-1280.png"
+    },
+    "kids-discovery": {
+      "card": 27,
+      "layout": "",
+      "image": "34-1280.png"
+    },
+    "tech-feature": {
+      "card": 30,
+      "layout": "",
+      "image": "37-1280.png"
+    },
+    "editorial-hero": {
+      "card": 38,
+      "layout": "",
+      "image": "45-1280.png"
+    },
+    "editorial-story": {
+      "card": 39,
+      "layout": "",
+      "image": "46-1280.png"
+    },
+    "editorial-story-cards": {
+      "card": 40,
+      "layout": "",
+      "image": "47-1280.png"
+    },
+    "editorial-journal-rows": {
+      "card": 41,
+      "layout": "",
+      "image": "48-1280.png"
+    },
+    "image-highlights": {
+      "card": 45,
+      "layout": "",
+      "image": "52-1280.png"
+    },
+    "corporate-section-story": {
+      "card": 58,
+      "layout": "",
+      "image": "65-1280.png"
+    },
+    "inset-surface-panel": {
+      "card": 61,
+      "layout": "",
+      "image": "68-1280.png"
+    },
+    "wide-visual-centered": {
+      "card": 63,
+      "layout": "",
+      "image": "70-1280.png"
+    },
+    "split-visual-surface": {
+      "card": 64,
+      "layout": "",
+      "image": "71-1280.png"
+    },
+    "contained-wide-centered": {
+      "card": 65,
+      "layout": "",
+      "image": "72-1280.png"
+    },
+    "contained-wide-editorial": {
+      "card": 66,
+      "layout": "",
+      "image": "73-1280.png"
+    },
+    "wide-visual-editorial": {
+      "card": 67,
+      "layout": "",
+      "image": "74-1280.png"
+    },
+    "corporate-builder-overview": {
+      "card": 68,
+      "layout": "",
+      "image": "75-1280.png"
+    },
+    "team-story-overview": {
+      "card": 73,
+      "layout": "",
+      "image": "80-1280.png"
+    },
+    "corporate-marketplace": {
+      "card": 78,
+      "layout": "",
+      "image": "85-1280.png"
+    },
+    "corporate-courier": {
+      "card": 79,
+      "layout": "",
+      "image": "86-1280.png"
+    },
+    "corporate-payments": {
+      "card": 80,
+      "layout": "",
+      "image": "87-1280.png"
+    },
+    "corporate-image-story": {
+      "card": 81,
+      "layout": "",
+      "image": "88-1280.png"
+    },
+    "corporate-feature": {
+      "card": 85,
+      "layout": "",
+      "image": "92-1280.png"
+    },
+    "saas-hero": {
+      "card": 86,
+      "layout": "",
+      "image": "93-1280.png"
+    },
+    "saas-showcase": {
+      "card": 88,
+      "layout": "",
+      "image": "95-1280.png"
+    },
+    "saas-analytics": {
+      "card": 90,
+      "layout": "",
+      "image": "97-1280.png"
+    },
+    "default": {
+      "card": 107,
+      "layout": "",
+      "image": "114-1280.png"
+    },
+    "flush-split": {
+      "card": 115,
+      "layout": "",
+      "image": "122-1280.png"
+    },
+    "producer-story": {
+      "card": 120,
+      "layout": "",
+      "image": "127-1280.png"
+    },
+    "editorial-cover": {
+      "card": 150,
+      "layout": "",
+      "image": "157-1280.png"
+    },
+    "story-with-steps": {
+      "card": 161,
+      "layout": "",
+      "image": "168-1280.png"
+    }
+  },
+  "shop_navigation": {
+    "kids-banners": {
+      "card": 24,
+      "layout": "",
+      "image": "31-1280.png"
+    },
+    "age-cards": {
+      "card": 25,
+      "layout": "",
+      "image": "32-1280.png"
+    },
+    "market-hero": {
+      "card": 33,
+      "layout": "",
+      "image": "40-1280.png"
+    },
+    "market-offers": {
+      "card": 34,
+      "layout": "",
+      "image": "41-1280.png"
+    },
+    "fashion-banners": {
+      "card": 36,
+      "layout": "",
+      "image": "43-1280.png"
+    },
+    "collection-banners": {
+      "card": 100,
+      "layout": "",
+      "image": "107-1280.png"
+    },
+    "default": {
+      "card": 101,
+      "layout": "",
+      "image": "108-1280.png"
+    },
+    "image-overlay": {
+      "card": 111,
+      "layout": "",
+      "image": "118-1280.png"
+    },
+    "image-caption": {
+      "card": 112,
+      "layout": "",
+      "image": "119-1280.png"
+    },
+    "catalog-captions": {
+      "card": 116,
+      "layout": "",
+      "image": "123-1280.png"
+    },
+    "recipe-cards": {
+      "card": 117,
+      "layout": "",
+      "image": "124-1280.png"
+    }
+  },
+  "hero_slider": {
+    "fashion-editorial": {
+      "card": 35,
+      "layout": "",
+      "image": "42-1280.png"
+    },
+    "editorial-overlay": {
+      "card": 102,
+      "layout": "",
+      "image": "109-1280.png"
+    },
+    "default": {
+      "card": 104,
+      "layout": "",
+      "image": "111-1280.png"
+    }
+  },
+  "payment_methods": {
+    "cards": {
+      "card": 42,
+      "layout": "",
+      "image": "49-1280.png"
+    },
+    "list": {
+      "card": 43,
+      "layout": "",
+      "image": "50-1280.png"
+    }
+  },
+  "newsletter_signup": {
+    "inline-signup": {
+      "card": 121,
+      "layout": "",
+      "image": "128-1280.png"
+    },
+    "default": {
+      "card": 146,
+      "layout": "",
+      "image": "153-1280.png"
+    }
+  },
+  "store_locator": {
+    "true": {
+      "card": 139,
+      "layout": "",
+      "image": "146-1280.png"
+    }
+  },
+  "chapter_block": {
+    "process": {
+      "card": 152,
+      "layout": "",
+      "image": "159-1280.png"
+    },
+    "delivery": {
+      "card": 153,
+      "layout": "",
+      "image": "160-1280.png"
+    },
+    "actions": {
+      "card": 154,
+      "layout": "",
+      "image": "161-1280.png"
+    },
+    "story": {
+      "card": 155,
+      "layout": "",
+      "image": "162-1280.png"
+    },
+    "perspective": {
+      "card": 156,
+      "layout": "",
+      "image": "163-1280.png"
+    },
+    "principles": {
+      "card": 157,
+      "layout": "",
+      "image": "164-1280.png"
+    }
+  },
+  "policy_content": {
+    "guidelines": {
+      "card": 164,
+      "layout": "",
+      "image": "171-1280.png"
+    },
+    "choices": {
+      "card": 165,
+      "layout": "",
+      "image": "172-1280.png"
+    },
+    "steps": {
+      "card": 166,
+      "layout": "",
+      "image": "173-1280.png"
+    },
+    "process-flow": {
+      "card": 167,
+      "layout": "",
+      "image": "174-1280.png"
+    },
+    "timeline": {
+      "card": 168,
+      "layout": "",
+      "image": "175-1280.png"
+    },
+    "tabs": {
+      "card": 169,
+      "layout": "",
+      "image": "176-1280.png"
+    },
+    "columns": {
+      "card": 170,
+      "layout": "",
+      "image": "177-1280.png"
+    },
+    "document": {
+      "card": 171,
+      "layout": "",
+      "image": "178-1280.png"
+    },
+    "directory": {
+      "card": 172,
+      "layout": "",
+      "image": "179-1280.png"
+    }
+  }
+}

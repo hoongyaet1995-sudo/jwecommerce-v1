@@ -6,7 +6,7 @@ export function RichTextSettings({section,onChange,mode='all'}:{mode?:'all'|'con
   return <div className="space-y-3 pb-4 border-b border-neutral-100 dark:border-neutral-800">
     {mode!=='content'&&<>
     <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 block">Layout preset</label>
-    <VisualChoiceSelect aria-label="Layout preset" value={section.richTextPreset??'default'} onChange={event=>onChange(richTextPresetPatch(section,event.target.value as NonNullable<PageSection['richTextPreset']>))} className="w-full px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/60 text-neutral-900 dark:text-white">
+    <VisualChoiceSelect layoutDropdown aria-label="Layout preset" value={section.richTextPreset??'default'} onChange={event=>onChange(richTextPresetPatch(section,event.target.value as NonNullable<PageSection['richTextPreset']>))} className="w-full px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/60 text-neutral-900 dark:text-white">
       <option value="default">Editorial Text &amp; Quote — original layout</option>
       <option value="industrial-split">Industrial Split — title and introduction</option><option value="manifesto">Manifesto — centered statement</option>
     </VisualChoiceSelect>

@@ -17,5 +17,5 @@ it('only offers valid heights for CTA image banners while retaining layout choic
   const node=document.createElement('div');const root=createRoot(node);
   act(()=>root.render(<CtaStripSettings section={{id:'cta',type:'cta_strip',title:'Keep',isVisible:true,ctaPreset:'image-banner'}} onChange={()=>{}}/>));
   expect([...node.querySelectorAll('[aria-label="Banner height"] button')].map(b=>b.getAttribute('data-choice-value'))).toEqual(['compact','normal','spacious']);
-  expect(node.querySelector('[aria-label="Layout preset"] [data-choice-value="help-panel"]')).not.toBeNull();act(()=>root.unmount());
+  expect(node.querySelector('[data-image-choice="Layout preset"] [data-choice-value="help-panel"]')).not.toBeNull();act(()=>root.unmount());
 });
