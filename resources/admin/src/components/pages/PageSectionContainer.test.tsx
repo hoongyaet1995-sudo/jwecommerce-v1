@@ -12,7 +12,8 @@ it('scopes the website frame to Builder while page and section width overrides s
   const vars=storefrontContentVariables(width);
   expect(vars['--storefront-content-width']).toBe(expected);
   expect(vars.containerType).toBe('inline-size');
-  expect(vars['--storefront-content-gutter']).toContain('cqi');
+  if(width==='full')expect(vars['--storefront-content-gutter']).toBeUndefined();
+  else expect(vars['--storefront-content-gutter']).toContain('cqi');
   expect(pageContainerStyle('site').maxWidth).toBe('var(--storefront-content-width, 1280px)');
   expect(pageContainerStyle('standard').maxWidth).toBe(1280);
   expect(pageContainerStyle('wide').maxWidth).toBe(1440);

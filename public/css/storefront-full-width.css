@@ -1,0 +1,10 @@
+/* Full website width uses a shared inset across the shell and inherited sections. */
+:is(:root,div)[data-storefront-width=full]{--storefront-content-gutter:24px}
+:is(:root,div)[data-storefront-width=full][data-storefront-preview-mobile]{--storefront-content-gutter:16px}
+@media(max-width:760px){
+ :is(:root,div)[data-storefront-width=full]{--storefront-content-gutter:16px}
+}
+/* The simulated phone header uses the same inset as the storefront header. */
+[data-storefront-width=full] [data-builder-shell][data-mobile=true][data-shell-style=unified] .jw-shell-main{
+ padding-inline:var(--storefront-content-gutter);
+}

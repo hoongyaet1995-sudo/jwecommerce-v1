@@ -25,6 +25,7 @@
     <livewire:styles />
     @if($isStorefront)
         <link rel="stylesheet" href="{{ asset('css/storefront-layout.css') }}?v={{ filemtime(public_path('css/storefront-layout.css')) }}">
+        <link rel="stylesheet" href="{{ asset('css/storefront-full-width.css') }}?v={{ filemtime(public_path('css/storefront-full-width.css')) }}">
         <link rel="stylesheet" href="{{ asset('css/storefront-scrollbars.css') }}?v={{ filemtime(public_path('css/storefront-scrollbars.css')) }}">
     @endif
     @if($isStorefront && in_array('home_deco',$websiteStyleThemes,true))<link rel="stylesheet" href="{{ asset('css/home-deco-theme.css') }}?v={{ filemtime(public_path('css/home-deco-theme.css')) }}">@endif

@@ -1,8 +1,9 @@
 import React from 'react';
+import '../../../../../public/css/storefront-full-width.css';
 export type PageContainerWidth='standard'|'wide'|'full'|'site';
 /** Canvas-scoped website defaults; authored page/section widths remain independent. */
 export function storefrontContentVariables(width:Exclude<PageContainerWidth,'site'>='wide') {
- return {'--storefront-content-width':{standard:'1280px',wide:'1440px',full:'100%'}[width],'--storefront-content-gutter':'clamp(20px, 4cqi, 58px)',containerType:'inline-size' as const};
+ return {'--storefront-content-width':{standard:'1280px',wide:'1440px',full:'100%'}[width],...(width==='full'?{}:{'--storefront-content-gutter':'clamp(20px, 4cqi, 58px)'}),containerType:'inline-size' as const};
 }
 /** Missing width inherits the website; explicit authored widths remain overrides. */
 export function pageContainerStyle(width:PageContainerWidth='site',fullBleed=false):React.CSSProperties {

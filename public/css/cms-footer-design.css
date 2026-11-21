@@ -31,10 +31,3 @@
  .jw-shell-footer.cms-footer[data-footer-layout=compact] .cms-footer-wordmark{margin-top:21px}
  .jw-shell-footer.cms-footer[data-footer-layout=compact] .cms-footer-legal{flex-direction:column;align-items:flex-start;margin-top:16px}
 }
-
-/* Full changes the space outside the Compact card, not its content padding. */
-:where([data-storefront-width=full]) .cms-footer-region:has(> [data-footer-layout=compact]){padding-inline:0}
-:where([data-storefront-width=full]) .cms-footer-region > .jw-shell-footer.cms-footer[data-footer-layout=compact]{width:calc(100% - 48px)}
-@container cms-footer-region (max-width:650px){
- :where([data-storefront-width=full]) .cms-footer-region > .jw-shell-footer.cms-footer[data-footer-layout=compact]{width:calc(100% - 32px)}
-}
