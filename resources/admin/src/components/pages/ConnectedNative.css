@@ -570,8 +570,8 @@ h1, h2, h3,
     .process-step { right: 25px; left: 25px; padding: 43px 25px; }
     .step-dots { right: 55px; bottom: 50px; left: 55px; }
     .comparison-panel { padding: 75px 20px; }
-    .compare-grid { grid-template-columns: 1fr; gap: 35px; }
-    .versus { top: 50%; transform: translate(-50%, -50%); }
+    .compare-grid { grid-template-columns: 1fr; gap: 0; }
+    .compare-grid > .versus { position: static; justify-self: center; transform: none; }
     .footer-grid { margin-top: 90px; grid-template-columns: 1fr 1fr; }
     .footer-contact { grid-column: 1 / -1; }
     .footer-brand { margin-top: 25px; font-size: 19vw; }
