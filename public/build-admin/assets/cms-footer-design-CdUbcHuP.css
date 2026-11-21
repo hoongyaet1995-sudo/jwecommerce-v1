@@ -1,0 +1,40 @@
+@import url('/cms/connected/assets/fonts/google-fonts.css');
+@import url('/cms/connected/assets/fonts/fontshare.css');
+.cms-footer-region{container:cms-footer-region / inline-size;box-sizing:border-box;background:var(--cms-shell-paper,#fff);padding:24px var(--storefront-content-gutter,24px);width:100%;min-width:0}
+.jw-shell-footer.cms-footer[data-shell-style=unified]{--footer-bg:var(--cms-shell-contrast,#0d1b18);--footer-fg:var(--cms-shell-oncontrast,#fff);--footer-heading:color-mix(in srgb,var(--footer-fg) 55%,var(--footer-bg));--footer-muted:color-mix(in srgb,var(--footer-fg) 60%,var(--footer-bg));--footer-link:color-mix(in srgb,var(--footer-fg) 80%,var(--footer-bg));box-sizing:border-box;color:var(--footer-fg);background:var(--footer-bg);font-family:var(--font-body,'Switzer',Inter,Arial,sans-serif);font-size:16px;max-width:var(--storefront-content-width,1440px);width:100%;margin:auto;padding:65px 38px 35px;border:0;border-radius:28px;overflow:hidden}
+.jw-shell-footer.cms-footer[data-shell-style=unified] *{box-sizing:border-box;min-width:0}
+.jw-shell-footer.cms-footer[data-shell-style=unified] .cms-footer-intro{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(260px,.55fr);gap:28px;margin-bottom:40px;align-items:start}
+.jw-shell-footer.cms-footer[data-shell-style=unified] .cms-footer-brand{display:inline-block;font-family:var(--font-display,'Stack Sans Headline',Inter,Arial,sans-serif);font-size:24px;font-weight:600;letter-spacing:-.03em;line-height:1.2;text-decoration:none;color:var(--footer-fg);margin:0 0 12px}
+.jw-shell-footer.cms-footer[data-shell-style=unified] .cms-footer-description{font-size:16px;line-height:1.55;max-width:350px;margin:0 0 25px;color:var(--footer-muted);opacity:1}
+.jw-shell-footer.cms-footer[data-shell-style=unified] .cms-footer-navigation{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:28px;min-width:0;border-top:1px solid color-mix(in srgb,var(--footer-fg) 10%,transparent);padding-top:40px}
+.jw-shell-footer.cms-footer[data-shell-style=unified] h2{font-family:inherit;font-size:14px;line-height:1.5;font-weight:600;text-transform:uppercase;letter-spacing:0;color:var(--footer-heading);margin:3px 0 17px;opacity:1}
+.jw-shell-footer.cms-footer[data-shell-style=unified] nav a,.jw-shell-footer.cms-footer[data-shell-style=unified] .cms-footer-contact a{display:block;width:fit-content;max-width:100%;font-size:18px;line-height:1.5;color:var(--footer-link);text-decoration:none;overflow-wrap:anywhere;margin:0 0 7px;transition:color .2s}
+.jw-shell-footer.cms-footer[data-shell-style=unified] a:hover{color:var(--footer-fg);text-decoration:none}
+.jw-shell-footer.cms-footer[data-shell-style=unified] a:focus-visible{outline:2px solid currentColor;outline-offset:5px;border-radius:2px}
+.jw-shell-footer.cms-footer[data-shell-style=unified] :is(p,h2,a){overflow-wrap:anywhere}
+.jw-shell-footer.cms-footer[data-shell-style=unified] .cms-footer-wordmark{font-family:var(--font-display,'Stack Sans Headline',Inter,Arial,sans-serif);font-size:clamp(75px,12cqw,190px);font-weight:650;letter-spacing:-.08em;line-height:.85;margin:80px 0 0;text-align:center;overflow-wrap:anywhere}
+.jw-shell-footer.cms-footer[data-shell-style=unified] .cms-footer-legal{margin-top:75px;padding-top:20px;border-top:1px solid color-mix(in srgb,var(--footer-fg) 10%,transparent);font-size:14px;line-height:1.5;color:var(--footer-muted)}
+.jw-shell-footer.cms-footer[data-shell-style=unified] .cms-footer-badge{display:inline-block;font:600 10px/1.4 Arial,sans-serif;font-style:normal;border-radius:4px;padding:2px 5px;margin-inline-start:6px;vertical-align:middle;background:color-mix(in srgb,var(--footer-fg) 15%,var(--footer-bg));color:var(--footer-fg)}
+@container cms-footer-region (max-width:1000px){.jw-shell-footer.cms-footer[data-shell-style=unified] .cms-footer-navigation{grid-template-columns:repeat(2,minmax(0,1fr))}.jw-shell-footer.cms-footer[data-shell-style=unified] .cms-footer-intro{grid-template-columns:repeat(2,minmax(0,1fr))}.jw-shell-footer.cms-footer[data-shell-style=unified]{padding-inline:30px}}
+@container cms-footer-region (max-width:650px){.jw-shell-footer.cms-footer[data-shell-style=unified]{padding:40px 20px 28px;border-radius:22px}.jw-shell-footer.cms-footer[data-shell-style=unified] .cms-footer-intro{grid-template-columns:1fr;gap:20px;margin-bottom:30px}.jw-shell-footer.cms-footer[data-shell-style=unified] .cms-footer-navigation{padding-top:30px;gap:28px 20px}.jw-shell-footer.cms-footer[data-shell-style=unified] .cms-footer-wordmark{font-size:19cqw;margin-top:45px;line-height:.95;letter-spacing:-.065em}.jw-shell-footer.cms-footer[data-shell-style=unified] .cms-footer-legal{margin-top:40px}.jw-shell-footer.cms-footer[data-shell-style=unified] .cms-footer-contact h2{margin-bottom:12px}}
+@container cms-footer-region (max-width:330px){.jw-shell-footer.cms-footer[data-shell-style=unified] .cms-footer-navigation{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){.jw-shell-footer.cms-footer[data-shell-style=unified] a{transition:none}}
+.jw-shell-footer.cms-footer[data-footer-layout=compact]{display:grid;grid-template-columns:minmax(0,1.55fr) repeat(2,minmax(0,1fr));column-gap:28px;row-gap:24px}
+.jw-shell-footer.cms-footer[data-footer-layout=compact] :is(.cms-footer-intro,.cms-footer-navigation){display:contents}
+.jw-shell-footer.cms-footer[data-footer-layout=compact] :is(.cms-footer-wordmark,.cms-footer-legal){grid-column:1/-1}
+.jw-shell-footer.cms-footer[data-footer-layout=compact] .cms-footer-wordmark{margin-top:56px}
+.jw-shell-footer.cms-footer[data-footer-layout=compact] .cms-footer-legal{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:12px 24px;margin-top:51px}
+.jw-shell-footer.cms-footer[data-footer-layout=compact] .cms-footer-legal nav{display:flex;flex-wrap:wrap;gap:8px 20px}
+.jw-shell-footer.cms-footer[data-footer-layout=compact] .cms-footer-legal a{font-size:inherit;margin:0}
+@container cms-footer-region (max-width:650px){
+ .jw-shell-footer.cms-footer[data-footer-layout=compact]{grid-template-columns:minmax(0,1fr)}
+ .jw-shell-footer.cms-footer[data-footer-layout=compact] .cms-footer-wordmark{margin-top:21px}
+ .jw-shell-footer.cms-footer[data-footer-layout=compact] .cms-footer-legal{flex-direction:column;align-items:flex-start;margin-top:16px}
+}
+
+/* Full changes the space outside the Compact card, not its content padding. */
+:where([data-storefront-width=full]) .cms-footer-region:has(> [data-footer-layout=compact]){padding-inline:0}
+:where([data-storefront-width=full]) .cms-footer-region > .jw-shell-footer.cms-footer[data-footer-layout=compact]{width:calc(100% - 48px)}
+@container cms-footer-region (max-width:650px){
+ :where([data-storefront-width=full]) .cms-footer-region > .jw-shell-footer.cms-footer[data-footer-layout=compact]{width:calc(100% - 32px)}
+}

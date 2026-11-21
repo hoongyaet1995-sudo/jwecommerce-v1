@@ -120,7 +120,7 @@ export const FooterMenuAdmin: React.FC = () => {
         </div>
       </div>
 
-      {showFooterSimulator && <div style={storefrontContentVariables(storefrontShellSettings.contentWidth)}><StorefrontFooter value={storefrontShellSettings.shellDesign??shellDesignDefaults()} brand={shopSettings.shopName||'Store'} menus={footerMenus} palette={footerPalette}/></div>}
+      {showFooterSimulator && <div data-storefront-width={storefrontShellSettings.contentWidth} style={storefrontContentVariables(storefrontShellSettings.contentWidth)}><StorefrontFooter value={storefrontShellSettings.shellDesign??shellDesignDefaults()} brand={shopSettings.shopName||'Store'} menus={footerMenus} palette={footerPalette}/></div>}
 
       {/* 2-Tier Hierarchy Admin Sections */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
