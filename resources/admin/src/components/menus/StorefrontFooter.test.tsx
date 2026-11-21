@@ -16,3 +16,14 @@ it.each([0,1,7])('does not cap or invent navigation groups(%i)',count=>{
  const html=renderToStaticMarkup(<StorefrontFooter value={shellDesignDefaults()} brand="Merchant" menus={menus}/>);
  expect((html.match(/<nav /g)||[]).length).toBe(count);expect(html).not.toContain('Request a demo');expect(html).not.toContain('mailto:');
 });
+
+it('keeps Legal links in the copyright area only in Compact',()=>{
+ const menus:FooterMenuL1[]=[{id:'legal',sectionTitle:'Legal',isActive:true,sortOrder:1,links:[{id:'privacy',title:'Privacy Policy',url:'/pages/privacy-policy',linkType:'page',isActive:true,sortOrder:0}]}];
+ const value=shellDesignDefaults();
+ const classic=renderToStaticMarkup(<StorefrontFooter value={value} brand="Merchant" menus={menus}/>);
+ const compact=renderToStaticMarkup(<StorefrontFooter value={{...value,footerLayout:'compact'}} brand="Merchant" menus={menus}/>);
+ expect(classic).toMatch(/cms-footer-navigation.*Privacy Policy/);
+ expect(compact).toMatch(/cms-footer-legal.*Privacy Policy/);
+ expect(compact).not.toContain('cms-footer-navigation');
+ expect(compact).toContain('data-footer-layout="compact"');
+});

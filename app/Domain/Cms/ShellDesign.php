@@ -27,7 +27,7 @@ final class ShellDesign
     {
         return ['business' => $business, 'style' => 'editorial', 'appearance' => 'light',
             'showAnnouncement' => false, 'showAccount' => false, 'showCurrency' => false,
-            'showThemeSwitch' => false, 'brandName' => '', 'brandLogo' => '', 'ctaLabel' => '', 'ctaUrl' => '', 'tagline' => '', 'contactEmail' => ''];
+            'showThemeSwitch' => false, 'brandName' => '', 'brandLogo' => '', 'ctaLabel' => '', 'ctaUrl' => '', 'tagline' => '', 'contactEmail' => '', 'footerLayout' => 'classic'];
     }
 
     public static function resolve(array $global, ?array $page = null): ?array
@@ -41,7 +41,7 @@ final class ShellDesign
 
     public static function rules(string $prefix = 'shellDesign'): array
     {
-        return [$prefix => ['sometimes', 'array:brandName,brandLogo,business,style,appearance,showAnnouncement,showAccount,showCurrency,showThemeSwitch,ctaLabel,ctaUrl,tagline,contactEmail'],
+        return [$prefix => ['sometimes', 'array:brandName,brandLogo,business,style,appearance,showAnnouncement,showAccount,showCurrency,showThemeSwitch,ctaLabel,ctaUrl,tagline,contactEmail,footerLayout'],
             "$prefix.brandName" => ['nullable','string','max:100'],
             "$prefix.brandLogo" => ['nullable','string','max:2048'],
             "$prefix.business" => ['required_with:'.$prefix, 'in:commerce,service'],
@@ -54,6 +54,7 @@ final class ShellDesign
             "$prefix.ctaLabel" => ['nullable', 'string', 'max:80'],
             "$prefix.ctaUrl" => ['nullable', 'string', 'max:2048'],
             "$prefix.tagline" => ['nullable', 'string', 'max:255'],
+            "$prefix.footerLayout" => ['sometimes', 'in:classic,compact'],
             "$prefix.contactEmail" => ['nullable', 'email', 'max:255']];
     }
 }
