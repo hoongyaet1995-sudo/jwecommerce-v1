@@ -119,15 +119,15 @@
     "file": "assets/cms-shell-design-DsQzaQV-.css",
     "src": "C:/xampp/jw-footer-colors-release/public/css/cms-shell-design.css"
   },
-  "_AddSectionModal-B46DqZ01.js": {
-    "file": "assets/AddSectionModal-B46DqZ01.js",
+  "_AddSectionModal-DEvtvdnS.js": {
+    "file": "assets/AddSectionModal-DEvtvdnS.js",
     "name": "AddSectionModal",
     "imports": [
-      "_PageRuntimeContext-CNF3wzIe.js"
+      "_PageRuntimeContext-CIGtSNKh.js"
     ]
   },
-  "_PageRuntimeContext-CNF3wzIe.js": {
-    "file": "assets/PageRuntimeContext-CNF3wzIe.js",
+  "_PageRuntimeContext-CIGtSNKh.js": {
+    "file": "assets/PageRuntimeContext-CIGtSNKh.js",
     "name": "PageRuntimeContext",
     "css": [
       "assets/PageRuntimeContext-CbniEXcc.css"
@@ -172,13 +172,13 @@
     "src": "_index-CkNkapAZ.css"
   },
   "src/main.tsx": {
-    "file": "assets/main-D5natkOc.js",
+    "file": "assets/main-C65X8nct.js",
     "name": "main",
     "src": "src/main.tsx",
     "isEntry": true,
     "imports": [
-      "_PageRuntimeContext-CNF3wzIe.js",
-      "_AddSectionModal-B46DqZ01.js"
+      "_PageRuntimeContext-CIGtSNKh.js",
+      "_AddSectionModal-DEvtvdnS.js"
     ],
     "dynamicImports": [
       "src/previews/inventory48/Inventory48Runtime.tsx"
@@ -193,14 +193,14 @@
     ]
   },
   "src/previews/inventory48/Inventory48Runtime.tsx": {
-    "file": "assets/Inventory48Runtime-CtVCMv2I.js",
+    "file": "assets/Inventory48Runtime-CyWYRZRS.js",
     "name": "Inventory48Runtime",
     "src": "src/previews/inventory48/Inventory48Runtime.tsx",
     "isDynamicEntry": true,
     "imports": [
-      "_PageRuntimeContext-CNF3wzIe.js",
+      "_PageRuntimeContext-CIGtSNKh.js",
       "src/main.tsx",
-      "_AddSectionModal-B46DqZ01.js"
+      "_AddSectionModal-DEvtvdnS.js"
     ],
     "css": [
       "assets/Inventory48Runtime-DNZXllWr.css",
@@ -208,25 +208,25 @@
     ]
   },
   "src/public-page.tsx": {
-    "file": "assets/public-page-CkVHeuxk.js",
+    "file": "assets/public-page-Cco7_9RM.js",
     "name": "public-page",
     "src": "src/public-page.tsx",
     "isEntry": true,
     "imports": [
-      "_PageRuntimeContext-CNF3wzIe.js"
+      "_PageRuntimeContext-CIGtSNKh.js"
     ],
     "css": [
       "assets/index-CkNkapAZ.css"
     ]
   },
   "src/section-preview/index.html": {
-    "file": "assets/section-preview-BFqol8ww.js",
+    "file": "assets/section-preview-BkdrULmT.js",
     "name": "section-preview",
     "src": "src/section-preview/index.html",
     "isEntry": true,
     "imports": [
-      "_PageRuntimeContext-CNF3wzIe.js",
-      "_AddSectionModal-B46DqZ01.js"
+      "_PageRuntimeContext-CIGtSNKh.js",
+      "_AddSectionModal-DEvtvdnS.js"
     ],
     "css": [
       "assets/section-preview-DFoc5lP8.css"
