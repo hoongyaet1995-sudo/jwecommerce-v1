@@ -23,6 +23,13 @@ final class ShellDesign
         return $whiteRatio >= $darkRatio ? '#ffffff' : '#151515';
     }
 
+    public static function footerColor(mixed $value): ?string
+    {
+        return is_string($value) && preg_match('/\A#[a-f0-9]{6}\z/i', $value) === 1
+            ? strtolower($value)
+            : null;
+    }
+
     public static function defaults(string $business = 'commerce'): array
     {
         return ['business' => $business, 'style' => 'editorial', 'appearance' => 'light',
@@ -36,12 +43,17 @@ final class ShellDesign
         if (! is_array($value)) return null;
         $resolved=array_replace(self::defaults($value['business'] ?? 'commerce'),$value);
         foreach (['brandName','brandLogo','ctaLabel','ctaUrl','tagline','contactEmail'] as $field) $resolved[$field]=(string)($resolved[$field]??'');
+        foreach (['footerBackground', 'footerText'] as $field) {
+            if (array_key_exists($field, $resolved)) {
+                $resolved[$field] = self::footerColor($resolved[$field]);
+            }
+        }
         return $resolved;
     }
 
     public static function rules(string $prefix = 'shellDesign'): array
     {
-        return [$prefix => ['sometimes', 'array:brandName,brandLogo,business,style,appearance,showAnnouncement,showAccount,showCurrency,showThemeSwitch,ctaLabel,ctaUrl,tagline,contactEmail,footerLayout'],
+        return [$prefix => ['sometimes', 'array:brandName,brandLogo,business,style,appearance,showAnnouncement,showAccount,showCurrency,showThemeSwitch,ctaLabel,ctaUrl,tagline,contactEmail,footerLayout,footerBackground,footerText'],
             "$prefix.brandName" => ['nullable','string','max:100'],
             "$prefix.brandLogo" => ['nullable','string','max:2048'],
             "$prefix.business" => ['required_with:'.$prefix, 'in:commerce,service'],
@@ -54,6 +66,8 @@ final class ShellDesign
             "$prefix.ctaLabel" => ['nullable', 'string', 'max:80'],
             "$prefix.ctaUrl" => ['nullable', 'string', 'max:2048'],
             "$prefix.tagline" => ['nullable', 'string', 'max:255'],
+            "$prefix.footerBackground" => ['nullable', 'string', 'regex:/\A#[a-f0-9]{6}\z/i'],
+            "$prefix.footerText" => ['nullable', 'string', 'regex:/\A#[a-f0-9]{6}\z/i'],
             "$prefix.footerLayout" => ['sometimes', 'in:classic,compact'],
             "$prefix.contactEmail" => ['nullable', 'email', 'max:255']];
     }

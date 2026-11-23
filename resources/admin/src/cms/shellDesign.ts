@@ -3,6 +3,7 @@ export interface ShellDesign {
  business:'commerce'|'service';style:'editorial'|'soft'|'modern';appearance:'light'|'dark';
  showAnnouncement:boolean;showAccount:boolean;showCurrency:boolean;showThemeSwitch:boolean;
  ctaLabel:string;ctaUrl:string;tagline:string;contactEmail:string;footerLayout?:'classic'|'compact';
+ footerBackground?:string|null;footerText?:string|null;
 }
 export const shellDesignDefaults=(business:ShellDesign['business']='commerce'):ShellDesign=>({business,style:'editorial',appearance:'light',brandName:'',brandLogo:'',showAnnouncement:false,showAccount:false,showCurrency:false,showThemeSwitch:false,ctaLabel:'',ctaUrl:'',tagline:'',contactEmail:'',footerLayout:'classic'});
 export const resolveShellDesign=(global:ShellDesign|undefined,page?:ShellDesign)=>global??page;
@@ -10,5 +11,5 @@ export const shellStyleChoices=[{id:'editorial',name:'Editorial',description:'Ph
 export function isShellDesign(value:unknown):value is ShellDesign {
  if(!value||typeof value!=='object'||Array.isArray(value))return false;
  const v=value as Record<string,unknown>;
- return (v.footerLayout===undefined||v.footerLayout==='classic'||v.footerLayout==='compact')&&['brandName','brandLogo'].every(k=>v[k]===undefined||typeof v[k]==='string')&&['commerce','service'].includes(String(v.business))&&['editorial','soft','modern'].includes(String(v.style))&&['light','dark'].includes(String(v.appearance))&&['showAnnouncement','showAccount','showCurrency','showThemeSwitch'].every(k=>typeof v[k]==='boolean')&&['ctaLabel','ctaUrl','tagline','contactEmail'].every(k=>typeof v[k]==='string');
+ return (v.footerLayout===undefined||v.footerLayout==='classic'||v.footerLayout==='compact')&&['footerBackground','footerText'].every(k=>v[k]==null||(typeof v[k]==='string'&&/^#[a-f0-9]{6}$/i.test(v[k])))&&['brandName','brandLogo'].every(k=>v[k]===undefined||typeof v[k]==='string')&&['commerce','service'].includes(String(v.business))&&['editorial','soft','modern'].includes(String(v.style))&&['light','dark'].includes(String(v.appearance))&&['showAnnouncement','showAccount','showCurrency','showThemeSwitch'].every(k=>typeof v[k]==='boolean')&&['ctaLabel','ctaUrl','tagline','contactEmail'].every(k=>typeof v[k]==='string');
 }

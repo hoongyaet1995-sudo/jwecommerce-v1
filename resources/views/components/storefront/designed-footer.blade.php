@@ -12,9 +12,11 @@
     if (!is_string($footerContrast) || !preg_match('/^#[a-f0-9]{6}$/i', $footerContrast)) $footerContrast = '#0d1b18';
     if (!is_string($footerPaper) || !preg_match('/^#[a-f0-9]{6}$/i', $footerPaper)) $footerPaper = '#ffffff';
     $footerInk = \App\Domain\Cms\ShellDesign::footerForeground($footerContrast);
+    $footerBackground = \App\Domain\Cms\ShellDesign::footerColor($design['footerBackground'] ?? null) ?? $footerContrast;
+    $footerText = \App\Domain\Cms\ShellDesign::footerColor($design['footerText'] ?? null) ?? $footerInk;
 @endphp
 <link rel="stylesheet" href="{{ asset('css/cms-footer-design.css') }}?v={{ filemtime(public_path('css/cms-footer-design.css')) }}">
-<div class="cms-footer-region" style="--cms-shell-contrast:{{ $footerContrast }};--cms-shell-oncontrast:{{ $footerInk }};--cms-shell-paper:{{ $footerPaper }}">
+<div class="cms-footer-region" data-footer-palette-background="{{ $footerContrast }}" data-footer-palette-text="{{ $footerInk }}" style="--cms-shell-contrast:{{ $footerBackground }};--cms-shell-oncontrast:{{ $footerText }};--cms-shell-paper:{{ $footerPaper }}">
 <footer data-shell-footer data-shell-appearance="light" data-shell-business="{{ $design['business'] }}" data-shell-style="unified" @if($compact) data-footer-layout="compact" @endif class="jw-shell-footer cms-footer">
     <div class="cms-footer-intro">
         <section><a href="{{ route('storefront.home') }}" class="cms-footer-brand">{{ $footerBrand }}</a>@if(filled($design['tagline']))<p class="cms-footer-description">{{ $design['tagline'] }}</p>@endif @if($compact && filled($design['contactEmail']))<div class="cms-footer-contact"><a href="mailto:{{ $design['contactEmail'] }}">{{ $design['contactEmail'] }}</a></div>@endif</section>

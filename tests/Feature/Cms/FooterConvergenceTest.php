@@ -21,6 +21,25 @@ final class FooterConvergenceTest extends TestCase {
   $this->getJson('/admin/api/storefront-shell-settings')->assertOk()->assertJsonPath('shellDesign.ctaLabel','Preserved header action')->assertJsonPath('shellDesign.style','soft')->assertJsonPath('shellDesign.appearance','dark')->assertJsonPath('shellDesign.contactEmail','hello@example.test')->assertJsonPath('shellDesign.footerLayout','compact');
  }
 
+ public function test_footer_colors_save_independently_and_reset_to_the_page_palette():void {
+  $service=app(\App\Services\StorefrontShellSettingsService::class);
+  $settings=$service->live();
+  $settings['shellDesign']=array_replace(ShellDesign::defaults('service'),['footerLayout'=>'compact','footerBackground'=>'#342052','footerText'=>'#F0E000']);
+  $this->actingAs(\App\Models\User::factory()->create(['is_admin'=>true]))->putJson('/admin/api/storefront-shell-settings',$settings)->assertOk();
+  $this->getJson('/admin/api/storefront-shell-settings')->assertOk()->assertJsonPath('shellDesign.footerBackground','#342052')->assertJsonPath('shellDesign.footerText','#f0e000');
+  $render=fn()=>view('components.storefront.designed-footer',[
+   'design'=>$service->live()['shellDesign'],'footerSections'=>collect(),'shopBrandName'=>'Merchant',
+   'navigationContext'=>['page'=>['document'=>['style'=>['palette'=>['contrast'=>'#18232b']]]]],
+  ])->render();
+  $this->assertStringContainsString('--cms-shell-contrast:#342052;--cms-shell-oncontrast:#f0e000',$render());
+  $settings['shellDesign']['footerText']=null;
+  $this->putJson('/admin/api/storefront-shell-settings',$settings)->assertOk();
+  $this->assertStringContainsString('--cms-shell-contrast:#342052;--cms-shell-oncontrast:#ffffff',$render());
+  $settings['shellDesign']['footerBackground']=null;
+  $this->putJson('/admin/api/storefront-shell-settings',$settings)->assertOk();
+  $this->assertStringContainsString('--cms-shell-contrast:#18232b;--cms-shell-oncontrast:#ffffff',$render());
+ }
+
  public function test_compact_moves_only_the_legal_group_to_the_bottom():void {
   $group=new MenuItem(['label'=>'Legal','is_active'=>true]);
   $group->setRelation('children',collect([new MenuItem(['label'=>'Privacy Policy','url'=>'/pages/privacy-policy','is_active'=>true])]));
