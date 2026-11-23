@@ -23,11 +23,12 @@ export function TypographySettings(props:TypographyProps){
      <ImageChoiceDropdown label={props.scope==='page'?'Editing':'Text role'} fullWidthOverlay={props.scope!=='page'} value={role} options={roles.map(value=>[value,label(value)])}
        icon={index=><span aria-hidden className="w-5 shrink-0 text-center font-semibold text-neutral-500 dark:text-neutral-300">{glyphs[roles[index]]??'Aa'}</span>}
        onChange={value=>props.onSelectRole(value as TextRole)}/>
+     {props.renderCopyEditor?.(role)}
      <TypographyRoleSettings key={role} {...props} role={role}/>
    </div>
  </details>;
 }
-type RoleProps={colorItemId?:string;renderedText?:RenderedText;preserveLayout?:boolean;scope?:'page'|'section';availableRoles?:TextRole[];inheritedTypography?:SectionTypography;inheritedPalette?:BrandPalette;section:PageSection;onChange:(section:PageSection)=>void;selectedRole?:TextRole;onSelectRole:(role:TextRole)=>void};
+type RoleProps={renderCopyEditor?:(role:TextRole)=>React.ReactNode;colorItemId?:string;renderedText?:RenderedText;preserveLayout?:boolean;scope?:'page'|'section';availableRoles?:TextRole[];inheritedTypography?:SectionTypography;inheritedPalette?:BrandPalette;section:PageSection;onChange:(section:PageSection)=>void;selectedRole?:TextRole;onSelectRole:(role:TextRole)=>void};
 function TypographyRoleSettings({colorItemId,renderedText,section,onChange,role,inheritedTypography,inheritedPalette,preserveLayout=false,scope='section'}:RoleProps & {role:TextRole}){
 
  const local=section.typography?.[role]??(legacyTypographyRoles(section).includes(role as any)?section.typography?.eyebrow:undefined)??{};

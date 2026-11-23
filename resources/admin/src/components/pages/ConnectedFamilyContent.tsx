@@ -5,12 +5,10 @@ import type {ConnectedItem,ConnectedSection} from '../../cms/connectedFamilies';
 import {connectedPassport,connectedEntryFields} from '../../cms/connectedFamilies';
 import {ContentDisclosure} from './ContentDisclosure';
 import {InspectorDeleteButton} from './InspectorDeleteButton';
-import {rebaseTitleRanges,setTitleRange} from '../../cms/titleEmphasisRanges';
-const toolbarButtonClass='rounded-lg border border-neutral-200 px-2.5 py-1.5 text-xs hover:bg-neutral-100 disabled:opacity-40 dark:border-neutral-700 dark:hover:bg-neutral-800';
+import {SectionTitleEditor} from './SectionTitleEditor';
 const inputClass='w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900';
 type AssetTarget={id:string;url:string};
 export function ConnectedFamilyContent({section,onChange,assetControl}:{section:PageSection;onChange:(section:PageSection)=>void;assetControl?:(target:AssetTarget)=>React.ReactNode}){
- const titleInput=React.useRef<HTMLTextAreaElement>(null);const [selection,setSelection]=React.useState({start:0,end:0});
  const [selectedIllustration,setSelectedIllustration]=React.useState('');
  const s=section as ConnectedSection,meta=connectedPassport(s);if(!meta)return null;
  const patch=(change:Partial<ConnectedSection>)=>onChange({...s,...change});
@@ -36,7 +34,7 @@ export function ConnectedFamilyContent({section,onChange,assetControl}:{section:
   items:items.filter(item=>item.id!==id),
   imageSlots:s.imageSlots?.filter(slot=>!slot.target.startsWith(`item:${id}:`)),
  });
- const titleEditor=<div className="space-y-2"><label className="block space-y-1 text-xs font-medium"><span>Title</span><textarea ref={titleInput} data-inspector-field="title" aria-label="Title" className={inputClass} value={s.title} rows={3} onSelect={event=>setSelection({start:event.currentTarget.selectionStart,end:event.currentTarget.selectionEnd})} onChange={event=>patch({title:event.target.value,...(s.titleEmphasis?{titleEmphasis:rebaseTitleRanges(s.title,event.target.value,s.titleEmphasis)}:{})})}/></label><div className="flex gap-2 text-xs"><button type="button" className={toolbarButtonClass} disabled={selection.end<=selection.start} onClick={()=>patch({titleEmphasis:setTitleRange(s.titleEmphasis??[],selection.start,selection.end,true,s.title.length)})}>Emphasis</button><button type="button" className={toolbarButtonClass} disabled={selection.end<=selection.start} onClick={()=>patch({titleEmphasis:setTitleRange(s.titleEmphasis??[],selection.start,selection.end,false,s.title.length)})}>Clear</button><button type="button" className={toolbarButtonClass} onClick={()=>patch({titleEmphasis:undefined})}>Restore layout style</button></div></div>;
+ const titleEditor=<SectionTitleEditor key={s.id} section={s} onChange={onChange}/>;
  return <div className="space-y-3" data-connected-content>
   {!!sectionFields.length&&<ContentDisclosure title="Text & headings">{sectionFields.map(key=><React.Fragment key={key}>{key==='title'?titleEditor:field(key==='eyebrow'?'Eyebrow':key==='content'?'Description':key,(s as unknown as Record<string,unknown>)[key],value=>patch({[key]:value}),key==='content',key)}</React.Fragment>)}</ContentDisclosure>}
   {meta.sectionFields.includes('mediaUrl')&&<ContentDisclosure title="Images">{image('mediaUrl',s.mediaUrl??'',value=>patch({mediaUrl:value}))}{field('Alt text',s.mediaAlt,value=>patch({mediaAlt:value}))}</ContentDisclosure>}
