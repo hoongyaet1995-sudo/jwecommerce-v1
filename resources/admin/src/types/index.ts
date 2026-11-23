@@ -869,6 +869,7 @@ export interface PageSection {
 }
 
 export interface CmsPage {
+  publishedSlug?: string | null;
   seoSettings?: {titleLocked:boolean;descriptionLocked:boolean;excluded:boolean};
   isHomepage?: boolean;
   id: string;

@@ -182,6 +182,7 @@ class PageApiController extends Controller
             'status' => $page->status,
             'lockVersion' => $draft->lock_version,
             'hasPublishedSnapshot' => $published !== null,
+            'publishedSlug' => $published?->slug,
             'hasUnpublishedChanges' => $this->hasUnpublishedChanges($draft, $published),
             'createdAt' => $page->created_at?->toDateString(),
             'updatedAt' => $draft->updated_at?->toDateString(),

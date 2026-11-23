@@ -144,7 +144,15 @@ export const PageAdmin: React.FC = () => {
   // Mode state: null = Page Directory, non-null = Editing that Page ID
   const [historyOpen,setHistoryOpen]=useState(false);
   const aiHistorySource=useRef(false);
-  const [editingPageId, setEditingPageId] = useState<string | null>(selectedPageId || null);
+  const [editingPageId, setEditingPageId] = useState<string | null>(() =>
+    new URLSearchParams(window.location.search).get('edit') || selectedPageId,
+  );
+  const setEditorAddress = (pageId: string | null) => {
+    const url = new URL(window.location.href);
+    if (pageId) url.searchParams.set('edit', pageId);
+    else url.searchParams.delete('edit');
+    window.history.replaceState(window.history.state, '', url);
+  };
   const [selectedElement,setSelectedElement]=useState<{sectionId:string;target:string;role?:string;itemId?:string;revision:number}|null>(null);
   const selectElement=(sectionId:string,target:string,role?:string,itemId?:string)=>{setActiveSectionId(sectionId);setIsInspectorCollapsed(false);setSelectedElement(previous=>({sectionId,target,role,itemId,revision:(previous?.revision??0)+1}));};
   const [promotionOffers,setPromotionOffers]=useState<PromotionOffer[]>([]);
@@ -492,6 +500,7 @@ export const PageAdmin: React.FC = () => {
         adoptAutosave(page.id, controller);
         setEditingPageId(page.id);
         setSelectedPageId(page.id);
+        setEditorAddress(page.id);
         setActiveSectionId(hydrated.sections[0]?.id ?? null);
         if (takeover.openPreview) setIsPreviewModalOpen(true);
         return;
@@ -525,6 +534,8 @@ export const PageAdmin: React.FC = () => {
         const hydrated = pageFromDraft(currentPage, draft);
         replacePageLocal(hydrated);
         ownAutosave(editingPageId, draft.lockVersion);
+        setSelectedPageId(editingPageId);
+        setActiveSectionId(previous => previous ?? hydrated.sections[0]?.id ?? null);
       })
       .catch(error => {
         if (active) reportSaveFailure(error);
@@ -697,6 +708,7 @@ export const PageAdmin: React.FC = () => {
     disposeCurrentAutosave();
     setSelectedPageId(null);
     setEditingPageId(null);
+    setEditorAddress(null);
     setActiveSectionId(null);
   };
 
@@ -1083,20 +1095,37 @@ export const PageAdmin: React.FC = () => {
                     </h3>
                   </div>
 
-                  {page.isHomepage ? (
-                    <div className="flex items-center gap-1.5 mb-2 flex-wrap">
-                      <span className="text-xs font-mono font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/70 px-2 py-0.5 rounded-md border border-indigo-200 dark:border-indigo-800/80 flex items-center gap-1">
-                        <Home className="w-3 h-3" />
-                        / (index.php)
-                      </span>
-                      <span className="text-[11px] font-mono text-neutral-400">
-                        slug: /pages/{page.slug}
-                      </span>
+                  {page.status === 'published' && (page.isHomepage || page.publishedSlug) ? (
+                    <div className="mb-2 flex items-center gap-2">
+                      <a
+                        href={page.isHomepage ? '/' : `/pages/${encodeURIComponent(page.publishedSlug!)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="Open storefront page"
+                        className="min-w-0 truncate font-mono text-xs text-indigo-600 underline dark:text-indigo-400"
+                      >
+                        {page.isHomepage ? '/ (Home)' : `/pages/${page.publishedSlug}`}
+                      </a>
+                      <button
+                        type="button"
+                        aria-label="Copy storefront URL"
+                        title="Copy storefront URL"
+                        className="shrink-0 rounded-md p-1 text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                        onClick={async () => {
+                          const path = page.isHomepage ? '/' : `/pages/${encodeURIComponent(page.publishedSlug!)}`;
+                          try {
+                            await navigator.clipboard.writeText(new URL(path, window.location.origin).href);
+                            addToast({type:'success',title:'Storefront URL copied',message:'The published link is on your clipboard.'});
+                          } catch {
+                            addToast({type:'warning',title:'Could not copy URL',message:'Open the storefront link to copy it from the address bar.'});
+                          }
+                        }}
+                      >
+                        <Copy className="h-3.5 w-3.5" aria-hidden="true" />
+                      </button>
                     </div>
                   ) : (
-                    <p className="text-xs font-mono text-neutral-400 dark:text-neutral-500 mb-2">
-                      /pages/{page.slug}
-                    </p>
+                    <p className="mb-2 font-mono text-xs text-neutral-400 dark:text-neutral-500">/pages/{page.slug}</p>
                   )}
 
                   <p className="text-xs text-neutral-500 dark:text-neutral-400 line-clamp-2 leading-relaxed mb-4">
@@ -1153,7 +1182,7 @@ export const PageAdmin: React.FC = () => {
                         void hydrateEditor(page, true);
                       }}
                       className="p-2 rounded-xl text-neutral-500 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
-                      title="Preview Live Page"
+                      title="Preview draft"
                     >
                       <Eye className="w-4 h-4" />
                     </button>
