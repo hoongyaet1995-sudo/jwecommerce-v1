@@ -126,7 +126,7 @@ Learn more: https://react.dev/warnings/version-mismatch`))}hV();function yV(e,o)
 `,n("div",{className:"dark-panel"},`
 `,n("div",{className:"platform-intro"},`
 `,n(I,{section:e}),`
-`,e.title?n("h2",{"data-cms-text":"title",style:{...h(e,"title")}},e.titleEmphasis?.length?n(Fe,{section:e}):n(v,{value:e.title,original:"Your website, commerce and customer conversations should work together. Create a clearer path from first visit to the next order."},"Your website, commerce and customer conversations should work together. Create a clearer path from first visit to ",n("em",{},"the next order."))):null,`
+`,e.title?n("h2",{"data-cms-text":"title",style:{...h(e,"title")}},e.titleEmphasis?.length?n(Fe,{section:e}):e.title):null,`
 `,n("div",{className:"senior-note"},`
 `,n("div",{"aria-hidden":"true",className:"avatar-stack"},n("span",{},y(e,"tabs-composition-1-label-0")?.description),n("span",{},y(e,"tabs-composition-1-label-1")?.description),n("span",{},y(e,"tabs-composition-1-label-2")?.description)),`
 `,e.content?n("p",{"data-cms-text":"content",style:{...h(e,"content")}},n(v,{value:e.content,original:"Websites, commerce and AI, shaped around the way your team works."},"Websites, commerce and AI, shaped around the way your team works.")):null,`
@@ -422,7 +422,7 @@ Learn more: https://react.dev/warnings/version-mismatch`))}hV();function yV(e,o)
 `,n("div",{className:"subpage-hero-shell"},`
 `,n("div",{className:"subpage-hero-copy"},`
 `,n(I,{section:e}),`
-`,e.title?n("h1",{"data-cms-text":"title",style:{...h(e,"title")}},e.titleEmphasis?.length?n(Fe,{section:e}):n(v,{value:e.title,original:"A stronger presence. A clearer path to purchase."},"A stronger presence. A clearer ",n("em",{},"path to purchase."))):null,`
+`,e.title?n("h1",{"data-cms-text":"title",style:{...h(e,"title")}},e.titleEmphasis?.length?n(Fe,{section:e}):e.title):null,`
 `,e.content?n("p",{"data-cms-text":"content",style:{...h(e,"content")}},n(v,{value:e.content,original:"Present products and services, offer purchase or quotation paths, and give your team a clearer view of orders and customer enquiries."},"Present products and services, offer purchase or quotation paths, and give your team a clearer view of orders and customer enquiries.")):null,`
 `,n("div",{className:"hero-actions subpage-actions"},`
 `,e.buttonText?n("a",{className:"button button-dark",rel:"noopener",target:"_blank",href:j(e.buttonLink||"")||void 0,onClick:s=>yt(s,e.buttonLink,o),"data-cms-button":"primary","data-cms-button-kind":"button","data-cms-action":"button"},n(v,{value:e.buttonText,original:"Request a demo"},"Request a demo",n("span",{},n("img",{alt:"",src:"/cms/connected/assets/icons/arrow-top-right.svg"})))):null,`
@@ -501,7 +501,7 @@ Learn more: https://react.dev/warnings/version-mismatch`))}hV();function yV(e,o)
 `,n("div",{className:"subpage-hero-shell service-hero-shell"},`
 `,n("div",{className:"subpage-hero-copy"},`
 `,n(I,{section:e}),`
-`,e.title?n("h1",{"data-cms-text":"title",style:{...h(e,"title")}},e.titleEmphasis?.length?n(Fe,{section:e}):n(v,{value:e.title,original:"Your business data. Working together."},"Your business ",n("em",{},"data. Working together."))):null,`
+`,e.title?n("h1",{"data-cms-text":"title",style:{...h(e,"title")}},e.titleEmphasis?.length?n(Fe,{section:e}):e.title):null,`
 `,e.content?n("p",{"data-cms-text":"content",style:{...h(e,"content")}},n(v,{value:e.content,original:"Bring catalogue, stock, orders and customer context into a more consistent workflow. Agree each connection around your operation."},"Bring catalogue, stock, orders and customer context into a more consistent workflow. Agree each connection around your operation.")):null,`
 `,n("div",{className:"hero-actions subpage-actions"},`
 `,e.buttonText?n("a",{className:"button button-dark",rel:"noopener",target:"_blank",href:j(e.buttonLink||"")||void 0,onClick:s=>yt(s,e.buttonLink,o),"data-cms-button":"primary","data-cms-button-kind":"button","data-cms-action":"button"},n(v,{value:e.buttonText,original:"Request a demo"},"Request a demo",n("span",{},n("img",{alt:"",src:"/cms/connected/assets/icons/arrow-top-right.svg"})))):null,`
@@ -803,7 +803,7 @@ Learn more: https://react.dev/warnings/version-mismatch`))}hV();function yV(e,o)
 `,n("div",{className:"subpage-hero-shell service-hero-shell"},`
 `,n("div",{className:"subpage-hero-copy"},`
 `,n(I,{section:e}),`
-`,e.title?n("h1",{"data-cms-text":"title",style:{...h(e,"title")}},e.titleEmphasis?.length?n(Fe,{section:e}):n(v,{value:e.title,original:"Software that fits the way you work."},"Software that fits the ",n("em",{},"way you work."))):null,`
+`,e.title?n("h1",{"data-cms-text":"title",style:{...h(e,"title")}},e.titleEmphasis?.length?n(Fe,{section:e}):e.title):null,`
 `,e.content?n("p",{"data-cms-text":"content",style:{...h(e,"content")}},n(v,{value:e.content,original:"Map the process, clarify the rules and plan the right integration. Build a practical first version around the people who will use it."},"Map the process, clarify the rules and plan the right integration. Build a practical first version around the people who will use it.")):null,`
 `,n("div",{className:"hero-actions subpage-actions"},`
 `,e.buttonText?n("a",{className:"button button-dark",rel:"noopener",target:"_blank",href:j(e.buttonLink||"")||void 0,onClick:s=>yt(s,e.buttonLink,o),"data-cms-button":"primary","data-cms-button-kind":"button","data-cms-action":"button"},n(v,{value:e.buttonText,original:"Request a demo"},"Request a demo",n("span",{},n("img",{alt:"",src:"/cms/connected/assets/icons/arrow-top-right.svg"})))):null,`
@@ -949,7 +949,7 @@ Learn more: https://react.dev/warnings/version-mismatch`))}hV();function yV(e,o)
 `,n("div",{className:"subpage-hero-shell live-hero-shell"},`
 `,n("div",{className:"subpage-hero-copy"},`
 `,n(I,{section:e}),`
-`,e.title?n("h1",{"data-cms-text":"title",style:{...h(e,"title")}},e.titleEmphasis?.length?n(Fe,{section:e}):n(v,{value:e.title,original:"Your brand. Ready for what comes next."},"Your brand. Ready for ",n("em",{},"what comes next."))):null,`
+`,e.title?n("h1",{"data-cms-text":"title",style:{...h(e,"title")}},e.titleEmphasis?.length?n(Fe,{section:e}):e.title):null,`
 `,e.content?n("p",{"data-cms-text":"content",style:{...h(e,"content")}},n(v,{value:e.content,original:"Turn business and product information into channel-ready drafts. Review copy and creative, keep the original, and plan publishing separately."},"Turn business and product information into channel-ready drafts. Review copy and creative, keep the original, and plan publishing separately.")):null,`
 `,n("div",{className:"hero-actions subpage-actions"},`
 `,e.buttonText?n("a",{className:"button button-dark",rel:"noopener",target:"_blank",href:j(e.buttonLink||"")||void 0,onClick:s=>yt(s,e.buttonLink,o),"data-cms-button":"primary","data-cms-button-kind":"button","data-cms-action":"button"},n(v,{value:e.buttonText,original:"Request a demo"},"Request a demo",n("span",{},n("img",{alt:"",src:"/cms/connected/assets/icons/arrow-top-right.svg"})))):null,`
@@ -1186,7 +1186,7 @@ Learn more: https://react.dev/warnings/version-mismatch`))}hV();function yV(e,o)
 `,n("div",{className:"subpage-hero-shell multichannel-hero-shell"},`
 `,n("div",{className:"subpage-hero-copy"},`
 `,n(I,{section:e}),`
-`,e.title?n("h1",{"data-cms-text":"title",style:{...h(e,"title")}},e.titleEmphasis?.length?n(Fe,{section:e}):n(v,{value:e.title,original:"Different storefronts. One operational view."},"Different storefronts. ",n("em",{},"One operational view."))):null,`
+`,e.title?n("h1",{"data-cms-text":"title",style:{...h(e,"title")}},e.titleEmphasis?.length?n(Fe,{section:e}):e.title):null,`
 `,e.content?n("p",{"data-cms-text":"content",style:{...h(e,"content")}},n(v,{value:e.content,original:"Review your channels, map products and SKUs, and plan stock and order workflows around supported accounts and permissions."},"Review your channels, map products and SKUs, and plan stock and order workflows around supported accounts and permissions.")):null,`
 `,n("div",{className:"hero-actions subpage-actions"},`
 `,e.buttonText?n("a",{className:"button button-dark",rel:"noopener",target:"_blank",href:j(e.buttonLink||"")||void 0,onClick:s=>yt(s,e.buttonLink,o),"data-cms-button":"primary","data-cms-button-kind":"button","data-cms-action":"button"},n(v,{value:e.buttonText,original:"Request a demo"},"Request a demo",n("span",{},n("img",{alt:"",src:"/cms/connected/assets/icons/arrow-top-right.svg"})))):null,`
@@ -1441,7 +1441,7 @@ Learn more: https://react.dev/warnings/version-mismatch`))}hV();function yV(e,o)
 `,n("div",{className:"subpage-hero-shell service-hero-shell"},`
 `,n("div",{className:"subpage-hero-copy"},`
 `,n(I,{section:e}),`
-`,e.title?n("h1",{"data-cms-text":"title",style:{...h(e,"title")}},e.titleEmphasis?.length?n(Fe,{section:e}):n(v,{value:e.title,original:"Your business. Beautifully presented."},"Your ",n("em",{},"business. Beautifully presented."))):null,`
+`,e.title?n("h1",{"data-cms-text":"title",style:{...h(e,"title")}},e.titleEmphasis?.length?n(Fe,{section:e}):e.title):null,`
 `,e.content?n("p",{"data-cms-text":"content",style:{...h(e,"content")}},n(v,{value:e.content,original:"Build your business website with editable sections, your own imagery and clear customer actions. Preview each device before you publish."},"Build your business website with editable sections, your own imagery and clear customer actions. Preview each device before you publish.")):null,`
 `,n("div",{className:"hero-actions subpage-actions"},`
 `,e.buttonText?n("a",{className:"button button-dark",rel:"noopener",target:"_blank",href:j(e.buttonLink||"")||void 0,onClick:s=>yt(s,e.buttonLink,o),"data-cms-button":"primary","data-cms-button-kind":"button","data-cms-action":"button"},n(v,{value:e.buttonText,original:"Request a demo"},"Request a demo",n("span",{},n("img",{alt:"",src:"/cms/connected/assets/icons/arrow-top-right.svg"})))):null,`

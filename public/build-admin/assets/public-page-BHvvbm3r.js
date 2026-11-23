@@ -1,0 +1,1 @@
+import{bU as s,bT as a,j as t,r,an as n,bV as i,bW as c}from"./PageRuntimeContext-Dop9-vWb.js";/* empty css              */const o=document.getElementById("cms-page-root");if(o){const e=s();a.createRoot(o).render(t.jsx(r.StrictMode,{children:e?t.jsx(n,{payload:e,children:t.jsx(i,{sections:e.page.document.sections,mode:e.context.mode})}):t.jsx(c,{})}))}
