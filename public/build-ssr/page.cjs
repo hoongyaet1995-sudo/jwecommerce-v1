@@ -522,7 +522,7 @@ Learn more: https://react.dev/warnings/version-mismatch`))}hV();function yV(e,o)
 `),`
 `,e.content?n("p",{"data-cms-text":"content",style:{...h(e,"content")}},n(v,{value:e.content,original:"Give your team useful customer context while keeping permissions clear."},"Give your team useful customer context while keeping permissions clear.")):null,`
 `),`
-`,n("div",{"data-collection-count":O(e,"c0").length,className:"service-highlight-grid"+(O(e,"c0").length!==4?" sample-collection-reflow":"")},`
+`,n("div",{"data-collection-count":O(e,"c0").length,className:"service-highlight-grid service-highlight-grid-icon-tiles"+(O(e,"c0").length!==4?" sample-collection-reflow":"")},`
 `,O(e,"c0").map(s=>{switch(s.layoutVariant??0){case 0:return n("article",{className:"",key:s.id,"data-cms-item":s.id},`
 `,n("span",{},y(e,"cards-composition-2-label-0")?.description),`
 `,n("img",{alt:"","aria-hidden":"true",className:"service-highlight-icon",src:"/cms/connected/assets/icons/inventory.svg"}),`

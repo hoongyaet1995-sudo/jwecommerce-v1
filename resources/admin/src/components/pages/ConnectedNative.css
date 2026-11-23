@@ -1360,9 +1360,11 @@ h1, h2, h3,
 .service-highlight-grid article:nth-child(4) > span { background: var(--accent); }
 .service-page-wms .service-highlight-grid article > span { width: 50px; height: 50px; font-size: 21px; font-weight: 800; }
 .service-page-omnichannel .service-highlight-grid article { position: relative; }
+.service-highlight-grid-icon-tiles article { position: relative; }
 .service-page-omnichannel .service-highlight-grid article > span { width: 48px; height: 48px; font-size: 19px; font-weight: 800; }
 .service-page-omnichannel .service-highlight-icon { position: absolute; top: 28px; right: 28px; width: 58px; height: 58px; padding: 12px; border-radius: 16px; background: rgba(255,255,255,.82); object-fit: contain; }
 .service-page-omnichannel .service-highlight-grid article:nth-child(4) .service-highlight-icon { background: var(--paint-ffffff,#fff); }
+.service-highlight-grid-icon-tiles .service-highlight-icon { position: absolute; inset-block-start: 28px; inset-inline-end: 28px; box-sizing: border-box; width: 58px; height: 58px; padding: 12px; border-radius: 16px; background: #faf9fc; object-fit: contain; }
 .service-highlight-grid h3 { margin: auto 0 14px; font-size: 30px; font-weight: 600; letter-spacing: -.045em; line-height: 1.05; }
 .service-highlight-grid p { margin: 0; color: #59605c; font-size: 16px; line-height: 1.5; }.service-highlight-grid article:nth-child(4) p { color: #aeb7b3; }
 .service-story-section { display: grid; gap: 115px; }
