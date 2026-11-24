@@ -246,6 +246,30 @@ final class PagePublicationApiTest extends TestCase
         $this->assertDatabaseCount('page_documents', 4);
     }
 
+    public function test_slug_rename_keeps_the_old_public_path_until_publish_and_reserves_its_redirect(): void
+    {
+        $original = $this->document('original-marketplace-path', 'Marketplace');
+        $page = $this->canonicalPage($original);
+        $this->actingAs($this->admin())
+            ->postJson(route('admin.api.pages.publish', $page), ['lockVersion' => 1])
+            ->assertOk();
+
+        $updated = [...$original, 'slug' => 'new-marketplace-path'];
+        $draft = app(\App\Domain\Cms\PageDraftService::class)->save($page, $updated, 1);
+        $this->assertSame('new-marketplace-path', $page->fresh()->draftDocument->slug);
+        $this->assertSame('original-marketplace-path', $page->fresh()->publishedDocument->slug);
+        $this->assertDatabaseMissing('search_redirects', ['from_path' => '/pages/original-marketplace-path']);
+
+        $this->postJson(route('admin.api.pages.publish', $page), ['lockVersion' => $draft->lock_version])->assertOk();
+        $this->get('/pages/original-marketplace-path')->assertStatus(301)->assertRedirect('/pages/new-marketplace-path');
+
+        $another = $this->canonicalPage($original);
+        $this->postJson(route('admin.api.pages.publish', $another), ['lockVersion' => 1])
+            ->assertUnprocessable()
+            ->assertJsonPath('errors.slug.0', 'This slug is reserved by a redirect for another page.');
+        $this->get('/pages/original-marketplace-path')->assertStatus(301)->assertRedirect('/pages/new-marketplace-path');
+    }
+
     public function test_published_slug_unique_race_is_translated_after_preflight_and_rolls_back(): void
     {
         $raceOwner = $this->canonicalPage($this->document('race-owner-draft', 'Race owner'));

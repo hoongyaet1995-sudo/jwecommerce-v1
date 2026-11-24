@@ -9,6 +9,7 @@ use App\Models\Page;
 use App\Models\PageDocument;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 
 final class PagePublicationService
@@ -59,6 +60,14 @@ final class PagePublicationService
                 $this->assertPublishedSlugAvailable($lockedPage, $draft->slug);
 
                 $previousSlug=PageDocument::where('page_id',$lockedPage->id)->where('stage','published')->value('slug');
+                if ($previousSlug !== $draft->slug && Schema::hasTable('search_redirects')) {
+                    $redirect = DB::table('search_redirects')->where('from_path', '/pages/'.$draft->slug)->first();
+                    if ($redirect && ($redirect->kind !== 'page' || (int) $redirect->entity_id !== (int) $lockedPage->id)) {
+                        throw CmsPublicationBlocked::withMessages([
+                            'slug' => ['This slug is reserved by a redirect for another page.'],
+                        ]);
+                    }
+                }
                 $published = PageDocument::query()->updateOrCreate(
                     [
                         'page_id' => $lockedPage->getKey(),
