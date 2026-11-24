@@ -2,7 +2,7 @@ import React from 'react';
 import {Plus} from 'lucide-react';
 import type {PageSection} from '../../types';
 import type {ConnectedItem,ConnectedSection} from '../../cms/connectedFamilies';
-import {connectedPassport,connectedEntryFields} from '../../cms/connectedFamilies';
+import {connectedPassport,connectedEntryFields,isConnectedCardOrdinalSlot} from '../../cms/connectedFamilies';
 import {ContentDisclosure} from './ContentDisclosure';
 import {InspectorDeleteButton} from './InspectorDeleteButton';
 import {SectionTitleEditor} from './SectionTitleEditor';
@@ -19,11 +19,12 @@ export function ConnectedFamilyContent({section,onChange,assetControl}:{section:
  const sectionFields=meta.sectionFields.filter(key=>!['mediaUrl','mediaAlt','buttonText','buttonLink','secondaryButtonText','secondaryButtonLink'].includes(key)).sort((a,b)=>['eyebrow','title','subtitle','leadText','content'].indexOf(a)-['eyebrow','title','subtitle','leadText','content'].indexOf(b));
  const image=(id:string,url:string,change:(v:string)=>void)=>assetControl?.({id,url})??field('Image URL',url,change);
  const move=(id:string,offset:number)=>{const next=[...items],from=next.findIndex(item=>item.id===id),item=next[from];if(!item)return;const peers=next.map((entry,index)=>({entry,index})).filter(({entry})=>entry.layoutGroup===item.layoutGroup),at=peers.findIndex(({entry})=>entry.id===id),to=peers[at+offset]?.index;if(to===undefined)return;[next[from],next[to]]=[next[to],next[from]];patch({items:next});};
- const illustrationCards=meta.details.flatMap(slot=>{
+ const illustrationSlots=meta.details.filter(slot=>!isConnectedCardOrdinalSlot(s.connectedDiagram,slot.slot));
+ const illustrationCards=illustrationSlots.flatMap(slot=>{
   const item=items.find(entry=>entry.layoutGroup==='details'&&entry.layoutSlot===slot.slot);
   return item?[{slot,item}]:[];
  });
- const availableIllustrations=meta.details.filter(slot=>!illustrationCards.some(card=>card.slot.slot===slot.slot));
+ const availableIllustrations=illustrationSlots.filter(slot=>!illustrationCards.some(card=>card.slot.slot===slot.slot));
  const availableIllustration=availableIllustrations.find(slot=>slot.slot===selectedIllustration)??availableIllustrations[0];
  const addIllustration=()=>{
   if(!availableIllustration)return;
@@ -39,7 +40,7 @@ export function ConnectedFamilyContent({section,onChange,assetControl}:{section:
   {!!sectionFields.length&&<ContentDisclosure title="Text & headings">{sectionFields.map(key=><React.Fragment key={key}>{key==='title'?titleEditor:field(key==='eyebrow'?'Eyebrow':key==='content'?'Description':key,(s as unknown as Record<string,unknown>)[key],value=>patch({[key]:value}),key==='content',key)}</React.Fragment>)}</ContentDisclosure>}
   {meta.sectionFields.includes('mediaUrl')&&<ContentDisclosure title="Images">{image('mediaUrl',s.mediaUrl??'',value=>patch({mediaUrl:value}))}{field('Alt text',s.mediaAlt,value=>patch({mediaAlt:value}))}</ContentDisclosure>}
   {(s.type==='faq_accordion'?[]:meta.groups).map(group=><ContentDisclosure key={group.id} title={group.label}>{items.filter(item=>item.layoutGroup===group.id).map((item,index)=><details key={item.id} data-inspector-item={item.id} className="rounded-lg border border-neutral-200 p-3 dark:border-neutral-700" open><summary className="text-sm font-medium">{item.title||`Item ${index+1}`}</summary><div className="mt-3 space-y-3">{connectedEntryFields(s,item).map(key=><React.Fragment key={key}>{key==='imageUrl'?image(`item:${item.id}:imageUrl`,item.imageUrl??'',value=>editItem(item.id,key,value)):field(key==='mediaAlt'?'Alt text':key==='linkUrl'?'Destination':key==='buttonText'?'Action label':key.replace(/([A-Z])/g,' $1'),(key==='mediaAlt'?itemAlt(item.id):(item as unknown as Record<string,unknown>)[key]),value=>editItem(item.id,key,value),key==='description')}</React.Fragment>)}<div className="flex items-center gap-2"><button type="button" className="text-xs" disabled={index===0} onClick={()=>move(item.id,-1)}>Move up</button><button type="button" className="text-xs" disabled={index===items.filter(entry=>entry.layoutGroup===group.id).length-1} onClick={()=>move(item.id,1)}>Move down</button><InspectorDeleteButton onClick={()=>patch({items:items.filter(entry=>entry.id!==item.id),imageSlots:s.imageSlots?.filter(slot=>!slot.target.startsWith(`item:${item.id}:`))})}/></div></div></details>)}<button type="button" className="text-sm font-medium text-indigo-600" disabled={items.filter(item=>item.layoutGroup===group.id).length>=group.max} onClick={()=>{const entry:ConnectedItem={id:`${s.id}-item-${globalThis.crypto?.randomUUID?.()??Date.now()}`,title:'',layoutGroup:group.id,layoutVariant:0};for(const key of connectedEntryFields(s,entry))if(key!=='mediaAlt')(entry as unknown as Record<string,unknown>)[key]='';patch({items:[...items,entry]});}}>Add item</button></ContentDisclosure>)}
-  {!!meta.details.length&&<ContentDisclosure title="Illustration labels" defaultOpen={false}>
+  {!!illustrationSlots.length&&<ContentDisclosure title="Illustration labels" defaultOpen={false}>
    <div className="flex items-center justify-between gap-2">
     <span className="text-xs font-semibold uppercase tracking-wide">Illustration labels ({illustrationCards.length})</span>
     <button type="button" className="inline-flex items-center gap-1 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-40" disabled={!availableIllustration} onClick={addIllustration}><Plus size={13} aria-hidden="true"/>Add Label</button>

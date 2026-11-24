@@ -39,3 +39,25 @@ it('numbers every orbit and sticky card by current order, including appended ent
 it('keeps edited native title emphasis nonempty and renders canonical range emphasis after a long append',()=>{
  const section=connectedPageSections('jw-connected-commerce',{},'emphasis')[0];section.title+=' with a much longer customer authored heading and useful detail';let doc=new DOMParser().parseFromString(renderToStaticMarkup(<ConnectedFamilySection section={section}/>),'text/html');expect(doc.querySelector('h1')?.textContent).toBe(section.title);for(const mark of doc.querySelectorAll('h1 em,h1 mark'))expect(mark.textContent?.trim()).not.toBe('');section.titleEmphasis=[{start:0,end:8}];doc=new DOMParser().parseFromString(renderToStaticMarkup(<ConnectedFamilySection section={section}/>),'text/html');expect(doc.querySelector('[data-cms-title-emphasis]')?.textContent).toBe(section.title.slice(0,8));expect(doc.querySelector('h1')?.textContent).toBe(section.title);
 });
+
+it('renders consecutive read-only card numbers through additions, reordering and deletion', () => {
+ const pages = connectedPageIds.flatMap(id => connectedPageSections(id, {}, 'card-numbers'));
+ const diagrams = [1, 2, 3, 4, 5, 6, 9, 10, 13];
+ for (const number of diagrams) {
+  const section = pages.find(page => page.connectedDiagram === `cards-composition-${number}`)!;
+  const entry = section.items!.find(item => item.layoutGroup === 'c0')!;
+  const details = section.items!.filter(item => item.layoutGroup === 'details');
+  const cards = Array.from({length: 11}, (_, index) => ({...entry, id: `card-${index}`, title: `Test card ${index}`}));
+  for (const items of [cards, [...cards].reverse(), cards.filter((_, index) => index !== 2)]) {
+   const markup = renderToStaticMarkup(<ConnectedFamilySection section={{...section, items: [...details, ...items]}}/>);
+   const doc = new DOMParser().parseFromString(markup, 'text/html');
+   const badges = [...doc.querySelectorAll('.connected-card-ordinal')];
+   expect(badges.map(node => node.textContent)).toEqual(items.map((_, index) => String(index + 1).padStart(2, '0')));
+   expect(badges.map(node => node.closest('article')?.querySelector('h3')?.textContent)).toEqual(items.map(item => item.title));
+  }
+  if (number === 3) {
+   const inspector = renderToStaticMarkup(<ConnectedFamilyContent section={section} onChange={() => {}}/>);
+   expect(inspector).not.toContain('Illustration labels');
+  }
+ }
+});

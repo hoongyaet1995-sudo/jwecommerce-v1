@@ -13,6 +13,22 @@ export const connectedFamilyMetadata:Record<string,ConnectedPassport>=Object.fro
   details:meta.details.map((slot,index)=>({...slot,label:names[id]?.[slot.slot]??`Illustration field ${index+1}`}))
  }])
 );
+const cardOrdinalSlots: Partial<Record<keyof typeof source, readonly number[]>> = {
+ 'cards-composition-1': [0, 2, 3, 4, 5, 6],
+ 'cards-composition-2': [0, 1, 2, 3],
+ 'cards-composition-3': [0, 1, 2, 3, 4, 5],
+ 'cards-composition-4': [0, 1, 2, 3],
+ 'cards-composition-5': [0, 5, 11],
+ 'cards-composition-6': [0, 2, 3, 4, 5, 6],
+ 'cards-composition-9': [0, 1, 2],
+ 'cards-composition-10': [0, 5, 14, 17],
+ 'cards-composition-13': [0, 1, 2, 3, 4, 5, 6, 7, 8],
+};
+
+export function isConnectedCardOrdinalSlot(diagram: ConnectedSection["connectedDiagram"], slot: string) {
+ return diagram !== undefined && (cardOrdinalSlots[diagram]?.some(index => slot === `${diagram}-label-${index}`) ?? false);
+}
+
 export const connectedDiagramIds=Object.keys(source);
 export function isConnectedFamily(section:PageSection):section is ConnectedSection{const s=section as ConnectedSection;return !!s.connectedDiagram&&!!connectedFamilyMetadata[s.connectedDiagram]&&connectedFamilyMetadata[s.connectedDiagram].type===s.type&&connectedFamilyMetadata[s.connectedDiagram].layout===s.connectedLayout;}
 export function connectedPassport(section:PageSection):ConnectedPassport|undefined{

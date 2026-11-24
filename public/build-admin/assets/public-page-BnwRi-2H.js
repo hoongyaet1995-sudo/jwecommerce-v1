@@ -1,0 +1,1 @@
+import{bV as s,bU as a,j as t,r,an as n,bW as i,bX as c}from"./PageRuntimeContext-dDLLadeL.js";/* empty css              */const o=document.getElementById("cms-page-root");if(o){const e=s();a.createRoot(o).render(t.jsx(r.StrictMode,{children:e?t.jsx(n,{payload:e,children:t.jsx(i,{sections:e.page.document.sections,mode:e.context.mode})}):t.jsx(c,{})}))}

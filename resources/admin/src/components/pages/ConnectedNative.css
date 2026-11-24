@@ -1426,6 +1426,8 @@ h1, h2, h3,
 .service-feature-grid article { min-height: 320px; padding: 28px; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--paint-ffffff,#fff); }
 .service-feature-grid article:nth-child(2), .service-feature-grid article:nth-child(6) { background: var(--accent); border-color: var(--accent); }.service-feature-grid article:nth-child(4) { background: var(--pink); border-color: var(--pink); }.service-feature-grid article:nth-child(5) { color: var(--paint-ffffff,#fff); background: var(--paint-111111,#111); border-color: var(--paint-111111,#111); }
 .service-feature-grid article > span { color: #68706c; font-size: 14px; font-weight: 750; }.service-feature-grid article:nth-child(5) > span { color: var(--accent); }
+.service-feature-grid article > span:where(.connected-card-ordinal) { display: grid; width: 40px; height: 40px; place-items: center; border-radius: 50%; color: var(--paint-111111,#111); background: #eef0ed; font-size: 15px; font-weight: 750; }
+.service-feature-grid article:nth-child(5) > span:where(.connected-card-ordinal) { color: var(--paint-111111,#111); background: var(--accent); }
 .service-page-omnichannel .service-feature-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 9px; }
 .service-page-omnichannel .service-feature-grid article { display: flex; min-height: 350px; padding: 20px; flex-direction: column; border-radius: 18px; }
 .service-page-omnichannel .service-feature-grid article > span { display: grid; width: 46px; height: 46px; place-items: center; border-radius: 50%; color: var(--paint-111111,#111); background: #eef0ed; font-size: 19px; font-weight: 800; line-height: 1; }
