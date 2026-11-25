@@ -167,12 +167,12 @@
       "assets/malaysia-proud-CoWH8gQK.png"
     ]
   },
-  "_index-CkNkapAZ.css": {
-    "file": "assets/index-CkNkapAZ.css",
-    "src": "_index-CkNkapAZ.css"
+  "_index-CmBywIZ7.css": {
+    "file": "assets/index-CmBywIZ7.css",
+    "src": "_index-CmBywIZ7.css"
   },
   "src/main.tsx": {
-    "file": "assets/main-DE9DvbIE.js",
+    "file": "assets/main-BZXlsewO.js",
     "name": "main",
     "src": "src/main.tsx",
     "isEntry": true,
@@ -185,7 +185,7 @@
     ],
     "css": [
       "assets/main-Zg1rF_j1.css",
-      "assets/index-CkNkapAZ.css"
+      "assets/index-CmBywIZ7.css"
     ],
     "assets": [
       "assets/cms-footer-design-dgL3cJ0s.css",
@@ -193,7 +193,7 @@
     ]
   },
   "src/previews/inventory48/Inventory48Runtime.tsx": {
-    "file": "assets/Inventory48Runtime-HH8FAydO.js",
+    "file": "assets/Inventory48Runtime-fSCcivBK.js",
     "name": "Inventory48Runtime",
     "src": "src/previews/inventory48/Inventory48Runtime.tsx",
     "isDynamicEntry": true,
@@ -204,11 +204,11 @@
     ],
     "css": [
       "assets/Inventory48Runtime-DNZXllWr.css",
-      "assets/index-CkNkapAZ.css"
+      "assets/index-CmBywIZ7.css"
     ]
   },
   "src/public-page.tsx": {
-    "file": "assets/public-page-BnwRi-2H.js",
+    "file": "assets/public-page-CdgUJFfr.js",
     "name": "public-page",
     "src": "src/public-page.tsx",
     "isEntry": true,
@@ -216,11 +216,11 @@
       "_PageRuntimeContext-dDLLadeL.js"
     ],
     "css": [
-      "assets/index-CkNkapAZ.css"
+      "assets/index-CmBywIZ7.css"
     ]
   },
   "src/section-preview/index.html": {
-    "file": "assets/section-preview-Ck3P35u8.js",
+    "file": "assets/section-preview-CfzhrTHW.js",
     "name": "section-preview",
     "src": "src/section-preview/index.html",
     "isEntry": true,
@@ -229,7 +229,7 @@
       "_AddSectionModal-BgiO6oQu.js"
     ],
     "css": [
-      "assets/section-preview-DFoc5lP8.css"
+      "assets/section-preview-AopuE-Lu.css"
     ]
   }
 }

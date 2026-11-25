@@ -13,14 +13,13 @@ const openai = {
   ],
 };
 
-export function modelOptions(provider: AIProvider, kind: 'text' | 'image', models: AIConnection['models'], selected?: string) {
+export function modelOptions(provider: AIProvider, kind: 'text' | 'image', models: AIConnection['models']) {
   const available = models.filter(model => model[kind]);
-  const recommended = provider === 'openai' ? openai[kind].map(model => ({
-    ...model, available: available.some(item => item.id === model.id),
-  })) : [];
+  const recommended = provider === 'openai'
+    ? openai[kind].filter(model => available.some(item => item.id === model.id))
+    : [];
   return {
     recommended,
-    others: available.filter(model => !recommended.some(item => item.id === model.id)
-      && (provider !== 'openai' || !recommended.some(item => item.available) || model.id === selected)),
+    others: available.filter(model => !recommended.some(item => item.id === model.id)),
   };
 }
